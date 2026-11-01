@@ -1,0 +1,17 @@
+spec_type: core/v1
+
+name: dexhand_shape_sorter_all_pieces
+
+image: {kind: container}
+
+resources: {cpus: 4, memory_mb: 16384}
+network: {mode: block}
+timeouts: {setup: 600, agent: 7200, verify: 5400}
+artifacts: [/home/user/submission]
+
+verify:
+  environment_mode: separate
+  resources: {cpus: 4, memory_mb: 16384, storage_mb: null, gpus: 0}
+
+metadata:
+  platform: hand

@@ -1,0 +1,72 @@
+{
+ "top": {
+  "width": 640,
+  "height": 480,
+  "fx": 554.2562584220408,
+  "fy": 554.2562584220408,
+  "cx": 320.0,
+  "cy": 240.0,
+  "world_from_camera": [
+   [
+    0.0,
+    -1.0,
+    0.0,
+    -0.17
+   ],
+   [
+    -1.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    -1.0,
+    0.95
+   ],
+   [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  ],
+  "convention": "OpenCV pinhole: x right, y down, z forward. A camera-frame point (X, Y, Z) projects to continuous image coordinates u = fx*X/Z + cx, v = fy*Y/Z + cy; the pixel in column i, row j covers u in [i, i+1), v in [j, j+1) and samples its centre (u, v) = (i + 0.5, j + 0.5)."
+ },
+ "left": {
+  "width": 640,
+  "height": 480,
+  "fx": 554.2562584220408,
+  "fy": 554.2562584220408,
+  "cx": 320.0,
+  "cy": 240.0,
+  "world_from_camera": [
+   [
+    0.9992976157091807,
+    -0.02198569319011528,
+    0.0303464088962229,
+    -0.15
+   ],
+   [
+    -0.03747366058909428,
+    -0.5862851517364074,
+    0.809237570565944,
+    -0.8
+   ],
+   [
+    0.0,
+    -0.8098063658359127,
+    -0.5866972386603094,
+    0.6
+   ],
+   [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  ],
+  "convention": "OpenCV pinhole: x right, y down, z forward. A camera-frame point (X, Y, Z) projects to continuous image coordinates u = fx*X/Z + cx, v = fy*Y/Z + cy; the pixel in column i, row j covers u in [i, i+1), v in [j, j+1) and samples its centre (u, v) = (i + 0.5, j + 0.5)."
+ }
+}
