@@ -12,10 +12,22 @@
     "spec_hash": "sha256:472d0e693dc5010a5d406716d9f5158cd1bcacc1493d3bad88e468e72ac6a5d5"
   },
   {
+    "content_digest": "sha256:74d7e1b8e429d8ce4323c6f1c553973882c720d38c2dd0dfb5f272b317398aff",
+    "since": "2026-11-01T19:12:18Z",
+    "slug": "dexhand_shape_sorter_all_pieces",
+    "spec_hash": "sha256:6e5220c8e1f23619af7b813d0c474767decdddfcf79f2133b4d1c442f9b581a8"
+  },
+  {
     "content_digest": "sha256:cd46084918fc5abc3e64c8a67e7f73722a4297f03f9923f5109c96519c32417e",
     "since": "2026-10-15T15:24:22Z",
     "slug": "fault_adaptive_spacecraft_docking",
     "spec_hash": "sha256:95b824570ebf68cda4aa08382f7d95b3e4ee0110eefc03191a9cccd1eda8dc7e"
+  },
+  {
+    "content_digest": "sha256:b3b962798301f3179dde76439fe7444052b3b0eff4d16daec6395a3977e5f264",
+    "since": "2026-11-01T19:12:18Z",
+    "slug": "hot3d_sharpa_retarget",
+    "spec_hash": "sha256:4e6ee4fd9027232b7798674798dd1711adfe51b9b8cb3fdeabd297eaf248b09d"
   },
   {
     "content_digest": "sha256:e7641ba44f5a53e77c9e1dedcb78d944dc8ebc5c7da6828d21636717faaf6e38",
@@ -40,5 +52,11 @@
     "since": "2026-10-27T19:49:28Z",
     "slug": "robotic_arm_requirements_replica_from_photos",
     "spec_hash": "sha256:58d88f2534d367fe47af9c59fae8dc46e1fa52d56a5bed83dedc828b5e33ae89"
+  },
+  {
+    "content_digest": "sha256:c3b011cae2ddaac85b1307dcc452ef042b9e31c54d4a74c7dc4640e2ce3d4f0c",
+    "since": "2026-11-01T19:12:18Z",
+    "slug": "visual_low_level_flight_control",
+    "spec_hash": "sha256:3e40de5802d358684778ed2c61632f886a58cbb8f7c1cb490443c9688b84f478"
   }
 ]
