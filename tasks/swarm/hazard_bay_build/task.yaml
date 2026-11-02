@@ -1,0 +1,28 @@
+# hazard_bay_build: rebuild a hazardous maintenance bay of a process plant in NVIDIA Isaac Sim from photographs
+# and a few facts; design the robot fleet for it (three flying robots that carry a water bucket on ropes, a ground
+# vehicle with an arm) from a hardware catalog; and program the fleet through the plant's whole job (the valve closed,
+# the fire put out with the bucket, the parts cleared into the crate). The agent delivers one USD stage (the bay, the
+# steam line with a quarter-turn valve and a leaking plume, a burning pan, a water tank and the bucket on three rope
+# chains, the fleet, the OmniGraph logic for the hazard rules) and the fleet's program (run.sh). The grader runs none
+# of the agent's scene code: it opens the stage in its own Isaac Sim processes as an unprivileged account and measures
+# it (layout, rest and masses, the valve and the plume, the bucket on its ropes under the grader's own moves, the
+# fleet's design), then runs the agent's program on the agent's scene twice behind a wire and measures the outcomes.
+# Needs one NVIDIA RTX GPU.
+
+spec_type: core/v1
+
+name: hazard_bay_build
+
+image: {kind: container}
+
+resources: {cpus: 8, memory_mb: 32768, gpus: 1}
+network: {mode: block}
+
+# setup: stage ~/given (< 1 min). agent: 8 h. verify: a canary, the scan, five probe groups and two mission runs, each
+# in a fresh Isaac Sim process (the oracle's verify takes about 25 min; the first Isaac Sim start compiles shaders).
+timeouts: {setup: 600, agent: 28800, verify: 5400}
+
+artifacts: [/home/user/submission]
+
+metadata:
+  platform: swarm
