@@ -9,20 +9,26 @@
 # fleet's design), then runs the agent's program on the agent's scene twice behind a wire and measures the outcomes.
 # Needs one NVIDIA RTX GPU.
 
-spec_type: core/v1
+schema_version = "1.4+ale.1"
+artifacts = ["/home/user/submission"]
 
-name: hazard_bay_build
+[task]
+name = "grounded-intelligence-initiative/hazard_bay_build"
 
-image: {kind: container}
+[metadata]
+platform = "swarm"
 
-resources: {cpus: 8, memory_mb: 32768, gpus: 1}
-network: {mode: block}
+[environment]
+cpus = 8
+memory_mb = 32768
+gpus = 1
 
-# setup: stage ~/given (< 1 min). agent: 8 h. verify: a canary, the scan, five probe groups and two mission runs, each
-# in a fresh Isaac Sim process (the oracle's verify takes about 25 min; the first Isaac Sim start compiles shaders).
-timeouts: {setup: 600, agent: 28800, verify: 5400}
+# Setup (environment/setup/setup.sh: stage ~/given, < 1 min) has no field: the engine bounds it at a fixed 1800 s.
+# [agent] timeout_sec: 8 h. [verifier] timeout_sec: a canary, the scan, five probe groups and two mission runs, each in
+# a fresh Isaac Sim process (the oracle's verify takes about 25 min; the first Isaac Sim start compiles shaders).
+[agent]
+timeout_sec = 28800
+network_mode = "no-network"
 
-artifacts: [/home/user/submission]
-
-metadata:
-  platform: swarm
+[verifier]
+timeout_sec = 5400

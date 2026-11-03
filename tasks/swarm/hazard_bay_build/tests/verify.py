@@ -1,6 +1,6 @@
 """The grader: scores the submission's USD stage against the real bay, the brief and the requirements.
 
-Runs as root after the agent's session (verify stage, `/opt/ale/verify/`). Nothing of the agent's runs: every process
+Runs as root after the agent's session (verify stage, `/opt/ale/tests/`). Nothing of the agent's runs: every process
 of its account is killed, the submission is snapshotted (regular files only) under a fresh root-owned folder, the
 shared Kit folders are emptied, and the measurements run as a separate unprivileged account with a clean environment
 (`python3 -I -s`), each probe group in its own Isaac Sim process (one stage per process: a clean clock), with Kit's

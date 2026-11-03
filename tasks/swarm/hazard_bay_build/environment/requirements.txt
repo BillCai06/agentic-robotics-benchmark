@@ -1,4 +1,4 @@
-# The task image's Python dependencies (installed into the py3.12 /opt/venv by image/Dockerfile).
+# The task image's Python dependencies (installed into the py3.12 /opt/venv by environment/Dockerfile).
 # Isaac Lab 3.0.0 with its matching Isaac Sim (6.2.0.0, pulled by the `isaacsim` extra) from NVIDIA's index; torch from
 # the CUDA 12.8 index (Blackwell GPUs need cu128 kernels).
 --extra-index-url https://pypi.nvidia.com

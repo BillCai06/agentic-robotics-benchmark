@@ -1,7 +1,7 @@
 # The task's environment: NVIDIA Isaac Sim + Isaac Lab on the official ALE container base, for one NVIDIA GPU, with an
 # offline asset library and the task's own airframes.
-# `image/` is the sole build context. Nothing from verify/ or oracle/ is in here.
-FROM ghcr.io/agentslastexam/container-ubuntu22-base:latest
+# `environment/` (less its `setup/`) is the sole build context. Nothing from tests/ or solution/ is in here.
+FROM ghcr.io/agentslastexam/container-ubuntu22-base:0.1.1
 
 COPY --from=ghcr.io/astral-sh/uv:0.11 /uv /usr/local/bin/uv
 

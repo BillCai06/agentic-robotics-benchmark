@@ -214,32 +214,65 @@ def test_verdict():
         except SystemExit:
             check("a reward outside [0, 1] is a task error", True)
 
-        # The engine's record path without the engine is a task error, and nothing is
-        # written. `sys.modules["ale_verify"] = None` makes the import fail whatever this
-        # interpreter happens to have installed.
-        record_path = os.path.join(tmp, "verification.json")
-        verdict = {"rewards": {"reward": 0.5},
+        verdict = {"rewards": {"reward": 0.4567},
                    "metrics": {"ratio": 0.75, "success_rate": 41.0}}
         saved_module = sys.modules.get("ale_verify", "<absent>")
-        sys.modules["ale_verify"] = None
-        os.environ["ALE_VERIFICATION_PATH"] = record_path
         try:
-            for f in (path, record_path):
-                if os.path.exists(f):
-                    os.remove(f)
+            # The engine's verify stage without the engine's package is a task error, and
+            # nothing is written. `sys.modules["ale_verify"] = None` makes the import fail
+            # whatever this interpreter happens to have installed.
+            sys.modules["ale_verify"] = None
             try:
-                stage.write_verdict(verdict, path=path)
-                check("ALE_VERIFICATION_PATH without ale_verify is a task error", False)
+                stage.write_verdict(verdict)
+                check("no path and no ale_verify is a task error", False)
             except SystemExit:
-                check("ALE_VERIFICATION_PATH without ale_verify is a task error", True)
-            check("... and nothing is written",
-                  not os.path.exists(path) and not os.path.exists(record_path))
+                check("no path and no ale_verify is a task error", True)
+
+            # In the engine's verify stage the result goes through ale_verify.write: the
+            # reward it rounds, the metrics with the exact reward, and the diagnostic.
+            written = []
+            fake = type(sys)("ale_verify")
+            fake.write = written.append
+            sys.modules["ale_verify"] = fake
+            stage.write_verdict(verdict, diagnostic="two of three episodes")
+            result = written[0] if written else {}
+            check("the result goes through ale_verify.write", len(written) == 1)
+            check("... with the gated reward at the top", result.get("reward") == 0.4567)
+            check("... the metrics beside it, the exact reward included",
+                  result.get("metrics", {}).get("ratio") == 0.75
+                  and result.get("metrics", {}).get("reward_exact") == 0.4567)
+            check("... and the diagnostic", result.get("diagnostic") == "two of three episodes")
+            check("... and no second rewards map for the single key", "rewards" not in result)
+            written[:] = []
+            stage.write_verdict(scoring.zero_verdict(reason="no submission"))
+            check("zero_verdict's reason becomes the diagnostic",
+                  written and written[0]["reward"] == 0.0
+                  and "no submission" in written[0].get("diagnostic", ""))
+
+            # A grader run by hand outside the engine writes the envelope where the
+            # variable says; inside the engine the variable is ignored.
+            by_hand = os.path.join(tmp, "by_hand.json")
+            os.environ["ROBOTICS_GRADER_VERDICT_PATH"] = by_hand
+            written[:] = []
+            try:
+                stage.write_verdict(verdict)
+                check("outside the engine ROBOTICS_GRADER_VERDICT_PATH gets the envelope",
+                      not written and os.path.isfile(by_hand))
+                os.remove(by_hand)
+                os.environ["ALE_VERIFY_PYTHON"] = "python3"
+                stage.write_verdict(verdict)
+                check("inside the engine the variable is ignored",
+                      len(written) == 1 and not os.path.exists(by_hand))
+            finally:
+                os.environ.pop("ROBOTICS_GRADER_VERDICT_PATH", None)
+                os.environ.pop("ALE_VERIFY_PYTHON", None)
         finally:
-            os.environ.pop("ALE_VERIFICATION_PATH", None)
             if saved_module == "<absent>":
                 sys.modules.pop("ale_verify", None)
             else:
                 sys.modules["ale_verify"] = saved_module
+        check("nothing was written beside the plain envelope",
+              sorted(os.listdir(tmp)) == ["verdict.json"])
 
 
 # --------------------------------------------------------------------------- #

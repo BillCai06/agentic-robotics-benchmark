@@ -1,9 +1,0 @@
-{
-  "metric": "acceptance_score",
-  "direction": "higher",
-  "value": 0.693,
-  "full_at": 0.98,
-  "source": "The reference's (oracle/reference/build_scene.py + oracle/reference/controller.py + vehicle.py) own acceptance_score from direct runs of this grader (verify/verify.py as the engine runs it: root, the submission in the agent home, the program behind the kit's Solver) on the authoring host with the pinned engine's image, 2026-11-02: two runs scored 0.8616 and 0.6931; the value is the lower one. The reference program is a scripted baseline: the vehicle closes the valve and parks, the drones carry the bucket and pour after the push; it does not clear the station. Every scene section scored 1.0 (hoist 0.998 once).",
-  "reference_commit": "contrib/hazard_bay_build (the commit that adds this folder; the reference is oracle/reference/build_scene.py in it)",
-  "note": "full_at 0.98 (the owner's choice): a run scoring 0.98 x value (about 0.679) earns the full reward. The spread sits in the mission section: in 1 of the 4 measured mission runs the baseline vehicle's arm missed the lever, so the steam stayed on and the drones never poured (that run's mission score 0.26 against 0.68-0.75 otherwise); an oracle run in which that happens can fall below the threshold. Sections: layout .08, physics .04, steam .04, hoist .20, control (the bay mission, two runs, outcomes only) .54, fleet .10."
-}

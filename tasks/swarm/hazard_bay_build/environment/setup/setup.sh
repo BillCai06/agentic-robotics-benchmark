@@ -3,7 +3,7 @@
 #
 # One job here: put the agent-visible material (the practice grader, the agent's own
 # editable copy of the environment) into the agent home, owned by the agent. Keep this
-# stage dynamic-only: package installation and fixed downloads belong in image/Dockerfile,
+# stage dynamic-only: package installation and fixed downloads belong in environment/Dockerfile,
 # and lint rejects them here.
 #
 # Everything under payload/ is staged, whatever it is called — add, rename or remove
