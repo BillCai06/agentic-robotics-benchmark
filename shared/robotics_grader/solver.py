@@ -3,7 +3,7 @@
 The grader owns the simulator and asks the agent's policy for one action at a time. Three
 properties make that safe to score:
 
-1. **The solver runs as the agent, not as root.** `verify/run.sh` is root — the framework
+1. **The solver runs as the agent, not as root.** `tests/test.sh` is root — the framework
    runs it on the task's behalf — so spawning the solver directly would give the agent's
    code the grader's own privileges. `stage.deprivileged` drops to the agent account, and
    from there `/opt/ale` is untraversable and the grader's memory unreadable.

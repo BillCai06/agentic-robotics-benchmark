@@ -1,0 +1,28 @@
+schema_version = "1.4+ale.1"
+artifacts = ["/home/user/submission"]
+
+[task]
+name = "grounded-intelligence-initiative/hot3d_sharpa_retarget"
+
+[metadata]
+platform = "hand"
+
+[environment]
+cpus = 8
+memory_mb = 65536
+gpus = 1
+
+[agent]
+timeout_sec = 10800
+network_mode = "no-network"
+
+# A fresh verifier sandbox from the image, with only the submission restored: nothing the agent left in the solver's
+# file system (programs earlier on PATH, Isaac Sim's kit settings and caches) reaches the grader, which runs as root.
+[verifier]
+timeout_sec = 4500
+environment_mode = "separate"
+
+[verifier.environment]
+cpus = 8
+memory_mb = 65536
+gpus = 1

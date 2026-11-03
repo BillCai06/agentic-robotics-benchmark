@@ -3,10 +3,10 @@
     python3 fetch_assets.py <assets.sha256> <dest_dir>
 
 The canonical copy is `shared/task_assets/fetch_assets.py` in the benchmark repository. Every task that has assets
-carries a byte-identical copy in its `image/` (the image's sole build context); `scripts/task_assets.py check`
+carries a byte-identical copy in its `environment/` (the image's build context); `scripts/task_assets.py check`
 enforces the identity.
 
-`assets.sha256` (in image/, so in the build context) holds a header, then one `<sha256>  <relative path>` line per
+`assets.sha256` (in environment/, so in the build context) holds a header, then one `<sha256>  <relative path>` line per
 file, as `sha256sum` writes them:
 
     # endpoint: https://huggingface.co
