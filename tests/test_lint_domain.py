@@ -534,3 +534,31 @@ def test_a_template_gets_the_image_battery_only(tmp_path):
     (template / "environment" / "Dockerfile").write_text(_DOCKERFILE + "COPY tests /opt/t\n")
     problems = lint_domain.lint_paths([tmp_path])
     assert len(problems) == 1 and "the tests stage" in problems[0], problems
+
+
+# --------------------------------------------------------------------------- #
+# found in the 2026-11-03 review of the Harbor migration
+# --------------------------------------------------------------------------- #
+def test_the_one_folder_lint_runs_the_image_battery_too(tmp_path):
+    """A maintainer lints one contribution with `lint_domain.py tasks/<platform>/<slug>`; that
+    must be the pull request's lint, image hygiene included."""
+    task = _task(tmp_path)
+    (task / "environment" / "Dockerfile").write_text(_DOCKERFILE + "COPY tests/anchor.json /opt/a.json\n")
+    problems = lint_domain.lint_paths([task])
+    assert any("COPY/ADD in environment/Dockerfile" in p for p in problems), problems
+
+
+def test_a_task_folder_without_task_toml_is_reported(tmp_path):
+    """The engine discovers tasks by task.toml alone: a misnamed manifest leaves the folder
+    unseen by `ale lint`, by a run and by the export, so the domain lint names it."""
+    task = _task(tmp_path)
+    (task / "task.toml").rename(task / "task.yml")
+    problems = lint_domain.lint_paths([tmp_path])
+    assert len(problems) == 1 and "uav/probe: no task.toml" in problems[0], problems
+
+
+def test_the_payload_may_not_name_the_grader_s_files(tmp_path):
+    task = _task(tmp_path)
+    (task / "environment" / "setup" / "payload" / "peek.py").write_text('open("tests/grader.py")\n')
+    problems = lint_domain.lint_paths([task])
+    assert any("the grader (tests/)" in p for p in problems), problems

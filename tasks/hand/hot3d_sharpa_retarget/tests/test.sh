@@ -6,6 +6,7 @@
 # `$ALE_VERIFY_PYTHON` and nothing else: the engine stages `ale_verify` into the first
 # 3.12+ interpreter it finds (`python3`, then `python3.12`) and names it here, so any
 # other interpreter would import from a python that package was never installed into.
+# Run by hand outside the engine, the variable is unset and `python3` stands in.
 set -euo pipefail
 
-exec "$ALE_VERIFY_PYTHON" verify.py
+exec "${ALE_VERIFY_PYTHON:-python3}" verify.py

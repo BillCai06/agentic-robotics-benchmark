@@ -22,7 +22,8 @@ sandbox. It is handed an `instruction.md` and an environment image, works howeve
 (train a controller, write a planner, design a part, generate code, tune parameters), and
 leaves any artifact in `/home/user/submission/`. A hidden grader scores that artifact on
 fresh hidden seeds. Your job is to author the whole package so that it validates: an
-untouched sandbox scores an exact zero and the reference artifact scores an exact one.
+untouched sandbox scores reward 0.0 and the reference artifact 1.0, after the engine rounds
+`reward` half-up to two decimals.
 
 ## 1. Prerequisites
 
@@ -203,7 +204,7 @@ CLI's response cap hold. Check for each before trusting a run:
   `BUN_CONFIG_HTTP_IDLE_TIMEOUT=600` and `CLAUDE_STREAM_IDLE_TIMEOUT_MS=600000` itself
   (`harnesses/claude_code/adapter.py:30`, `:173-182`), and the gateway writes an SSE keep-alive
   comment to the CLI after every 15 s of upstream silence (`gateway/server.py:51-63`,
-  `:444-453`). A stream on which the CLI sees no event for 600 s still ends the episode
+  `:444-453`). A stream on which the CLI sees no byte for 600 s still ends the episode
   (`API Error: Stream idle timeout`). The harness's values win over an image `ENV` or an
   `[environment].env` entry of the same names (`guestd/main.py:112-113`,
   `protocol/episode_protocol.py:1750`), so the earlier workaround, those two variables in an

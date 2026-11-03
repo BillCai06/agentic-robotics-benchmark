@@ -53,8 +53,8 @@
 
 ```
 tasks/<platform>/<slug>/
-├── task.toml          schema_version = "1.4+ale.1", strict (an unknown key fails):
-│                      [task] name = "grounded-intelligence-initiative/<slug>", artifacts,
+├── task.toml          strict (an unknown key fails): top-level schema_version = "1.4+ale.1"
+│                      and artifacts, [task] name = "grounded-intelligence-initiative/<slug>",
 │                      [metadata] platform, [environment] resources, [agent] timeout_sec +
 │                      network_mode, [verifier] timeout_sec (+ environment_mode = "separate")
 ├── instruction.md     the prompt — the only thing the tested agent is told
@@ -66,7 +66,7 @@ tasks/<platform>/<slug>/
 │                      payload/ (practice grader, dev copies) into the agent home
 ├── solution/solve.sh  the reference implementation; `ale validate` runs it in place of the
 │                      agent (staged at ~/.ale-solution, run as the agent, same timeout)
-└── tests/             test.sh (`exec "$ALE_VERIFY_PYTHON" verify.py`) -> verify.py (the grader),
+└── tests/             test.sh (`exec "${ALE_VERIFY_PYTHON:-python3}" verify.py`) -> verify.py (the grader),
                        env.py, anchor.json, grader_config.json, robotics_grader/ (vendored kit);
                        staged root-only at /opt/ale/tests — ABSENT while the agent works
 ```
@@ -74,8 +74,9 @@ tasks/<platform>/<slug>/
 - Identity = `task.toml`'s `[task].name`, `grounded-intelligence-initiative/<slug>` (the
   GitHub / Hugging Face organization that owns the benchmark, then the slug). The slug is the
   folder name, the registry `slug` and the sheet's Task Name. `[metadata].platform` is the only
-  metadata field: one of the fixed keys in `tasks/platforms.json` (this repository owns the
-  vocabulary; the registry export hands it to the website, which only displays it). A landed
+  metadata field anything here reads: one of the fixed keys in `tasks/platforms.json` (this
+  repository owns the vocabulary; the registry export hands it to the website, which only
+  displays it). Older tasks may still carry retired keys there, which nothing reads. A landed
   task sits at exactly `tasks/<platform>/<slug>/` (`scripts/lint_domain.py` battery 7 checks
   the key and the placement; a contribution's pull request puts the folder there directly).
   The metric and its direction live only in `tests/anchor.json` (`metric`, `direction`).
@@ -102,7 +103,9 @@ tasks/<platform>/<slug>/
   Verification is shared (in the solver's sandbox, as root) unless the task sets
   `[verifier] environment_mode = "separate"`, which restores only the declared `artifacts`
   into a fresh sandbox; a task keeps the mode it has. Proof (recorded on the pre-Harbor
-  engine; the mechanism is unchanged): `docs/evidence/isolation-audit.md`. The repository
+  engine; the mechanism is unchanged except the result path, `/logs/verifier`, reset before
+  every attempt, which was checked in the 1cdbc02 code, not by a run):
+  `docs/evidence/isolation-audit.md`. The repository
   being public changes nothing here: the anchor is hidden from the tested agent while it
   works, not from people.
 - The engine writes `config.json`, `instruction.md` and `trajectory.json` into the staged
@@ -140,8 +143,9 @@ tasks/<platform>/<slug>/
 - `scripts/task_assets.py check`: every task's `environment/assets.sha256` names the dataset
   in `task-assets.toml`, and its `environment/fetch_assets.py` is byte-identical to
   `shared/task_assets/fetch_assets.py`.
-- The template and the worked example (`tasks/space/fault_adaptive_spacecraft_docking`)
-  each validate in well under a minute.
+- The worked example (`tasks/space/fault_adaptive_spacecraft_docking`) validates in well
+  under a minute once its image is built (`validate-44ad164a` on 1cdbc02); the template has
+  the same machinery and stops at `needs_anchor` until its anchor is recorded.
 
 ## Scoring (the kit owns it; do not re-derive)
 
@@ -276,7 +280,7 @@ uv run pytest -q
   read) everything the venv points at.**
 - The engine stages `ale_verify` into `python3`, else `python3.12` (3.12+ required), and
   names the one it used in `ALE_VERIFY_PYTHON`, set for the verify stage only:
-  `tests/test.sh` runs `exec "$ALE_VERIFY_PYTHON" verify.py`, never a bare `python3`.
+  `tests/test.sh` runs `exec "${ALE_VERIFY_PYTHON:-python3}" verify.py`, never a bare `python3`.
 - `reward` is rounded half-up to two decimals before any gate reads it: an oracle at 0.995
   passes as 1.0 and an untouched run at 0.004 reads as 0.0. The unrounded value is
   `metrics.reward_exact` in the episode's `verification.json`.

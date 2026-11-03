@@ -10,4 +10,4 @@ export SUPERDEX_PRECISION=double SUPERDEX_ASSETS_PATH=/opt/superdex_assets SORTE
 unset PYTHONPATH PYTHONSTARTUP PYTHONHOME
 TMPROOT="$(mktemp -d)"
 export TMPDIR="$TMPROOT" XDG_CACHE_HOME="$TMPROOT/cache" XDG_CONFIG_HOME="$TMPROOT/config"
-exec "$ALE_VERIFY_PYTHON" -B verify.py
+exec "${ALE_VERIFY_PYTHON:-python3}" -B verify.py

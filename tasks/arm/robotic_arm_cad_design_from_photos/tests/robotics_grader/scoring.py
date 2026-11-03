@@ -11,8 +11,8 @@ genuinely good run lands in:
 
 `full_at` is the task's own declaration of "as good as the reference", sized by the
 measured seed-to-seed spread of the metric (`tests/anchor.json`). It exists because of
-the validate double pass: an untouched sandbox must score exactly 0 and the oracle exactly 1
-(the engine fails the run otherwise: `untouched_nonzero`, `oracle_not_full`), and an oracle
+the validate double pass: an untouched sandbox must score 0.0 and the oracle 1.0 on `reward`,
+after the engine's half-up rounding to two decimals (validation fails otherwise), and an oracle
 re-run on fresh hidden seeds does not reproduce its anchor to the digit —
 with the template's measured 1.16x spread over 12 runs, an honest oracle lands anywhere in
 ratio ~0.86–1.16. Saturating at `full_at` makes "inside the reference band" an exact 1.0
@@ -145,10 +145,10 @@ def ratio_rewards(measured, anchor, cap=DEFAULT_CAP, higher_is_better=True,
     measured value.
 
     `rewards` carries only the gated score: `reward = clamp(ratio / full_at, 0, 1)`.
-    Every reward key must be exactly 0 from an untouched sandbox and exactly 1 from the
-    oracle (the engine fails the run otherwise: `untouched_nonzero`, `oracle_not_full`),
-    so anything that is not that score — the raw metric, the capped ratio, the lock
-    outcomes — goes in `metrics`, where the engine records it without judging it.
+    `reward`, rounded half-up to two decimals, must be 0.0 from an untouched sandbox and
+    1.0 from the oracle (validation fails otherwise), so anything that is not that score —
+    the raw metric, the capped ratio, the lock outcomes — goes in `metrics`, which
+    verification.json records and nothing gates.
 
     `full_at` is where the reward saturates, in ratio units: the worst ratio a genuinely
     on-reference run can land on under fresh hidden seeds. Size it from a real measured
@@ -198,7 +198,7 @@ def ratio_rewards(measured, anchor, cap=DEFAULT_CAP, higher_is_better=True,
 def zero_verdict(reason=None, anchored=False, extra=None):
     """The honest zero: the verdict an absent or unusable submission earns.
 
-    Under `ale validate`, an untouched sandbox must produce a real verdict of exactly 0 —
+    Under `ale validate`, an untouched sandbox must produce a real verdict of reward 0.0 —
     a crash would read as a broken task, not as an agent that did nothing. The reward
     keys match `ratio_rewards`' exactly, and the reason rides along as the verdict's
     `diagnostic`, which `write_verdict` records in `verification.json`.

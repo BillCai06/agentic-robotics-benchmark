@@ -36,7 +36,7 @@ task/
 │           └── practice_grader/  a self-test on visible seeds; prints the raw metric, never a score
 ├── tests/               the grader. Absent while the agent works; uploaded root-only to
 │   │                    /opt/ale/tests at verify time
-│   ├── test.sh            `exec "$ALE_VERIFY_PYTHON" verify.py`
+│   ├── test.sh            `exec "${ALE_VERIFY_PYTHON:-python3}" verify.py`
 │   ├── verify.py          computes the metric under the grader's own physics, writes the verdict
 │   ├── env.py             the authoritative environment copy the grader imports
 │   ├── anchor.json        the metric and its direction, the hidden denominator, the saturation point
@@ -73,11 +73,12 @@ engine
 - stages its own `ale_verify` package into the first interpreter that is Python 3.12 or
   newer, `python3`, else `python3.12`, and names that interpreter in `ALE_VERIFY_PYTHON`.
   Tasks neither declare nor vendor the package. `tests/test.sh` runs
-  `exec "$ALE_VERIFY_PYTHON" verify.py`; in the template's image the interpreter is the
+  `exec "${ALE_VERIFY_PYTHON:-python3}" verify.py`; in the template's image the interpreter is the
   `/opt/venv` `python3`, first on `PATH`. An image with neither fails every verify stage
   before the grader starts, which is why the venv is 3.12;
 - sets `ALE_STAGE_DIR` (`/opt/ale/tests`), `ALE_HOME` (the agent's home, `/home/user`),
-  `ALE_EPISODE_ID` and `ALE_VERIFY_DEADLINE_SECONDS` (the seconds left in the verify phase);
+  `ALE_EPISODE_ID` and, when the verify phase has a deadline, `ALE_VERIFY_DEADLINE_SECONDS`
+  (the seconds left in it);
 - writes its own files into `tests/`, replacing any file the task ships under the same
   name: `config.json` (the Judge settings, `ALE_VERIFY_CONFIG_PATH`; this is why the
   grader's knobs live in `grader_config.json`), `instruction.md`

@@ -129,7 +129,9 @@ jobs:
       - name: robotics_grader selftest (canonical copy, shared/)
         run: |
           cd shared
-          python3 -m robotics_grader.selftest
+          # /usr/bin/python3, not the job's activated .venv: setup-uv activates one that holds the
+          # project's dependencies, and the kit must run with none (stdlib only, as in a task image).
+          /usr/bin/python3 -m robotics_grader.selftest
 
       # A task that ships a MODIFIED kit is a job FAILURE, not a warning: the kit computes
       # every future score, and nothing re-vendors it after merge any more. The fix is one
@@ -159,7 +161,7 @@ jobs:
       # vendors shared/task_assets/fetch_assets.py as environment/fetch_assets.py; a task that
       # disagrees with either is a failure: run 'python3 scripts/task_assets.py sync'.
       - name: Task assets match task-assets.toml and the canonical fetcher
-        run: python3 scripts/task_assets.py check
+        run: /usr/bin/python3 scripts/task_assets.py check
 
       - name: Pytest
         run: uv run pytest -q

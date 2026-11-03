@@ -271,6 +271,17 @@ def test_verdict():
                 sys.modules.pop("ale_verify", None)
             else:
                 sys.modules["ale_verify"] = saved_module
+        try:
+            stage.write_verdict({"rewards": {"reward": 0.5}, "metrics": {"reward_exact": 7.0}},
+                                path=path)
+            check("a task metric named reward_exact is a task error", False)
+        except SystemExit:
+            check("a task metric named reward_exact is a task error", True)
+        try:
+            stage.write_verdict(verdict, path=stage.verdict_path())
+            check("the envelope written into the verifier directory is a task error", False)
+        except SystemExit:
+            check("the envelope written into the verifier directory is a task error", True)
         check("nothing was written beside the plain envelope",
               sorted(os.listdir(tmp)) == ["verdict.json"])
 

@@ -73,7 +73,8 @@ reward = clamp(ratio / full_at, 0, 1)         # 任务的得分，也是引擎�
 
 从 `templates/task/` 开始做任务，用 `ale lint` 与 `ale validate` 过闸门，再用 frontier model
 测难度（`ale run`；目标是得分大致低于 0.5），然后开 PR。CI 会在 PR 上跑 `ale lint`、领域 lint、
-kit 字节比对与 asset 检查；维护者重跑 `ale validate`、merge、导出注册表。短版见
+kit 自检与字节比对、asset 检查、注册表 identity 交叉检查和测试套件（清单见
+[`CONTRIBUTING.md`](CONTRIBUTING.md)）；维护者重跑 `ale validate`、merge、导出注册表。短版见
 [`CONTRIBUTING.md`](CONTRIBUTING.md)；从模板到 merge 的完整路径见
 [`docs/contributing-a-task.md`](docs/contributing-a-task.md)。
 
@@ -146,7 +147,7 @@ cd vendor/ale && VIRTUAL_ENV= uv run python ../../scripts/export_registry.py \
 uv run pytest -q
 ```
 
-模板和完整示例任务都远不到一分钟就能 validate 完。
+完整示例任务在镜像建好之后，远不到一分钟就能 validate 完。
 
 ## 访问
 

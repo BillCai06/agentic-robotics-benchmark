@@ -30,8 +30,8 @@ The folder is Harbor's task format, as the engine at `vendor/ale` implements it:
 
 ```
 tasks/<platform>/<slug>/
-├── task.toml         strict configuration (schema_version "1.4+ale.1"): [task] name,
-│                     artifacts, [metadata] platform, [environment] resources,
+├── task.toml         strict configuration: top-level schema_version "1.4+ale.1" and
+│                     artifacts, [task] name, [metadata] platform, [environment] resources,
 │                     [agent] and [verifier] timeouts, [agent] network_mode
 ├── instruction.md    the prompt — the only thing the tested agent is told
 ├── environment/      the image: Dockerfile (context environment/ without setup/; final stage
@@ -87,8 +87,10 @@ teardown    sandbox destroyed by default (retention is a run policy; a kept sand
 **Stage isolation** is the whole hiding mechanism: a stage folder reaches the sandbox only
 when its stage runs, so `tests/` (grader, anchor, config) and `solution/` are simply absent
 while the agent works. Two more barriers hold even for what does exist: `/opt/ale` is
-root-only, and the solver runs at the agent's UID (Yama `ptrace_scope` blocks tracing across
-UIDs), so the agent's code cannot read the grader's memory or environment. Nor can it write
+root-only, and the solver runs at the agent's UID (the kernel refuses to let one UID trace
+another's process), so the agent's code cannot read the grader's memory. It does start with a
+copy of the verify stage's environment (`runuser` keeps it), so a grader keeps no secret in
+`os.environ`. Nor can it write
 the result: before every verification attempt the engine recreates `/logs/verifier` empty
 and readable by root alone. Real-run proof, made on the engine before the Harbor migration
 and re-checked in the 1cdbc02 code on 2026-11-03:
@@ -124,7 +126,7 @@ The engine persists one episode directory `runs/<run_id>/<org>.<slug>-<hex8>/` (
 | file | what it carries |
 |---|---|
 | `lock.json` | `task.{name,spec_hash,content_digest,non_verifier_digest,source}`, `framework.{commit,version}`, `agent.{harness,model,version,family}`, `image.*`, `resources.effective`, `verification.mode`, `ale_verify.content_hash` |
-| `result.json` | `episode_id`, `status` (`completed`, `agent_error`, `timeout`, …), `rewards{reward}` (only when completed), `metrics{}` (engine diagnostics; empty for these tasks), `phases[]`, `sandboxes[]`, `failure{}` |
+| `result.json` | `episode_id`, `status` (`completed`, `agent_error`, `timeout`, …), `rewards{reward}` (present whenever verification completed, including after an agent that timed out, failed or hit a limit; absent otherwise), `metrics{}` (engine diagnostics; empty for these tasks), `phases[]`, `sandboxes[]`, `failure{}` |
 | `verification.json` | the verifier's complete result: here the kit's `reward`, `metrics` and `diagnostic` |
 | `trajectory.json`, `trace.execution.jsonl`, `trace.transport.jsonl` | agent transcript, engine trace (each stage's stdout and stderr included), model calls |
 
@@ -216,5 +218,6 @@ tests/                       pytest
 - `ale validate` does not print a stage's stderr. The episode's `trace.execution.jsonl` keeps
   it (the stage's `command_finished` event), and the kit's `diagnostic` text is in
   `verification.json`.
-- The template and the worked example each validate in well under a minute; the template is
-  the place to test machinery.
+- The worked example validates in well under a minute once its image is built
+  (`validate-44ad164a` on 1cdbc02); the template has the same machinery and is the place to
+  test it.

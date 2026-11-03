@@ -137,10 +137,11 @@ def test_task_toml_names_the_benchmark_org_and_the_scaffold_org_to_replace():
 
 def test_verify_entry_runs_the_interpreter_the_engine_staged():
     """`tests/test.sh` execs `$ALE_VERIFY_PYTHON`, the interpreter `ale_verify` was staged
-    into; a bare `python3` may be another interpreter, without it."""
+    into; a bare `python3` may be another interpreter, without it. The `python3` default only
+    serves a run by hand outside the engine, where the variable is unset."""
     lines = [line.strip() for line in _text("tests/test.sh").splitlines()
              if line.strip() and not line.lstrip().startswith("#")]
-    assert lines == ["set -euo pipefail", 'exec "$ALE_VERIFY_PYTHON" verify.py']
+    assert lines == ["set -euo pipefail", 'exec "${ALE_VERIFY_PYTHON:-python3}" verify.py']
 
 
 def test_no_contributor_facing_file_points_at_the_maintainers_harness():

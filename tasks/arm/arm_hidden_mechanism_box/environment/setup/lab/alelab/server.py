@@ -1345,7 +1345,7 @@ def run_supervisor(cfg, lab, notify_fd):
 
 def start(config_path):
     if os.geteuid() != 0:
-        print("alelab: must be started as root (from setup/run.sh)", file=sys.stderr)
+        print("alelab: must be started as root (from environment/setup/setup.sh)", file=sys.stderr)
         return 2
     try:
         cfg = load_config(config_path)
@@ -1413,7 +1413,7 @@ def start(config_path):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(
-        description="alelab lab service (start as root from setup/run.sh)"
+        description="alelab lab service (start as root from environment/setup/setup.sh)"
     )
     ap.add_argument("--config", required=True)
     args = ap.parse_args(argv)

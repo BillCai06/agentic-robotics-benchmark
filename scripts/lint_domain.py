@@ -1,7 +1,8 @@
 """Domain lint — the policies upstream's `ale lint` cannot know about.
 
 `ale lint` checks what the engine owns: `task.toml` parses against the strict schema, the
-stage entries exist, every base image names an exact version. It has no opinion about whether
+stage entries exist, every base image a FROM names directly carries an exact version (a FROM
+through a build argument is not checked). It has no opinion about whether
 a metric can be compared across contributors' hardware, whether an anchor's provenance is
 recorded, or whether a practice grader quietly imports the anchor. Those are the robotics
 domain's rules, and without this file they erode task by task.
@@ -194,7 +195,8 @@ _VISIBLE_FORBIDDEN = (
     (re.compile(r"anchor", re.IGNORECASE), "the anchor"),
     (re.compile(r"\.\./tests\b", re.IGNORECASE), "the tests stage (../tests)"),
     (re.compile(r"/opt/ale/tests\b", re.IGNORECASE), "the tests stage (/opt/ale/tests)"),
-    (re.compile(r"(?<!\w)tests/(verify|grader_config|test\.sh)\b", re.IGNORECASE),
+    (re.compile(r"(?<!\w)tests/(verify|grader|grader_config|test\.sh|robotics_grader)\b",
+                re.IGNORECASE),
      "the grader (tests/)"),
     (re.compile(r"\.\./verify", re.IGNORECASE), "the verify stage (../verify)"),
     (re.compile(r"(?<!\w)verify/", re.IGNORECASE), "the verify stage (verify/)"),
@@ -478,11 +480,31 @@ def retired_manifests(root: Path) -> list[str]:
 
 # --------------------------------------------------------------------------- #
 def _lint_task_folder(task_dir: Path) -> list[str]:
-    """Every task battery plus placement when the folder lives under a ``tasks/`` root."""
+    """Every task battery, the image battery for the folder's Dockerfiles, and placement when
+    the folder lives under a ``tasks/`` root: the same checks the repository walk runs, so a
+    maintainer's one-folder lint is the pull request's."""
     problems = lint_task(task_dir)
+    for dockerfile in DOCKERFILES:
+        path = task_dir / dockerfile
+        if path.is_file():
+            problems += lint_image(path)
     root = tasks_root_of(task_dir)
     if root is not None:
         problems += lint_placement(task_dir, root)
+    return problems
+
+
+def unseen_task_folders(tasks_dir: Path) -> list[str]:
+    """``tasks/<platform>/<slug>/`` folders with no task.toml: the engine discovers tasks by
+    that file alone, so a misnamed or missing manifest leaves the folder unseen by `ale lint`,
+    by a run and by the registry export, without a word."""
+    problems = []
+    for platform in sorted(p for p in tasks_dir.iterdir() if p.is_dir()):
+        for folder in sorted(p for p in platform.iterdir() if p.is_dir()):
+            if not (folder / MANIFEST).is_file() and not (folder / RETIRED_MANIFEST).is_file():
+                problems.append(
+                    f"{platform.name}/{folder.name}: no {MANIFEST}; the engine does not see "
+                    f"this folder (a task at tasks/<platform>/<slug>/ needs task.toml)")
     return problems
 
 
@@ -497,16 +519,18 @@ def lint_domain(domain: Path) -> list[str]:
     tasks_dir = domain / "tasks"
     if tasks_dir.is_dir():
         for manifest in sorted(tasks_dir.rglob(MANIFEST)):
-            problems += _lint_task_folder(manifest.parent)
+            problems += _lint_task_folder(manifest.parent)   # task batteries, images, placement
+        problems += unseen_task_folders(tasks_dir)
     for collection in COLLECTION_DIRS:
         root = domain / collection
         if not root.is_dir():
             continue
-        for manifest in sorted(root.rglob(MANIFEST)):
-            for dockerfile in DOCKERFILES:
-                path = manifest.parent / dockerfile
-                if path.is_file():
-                    problems += lint_image(path)
+        if collection != "tasks":
+            for manifest in sorted(root.rglob(MANIFEST)):
+                for dockerfile in DOCKERFILES:
+                    path = manifest.parent / dockerfile
+                    if path.is_file():
+                        problems += lint_image(path)
         problems += retired_manifests(root)
     return problems
 

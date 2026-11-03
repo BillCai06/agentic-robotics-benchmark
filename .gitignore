@@ -12,17 +12,17 @@ runs/
 results/
 *.log
 
-# --- ALE task-folder contract: the engine's asset roots, the setup folder's, and the engine cache ---
-# (upstream ASSET_ROOTS in vendor/ale/packages/ale-run/src/ale/run/assets.py; files there never go into git.
-# This repository's large files come from its Hugging Face dataset at image build: docs/task-assets.md)
-tasks/**/environment/assets/
-tasks/**/environment/setup/assets/
-tasks/**/tests/assets/
-tasks/**/solution/assets/
-templates/**/environment/assets/
-templates/**/environment/setup/assets/
-templates/**/tests/assets/
-templates/**/solution/assets/
+# --- ALE task-folder contract: the engine's three asset roots, at task depth, and the engine cache ---
+# (upstream ASSET_ROOTS in vendor/ale/packages/ale-run/src/ale/run/assets.py: the engine leaves them out of a task's
+# content digest and `ale assets` syncs them, so files there never go into git. Anything else in a task folder, a
+# nested assets/ of a vendored library included, is hashed and uploaded and must be tracked. This repository's large
+# files come from its Hugging Face dataset at image build: docs/task-assets.md)
+tasks/*/*/environment/assets/
+tasks/*/*/tests/assets/
+tasks/*/*/solution/assets/
+templates/*/environment/assets/
+templates/*/tests/assets/
+templates/*/solution/assets/
 .ale-cache/
 
 # --- Large data / model artifacts (provisioned, not committed) ---
