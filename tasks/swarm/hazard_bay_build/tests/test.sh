@@ -8,4 +8,4 @@
 # other interpreter would import from a python that package was never installed into.
 set -euo pipefail
 
-exec "$ALE_VERIFY_PYTHON" verify.py
+exec "${ALE_VERIFY_PYTHON:-python3}" verify.py

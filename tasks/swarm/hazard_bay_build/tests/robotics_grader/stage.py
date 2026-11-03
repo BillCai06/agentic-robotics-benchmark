@@ -82,10 +82,11 @@ def write_verdict(verdict, path=None, diagnostic=None):
     """Write the verdict the framework reads back.
 
     `verdict` is `{"rewards": {...}, "metrics": {...}}`. The split is load-bearing under
-    `ale validate`: `reward` must be exactly 0 on an untouched sandbox and exactly 1 for the
-    oracle (two decimals, as the engine rounds it), so `rewards` carries only the gated
+    `ale validate`: `reward`, rounded half-up to two decimals as the engine rounds it, must be
+    0.0 on an untouched sandbox and 1.0 for the oracle, so `rewards` carries only the gated
     score, the single key `reward` in [0, 1], and everything worth keeping but not gating
-    (the raw metric, the capped ratio, lock outcomes, abort counts) goes in `metrics`.
+    (the raw metric, the capped ratio, lock outcomes, abort counts) goes in `metrics`. Other
+    reward keys are recorded in verification.json but never gated.
 
     With no `path`, inside the engine's verify stage (`ALE_VERIFY_PYTHON` is set), the result
     goes through the engine's `ale_verify.write`, which it stages into the verify-stage
@@ -95,8 +96,10 @@ def write_verdict(verdict, path=None, diagnostic=None):
     `diagnostic` text when there is one (the argument, or the verdict's own `diagnostic`).
 
     With a `path`, the plain envelope is written there instead, for runs outside a sandbox
-    (the kit's selftest, a host-side dry run). A grader run by hand outside the engine, such
-    as a maintainer re-measuring an anchor inside the task image, gets the same through the
+    (the kit's selftest, a host-side dry run); a path inside the verifier directory is a task
+    error, because the engine reads only Harbor's flat result there. A grader run by hand
+    outside the engine, such as a maintainer re-measuring an anchor inside the task image
+    (`bash test.sh` or `python3 verify.py` in the staged folder), gets the same through the
     `ROBOTICS_GRADER_VERDICT_PATH` environment variable without changing the grader.
     """
     rewards = verdict.get("rewards") or {}
@@ -106,10 +109,17 @@ def write_verdict(verdict, path=None, diagnostic=None):
             "every gated reward must lie in [0, 1]; report raw values under metrics")
     rewards = {k: float(v) for k, v in rewards.items()}
     metrics = {k: float(v) for k, v in metrics.items()}
+    require("reward_exact" not in metrics,
+            "reward_exact is the kit's own metric (the unrounded reward); rename the task's")
     diagnostic = diagnostic if diagnostic is not None else verdict.get("diagnostic")
 
     if path is None and not os.environ.get("ALE_VERIFY_PYTHON"):
         path = os.environ.get("ROBOTICS_GRADER_VERDICT_PATH") or None
+    if path is not None:
+        target = os.path.realpath(path)
+        require(not (target == VERIFIER_DIR or target.startswith(VERIFIER_DIR + os.sep)),
+                "write_verdict(path=...) writes the kit's envelope, which the engine cannot "
+                "read in {}; call write_verdict(verdict) with no path".format(VERIFIER_DIR))
     if path is None:
         try:
             from ale_verify import write
