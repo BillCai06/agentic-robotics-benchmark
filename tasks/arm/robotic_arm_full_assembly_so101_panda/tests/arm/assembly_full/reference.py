@@ -2,7 +2,7 @@
 """The Panda assembles the whole arm from the base: a privileged program in the full-arm cell (no observation).
 
     (in the task image, OSMesa)
-    python3 panda_assembly.py --task <task folder with verify/gt> --out <dir> [--cache <dir>] [--no-video]
+    python3 panda_assembly.py --task <task folder with tests/gt> --out <dir> [--cache <dir>] [--no-video]
 
 Here the Panda, its gripper and the physics do every placement; nothing else moves a part (no feeder, no jig).
 Privileged state only: the parts' exact poses, the design poses from the mating chain, the Panda's own kinematics

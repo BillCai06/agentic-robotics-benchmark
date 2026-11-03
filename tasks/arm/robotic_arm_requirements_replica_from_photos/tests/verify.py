@@ -149,7 +149,7 @@ def write_verdict(rewards, weights, stats, diagnostics):
     """One gated `reward` (the kit's envelope); the criteria and stats go to `metrics`, the per-criterion diagnostics
     into the verdict's `diagnostic` text (the record keeps them for the run's reader). In the engine (ALE_VERIFY_PYTHON
     set) the kit writes /logs/verifier/reward.json and verification.json through ale_verify; a host-side run writes the
-    plain envelope to verdict.local.json in the stage folder."""
+    plain envelope to ROBOTICS_GRADER_VERDICT_PATH, else verdict.local.json in the stage folder."""
     from robotics_grader import ratio_rewards, read_anchor
     from robotics_grader import write_verdict as kit_write
     overall = sum(float(rewards[c]) * weights[c] for c in CRITERIA) / sum(weights[c] for c in CRITERIA)
@@ -165,7 +165,8 @@ def write_verdict(rewards, weights, stats, diagnostics):
         # text[:2000]: the diagnostic cap of the earlier ale_verify API, kept so the recorded text is unchanged
         kit_write(recorded, diagnostic=text[:2000])
         return overall
-    kit_write(verdict, path=os.path.join(STAGE_DIR, "verdict.local.json"), diagnostic=text)
+    kit_write(verdict, path=os.environ.get("ROBOTICS_GRADER_VERDICT_PATH") or os.path.join(STAGE_DIR, "verdict.local.json"),
+              diagnostic=text)
     return overall
 
 

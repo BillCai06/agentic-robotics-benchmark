@@ -82,8 +82,10 @@ under the agent's own budget — that separation is why a scoring run is cheap a
    folder, not your solution directory.
 3. **`tests/verify.py`** — start from the template and change the physics only. Keep:
    * `Solver(step_timeout=…)` for the UID drop and the per-step deadline;
-   * the `SolverAborted` handler — an aborted episode is dropped from the metric and counted,
-     so a solver that answers one episode in ten cannot average its way to a score;
+   * the `SolverAborted` handler — an aborted episode is charged a real cost (the template
+     charges what standing still would cost) and counted in `episodes_aborted`, never dropped
+     from the metric: a dropped episode would let a weak solver abort its bad starts and
+     average only its good ones;
    * `ProbeLock`, and the rule that a probe reply is compared and **thrown away**, never applied
      to the simulator;
    * `seed_rng()` — hidden seeds from OS entropy, in memory only, never written anywhere;

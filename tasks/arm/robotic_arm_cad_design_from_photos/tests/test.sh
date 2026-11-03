@@ -14,4 +14,4 @@ if [ "$PARENT" != "/" ] && [ "$PARENT" != "${ALE_HOME:-/home/user}" ]; then
   chmod 700 "$PARENT"
 fi
 export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
-exec "$ALE_VERIFY_PYTHON" -B verify.py
+exec "${ALE_VERIFY_PYTHON:-python3}" -B verify.py

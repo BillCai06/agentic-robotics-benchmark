@@ -25,7 +25,7 @@
   "agent": true,
   "anchor": false,
   "every_ticks": 4,
-  "note": "maintainers' replay record of every agent episode under $ALE_STAGE_DIR/out/trace (tests/episode_trace.py); never a scoring input"
+  "note": "maintainers' replay record of every agent episode under /opt/arb-verify/out/trace (root-only, outside /opt/ale, which the engine clears before it keeps a sandbox; tests/episode_trace.py); never a scoring input"
  },
  "episodes": 3,
  "fixture_jitter_m": 0.01,

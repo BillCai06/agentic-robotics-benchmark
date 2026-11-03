@@ -299,13 +299,18 @@ the agent-visible payloads are the same.
   verification runs in the solver's sandbox as root, separate verification restores only the
   declared `artifacts`, and `tests/` and `solution/` are absent while the agent works.
 - **Identity.** Every task's `spec_hash` and `content_digest` change (the name gains the
-  organization, and every file moved), so the registry identity cross-check reports each
-  known slug until `identity-history.json` records the new identities.
+  organization, and every file moved), so the registry identity cross-check fails for every
+  known slug until `identity-history.json` records the new identities: the history was
+  re-exported from the clean converted tree and pushed with the migration.
 - **Validated so far.** `tasks/space/fault_adaptive_spacecraft_docking`, converted, on
   `1cdbc02`: run `validate-44ad164a` passed, untouched `reward` 0.0 ("scoring 0: no
   submission at /home/user/submission/run.sh") and oracle 1.0 (ratio 1.02,
-  `mean_docking_quality` 0.759, 48 episodes, 690 probes, match lock ok). The other tasks and
-  the template have not been validated on the new engine yet.
+  `mean_docking_quality` 0.759, 48 episodes, 690 probes, match lock ok).
+  `tasks/arm/arm_hidden_mechanism_box` (setup-started lab service, separate verification, the
+  in-loop Filament renderer): `validate-e683055d` passed, untouched 0.0, oracle 1.0 (8
+  episodes, 110/110 probes). Both runs used the tree before the follow-up edits (comments,
+  the kit's host-run fallback); the engine-path code they exercised is unchanged. The other
+  tasks and the template have not been validated on the new engine.
 - **Agent-run limits** (Open items). At `1cdbc02` the claude-code adapter raises the CLI's two
   stream idle timers from 300 s to 600 s, and the gateway writes an SSE keep-alive after 15 s
   of upstream silence; the harness's values win over an image `ENV` of the same names, so the
@@ -325,10 +330,20 @@ Gotchas found on the way:
   and builds one that is not). The base `container-ubuntu22-base:0.1.1` is published.
 - **`ALE_VERIFY_PYTHON`.** The engine stages `ale_verify` into `python3`, else `python3.12`
   (3.12+ required), and names the one it used in `ALE_VERIFY_PYTHON`, set for the verify
-  stage only. `tests/test.sh` runs `exec "$ALE_VERIFY_PYTHON" verify.py`, never a bare
-  `python3`. A grader that must tell an engine run from a host-side run tests
-  `os.environ.get("ALE_VERIFY_PYTHON")`; outside the engine, `write_verdict` needs a `path`.
-  This replaces the `python3` line under Gotchas below.
+  stage only. `tests/test.sh` runs `exec "${ALE_VERIFY_PYTHON:-python3}" verify.py` (the
+  default only matters for a run by hand), never a bare `python3`. A grader that must tell an
+  engine run from a host-side run tests `os.environ.get("ALE_VERIFY_PYTHON")`; outside the
+  engine `write_verdict` needs a `path` or `ROBOTICS_GRADER_VERDICT_PATH`. This replaces the
+  `python3` line under Gotchas below.
+- **Stage cleanup before retention.** Before the engine keeps or snapshots a sandbox it
+  deletes `/opt/ale/setup`, `/opt/ale/tests`, the solution and `/logs/verifier`, so anything a
+  grader leaves for maintainers must live outside `/opt/ale` (the so101 assembly grader now
+  writes its replay record to the root-only `/opt/arb-verify`).
+- **Artifacts and stopped episodes.** Run-level `artifacts.collect` defaults to `none` (was
+  `host`): set `--set artifacts.collect=host` to keep submissions on the host. An agent that
+  stops early (timeout, agent_error, a limit) is still verified, and its `result.json` carries
+  both the failure status and `rewards`. The agent deadline starts at harness launch, after
+  the CLI install and the network seal.
 - **Rounding.** `reward` is rounded half-up to two decimals before validate or a run reads it:
   an oracle at 0.995 passes as 1.0 and an untouched run at 0.004 reads 0.0, where the old
   gate wanted exactly 0 and exactly 1. The unrounded value is `metrics.reward_exact` in the
@@ -355,11 +370,12 @@ Gotchas found on the way:
 - Pull request #4 (`ball_physics_stepper`) must re-vendor the kit from #6 (CI's byte
   comparison), and should move to 64-bit, keyed-hash seeding if its agent holds a simulator
   copy.
-- The guidelines' example `task.yaml` link points at the `contrib/` branch. Point it at
-  `main` once the docs are next edited.
+- The guidelines' example link (a `task.yaml` on the `contrib/` branch, in the Google Doc)
+  should point at the converted example's `task.toml` on `main`; the doc is the owner's.
 - Engine (upstream) issues that skew agent runs:
-  - the claude-code harness kills a model stream after 300 s without a byte;
-  - it hard-codes the agent's `PATH`, so the image's `/opt/venv/bin` is lost;
+  - the claude-code harness ends a model stream after 600 s without a byte (300 s before
+    1cdbc02; the gateway's 15 s keep-alive covers silence inside a stream, not before its
+    first byte);
   - the CLI caps a response at 64k tokens and the gateway ends a request after 1800 s in total
     (`gateway/server.py`), which leaves long-thinking models with empty turns;
   - egress is opened before verify while a closed_loop solver runs.
@@ -377,7 +393,8 @@ Gotchas found on the way:
   the agent account cannot traverse; task images set `UV_PYTHON_INSTALL_DIR=/opt/uv-python`
   and keep the Dockerfile's agent-UID import self-check. The agent UID must traverse (not
   only read) everything the venv points at.
-- The engine stages `ale_verify` into whatever answers `python3` and refuses < 3.12.
+- The engine stages `ale_verify` into `python3`, else `python3.12` (3.12+ required), and
+  names it in `ALE_VERIFY_PYTHON` (section 8).
 - `ale validate` does not keep a stage's stderr; it is in the episode's
   `trace.execution.jsonl`.
 - A null anchor is not an error: the engine fails the run with `oracle_not_full` and

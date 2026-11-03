@@ -14,4 +14,4 @@ if [ "$PARENT" != "/" ] && [ "$PARENT" != "${ALE_HOME:-/home/user}" ]; then
   chmod 700 "$PARENT"
 fi
 export MUJOCO_GL="${MUJOCO_GL:-osmesa}"
-exec "$ALE_VERIFY_PYTHON" verify.py
+exec "${ALE_VERIFY_PYTHON:-python3}" verify.py

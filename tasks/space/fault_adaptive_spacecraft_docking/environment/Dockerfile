@@ -18,7 +18,9 @@ COPY --from=ghcr.io/astral-sh/uv:0.11 /uv /usr/local/bin/uv
 # ModuleNotFoundError with world-readable site-packages sitting right there.
 #
 # Python 3.12, not a style choice: at verify time the engine stages its own `ale_verify`
-# package into whatever interpreter answers `python3`, and refuses anything below 3.12.
+# package into the first of `python3` and `python3.12` that is 3.12 or newer and hands it to
+# tests/test.sh as ALE_VERIFY_PYTHON; an image with neither fails every verify stage. With
+# /opt/venv/bin first on PATH, that interpreter is this venv's `python3`.
 ENV UV_PYTHON_INSTALL_DIR=/opt/uv-python
 ENV UV_PROJECT_ENVIRONMENT=/opt/venv
 ENV VIRTUAL_ENV=/opt/venv
@@ -33,9 +35,9 @@ RUN uv venv /opt/venv --python 3.12 \
 # ships a standalone CPython 3.12 (at /opt/python, behind /usr/local/bin/python3), so uv
 # links the venv against that instead of downloading one.
 
-# The declared artifact path must exist even when nobody works — the engine captures
-# declared artifacts after every episode, untouched validation passes included, and a
-# missing path is an explicit episode error, not a zero.
+# The declared artifact path (task.toml `artifacts`), owned by the agent. The engine never
+# creates an artifact path or fixes its ownership, so the image does both, and the agent
+# (or the oracle, which runs as the agent) writes its submission into it.
 RUN mkdir -p /home/user/submission && chown -R user:user /home/user/submission
 
 # Headless by default: a task that renders opts in, rather than every task inheriting a

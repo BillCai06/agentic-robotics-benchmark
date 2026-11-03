@@ -24,7 +24,8 @@ whole arm with the Panda). This grader:
   5. criterion: assembly_score = the episode mean of the cell's stage score (the achieved mates' weight / 18: a servo
      seat or a bracket 1.0, a horn mate 1.5, counted when the cell has fastened it, a horn mate within 3 deg of the
      design rotation), an episode with a safety violation scoring 0, times the gates;
-  6. (a record only) every agent episode's replay trace under $ALE_STAGE_DIR/out/trace/agent_epNN (episode_trace.py).
+  6. (a record only) every agent episode's replay trace under /opt/arb-verify/out/trace/agent_epNN (episode_trace.py;
+     root-only, outside /opt/ale, so a kept sandbox still has it).
 Untouched sandbox: no assemble.py -> contract_ok 0 -> 0.
 Oracle: the token + `reference_assemble` (the privileged reference assembler inside the cell, on the nominal layout)
 -> 15 / 15 mates on every episode -> 1.
@@ -153,8 +154,19 @@ GT = os.path.join(STAGE_DIR, "gt")                               # the hidden ki
 PANDA = os.path.join(ROOT_GIVEN, "panda")
 HIDDEN = os.path.join(STAGE_DIR, "hidden")
 CACHE = os.path.join(ROOT_PAYLOAD, "cell_cache")                 # the cell's collision pieces (deterministic per kit), built once per verify
-LOGS = os.path.join(STAGE_DIR, "logs")
-OUT = os.path.join(STAGE_DIR, "out")
+# The maintainers' record (the agent program's stderr, the replay traces, episodes.json) lives outside /opt/ale: the
+# engine deletes its stage folders before it keeps a sandbox, and the record is read from a kept one. Root-only (0700).
+RECORD_ROOT = os.environ.get("ARB_RECORD_ROOT", "/opt/arb-verify")
+LOGS = os.path.join(RECORD_ROOT, "logs")
+OUT = os.path.join(RECORD_ROOT, "out")
+
+
+def record_dir(path):
+    """`path` under the root-only record root, created on demand; never a scoring input."""
+    os.makedirs(RECORD_ROOT, exist_ok=True)
+    os.chmod(RECORD_ROOT, 0o700)
+    os.makedirs(path, exist_ok=True)
+    return path
 CRITERIA = ["assembly_score"]
 GATES = ["contract_ok"]
 SUSPICIOUS = ("/opt/ale", "ALE_STAGE_DIR", "ALE_VERIFICATION", "hidden/bench_plan", "hidden/seeds", "oracle_token", "verify/gt", "cell_cache",
@@ -359,7 +371,7 @@ def run_episode(cfg, seed, rn, privileged, kit_info, plan, trace_tag=None):
             trace = episode_trace.EpisodeTrace(server, every_ticks=int(tcfg.get("every_ticks", 4)), log=log)
         except Exception as e:  # noqa: BLE001 - a record only
             log("[grader] episode trace not attached: %r" % (e,))
-    os.makedirs(LOGS, exist_ok=True)
+    record_dir(LOGS)
     wire_error, t0 = None, time.time()
     dirs = rn.prepare("agent_seed%d" % seed, program_source())
     before = rn.snapshot((dirs["root"],)) if rn.acct else None
@@ -409,8 +421,8 @@ def write_verdict(rewards, metrics):
     the oracle, full_at 1.0, so reward = assembly_score x the gates); the gate, the criterion and every statistic go to
     `metrics`. In the engine (`ALE_VERIFY_PYTHON` set) the kit writes reward.json and verification.json, the criteria
     text as the `diagnostic`; the metrics keep the names and the filter of this grader's records on the earlier engine
-    API (finite numbers only, '.' and '/' in a name replaced by '_'). Elsewhere the envelope goes to verdict.local.json
-    in the stage folder."""
+    API (finite numbers only, '.' and '/' in a name replaced by '_'). Elsewhere the envelope goes to
+    ROBOTICS_GRADER_VERDICT_PATH, else verdict.local.json in the stage folder."""
     from robotics_grader import ratio_rewards, read_anchor
     from robotics_grader import write_verdict as kit_write_verdict
     overall = float(rewards["assembly_score"])
@@ -433,7 +445,8 @@ def write_verdict(rewards, metrics):
                 recorded[k.replace(".", "_").replace("/", "_")] = v
         kit_write_verdict({"rewards": verdict["rewards"], "metrics": recorded}, diagnostic=text)
         return overall
-    kit_write_verdict(verdict, path=os.path.join(STAGE_DIR, "verdict.local.json"))
+    kit_write_verdict(verdict, path=os.environ.get("ROBOTICS_GRADER_VERDICT_PATH")
+                      or os.path.join(STAGE_DIR, "verdict.local.json"))
     return overall
 
 
@@ -560,7 +573,7 @@ def _main_locked(cfg, rewards, metrics):
         metrics["mate_rate." + mid] = float(np.mean([1.0 if any(r["id"] == mid and r["achieved"] for r in s["mates"]) else 0.0 for s in agent]))
     fastened = [r for s in agent for r in s["mates"] if r["kind"] == "horn_mate" and r.get("fastened", r["achieved"])]
     metrics["horn_fastened_off_design_rate"] = float(sum(1 for r in fastened if not r["achieved"])) / float(len(agent))
-    os.makedirs(OUT, exist_ok=True)
+    record_dir(OUT)
     with open(os.path.join(OUT, "episodes.json"), "w") as f:
         json.dump([{k: v for k, v in s.items() if k not in ("events",)} for s in agent], f, indent=1, default=float)
     _finish_stats(rn, metrics, t_start)

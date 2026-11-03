@@ -92,8 +92,9 @@ instructions and the results of both.
   `environment/setup/payload/` that reaches the grader, image hygiene, the organization
   `grounded-intelligence-initiative` in `[task].name`, a `[metadata].platform` from
   `tasks/platforms.json`, and the placement of the folder at `tasks/<platform>/<name>/`;
-- `tests/robotics_grader/` byte-identical to `shared/robotics_grader/` (copy the canonical
-  kit over yours and re-validate if this fails);
+- the kit's selftest (`cd shared && python3 -m robotics_grader.selftest`, on the system
+  python: the kit is stdlib-only), and `tests/robotics_grader/` byte-identical to
+  `shared/robotics_grader/` (copy the canonical kit over yours and re-validate if this fails);
 - for a task with large files in the Hugging Face dataset, its `environment/assets.sha256`
   naming the dataset in [`task-assets.toml`](task-assets.toml) and its
   `environment/fetch_assets.py` identical to `shared/task_assets/fetch_assets.py`

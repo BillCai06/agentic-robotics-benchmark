@@ -87,8 +87,10 @@ sign-up, roles, the task stages and credit:
 
 Build the task from `templates/task/`, gate it with `ale lint` and `ale validate`, measure its
 difficulty with frontier models (`ale run`; the target is a score roughly below 0.5), then
-open the pull request. CI runs `ale lint`, the domain lint, the kit comparison and the asset
-check on it; a maintainer re-runs `ale validate`, merges, and exports the registry. The short
+open the pull request. CI runs `ale lint`, the domain lint, the kit's selftest and byte
+comparison, the asset check, the registry identity cross-check and the test suite on it
+(the list is in [`CONTRIBUTING.md`](CONTRIBUTING.md)); a maintainer re-runs `ale validate`,
+merges, and exports the registry. The short
 version is [`CONTRIBUTING.md`](CONTRIBUTING.md); the whole path, from the template to a merged
 task, is [`docs/contributing-a-task.md`](docs/contributing-a-task.md).
 
@@ -161,7 +163,7 @@ cd vendor/ale && VIRTUAL_ENV= uv run python ../../scripts/export_registry.py \
 uv run pytest -q
 ```
 
-The template and the worked example each validate in well under a minute.
+The worked example validates in well under a minute once its image is built.
 
 ## Access
 

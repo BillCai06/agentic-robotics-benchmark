@@ -15,4 +15,4 @@ if [ "$PARENT" != "/" ] && [ "$PARENT" != "${ALE_HOME:-/home/user}" ]; then
 fi
 export MUJOCO_GL="${MUJOCO_GL:-osmesa}"
 export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
-exec "$ALE_VERIFY_PYTHON" -B verify.py
+exec "${ALE_VERIFY_PYTHON:-python3}" -B verify.py
