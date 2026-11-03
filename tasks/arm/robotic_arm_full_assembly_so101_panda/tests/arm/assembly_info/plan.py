@@ -1,7 +1,7 @@
 """The whole-arm assembly plan (schema `arm-assembly-plan/1`): schema check and grader (assembly.md 6.2, 7.4; PUBLIC CODE).
 
 The grader half runs on a GT (`gt_plan.json` + `symmetries.json` + `gt_axes.json` of a kit): practice kits ship theirs, the
-hidden kit's live only in the task's verify/. Plan (millimetres, radians; every pose = the part's delivered mesh frame in
+hidden kit's live only in the task's tests/. Plan (millimetres, radians; every pose = the part's delivered mesh frame in
 the carrier's delivered mesh frame; servos in the frame of parts/servo.stl):
 
     {"schema": "arm-assembly-plan/1", "units": {"length": "mm", "angle": "rad"},

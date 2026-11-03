@@ -9,11 +9,11 @@ import os
 from pathlib import Path
 import sys
 
-TASK = Path(__file__).resolve().parents[1]
+TASK = Path(__file__).resolve().parents[2]
 os.environ.setdefault("MUJOCO_GL", "osmesa")
 os.environ.setdefault("LIBGL_ALWAYS_SOFTWARE", "1")
 os.environ.setdefault("LP_NUM_THREADS", "2")
-sys.path[:0] = [str(TASK/"verify"), str(TASK/"oracle")]
+sys.path[:0] = [str(TASK/"tests"), str(TASK/"solution")]
 
 import mujoco
 import numpy as np

@@ -1,10 +1,10 @@
 """alelab plugin: the real hidden boxes (same robot environment as the agent's dev sim, box_env.py,
 with the hidden box models built from the root-only instance file by mech.py).
 
-Instance file (setup/ref/boxes.json): {box id: box config}. Lab instances = the scored boxes.
-Every trial starts from a fresh 64-bit seed drawn from OS entropy (box placement jitter and
-sensor noise). Episodes never end early (the reply does not reveal when a box is fully open);
-replies carry the observation only (images, proprioception, wrench), never box state.
+Instance file (environment/setup/ref/boxes.json): {box id: box config}. Lab instances = the
+scored boxes. Every trial starts from a fresh 64-bit seed drawn from OS entropy (box placement
+jitter and sensor noise). Episodes never end early (the reply does not reveal when a box is fully
+open); replies carry the observation only (images, proprioception, wrench), never box state.
 """
 
 import secrets

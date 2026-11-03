@@ -8,34 +8,35 @@ has to leave in `/home/user/submission/`.
 
 ## Checklist
 
-- [ ] The folder sits at `tasks/<platform>/<name>/`. `<name>` equals `name` in `task.yaml`
-      and the registered Task Name; `<platform>` equals `metadata.platform`.
+- [ ] The folder sits at `tasks/<platform>/<name>/`. `task.toml` has
+      `name = "grounded-intelligence-initiative/<name>"` under `[task]`, with `<name>` the
+      registered Task Name; `<platform>` equals `[metadata].platform`.
 - [ ] `ale lint <folder>` passes on the engine commit pinned at `vendor/ale`.
 - [ ] `ale validate <folder>` passes. The `ok` line from my run:
 
   ```
-  ok    <name>: untouched={'reward': 0.0}, oracle={'reward': 1.0}
+  ok    grounded-intelligence-initiative/<name>: untouched={'reward': 0.0}, oracle={'reward': 1.0}
   ```
 
 - [ ] I measured the difficulty with frontier models (`ale run`). Models, agent harness,
       budget and scores are below; the target is a score roughly below 0.5.
 
-- [ ] `verify/anchor.json`: `value` is my own measured number from that run, never a
+- [ ] `tests/anchor.json`: `value` is my own measured number from that run, never a
       published figure; `source` says where it came from; `full_at` is sized from the spread
       of several oracle runs.
-- [ ] `verify/robotics_grader/` is the canonical copy from `shared/robotics_grader/`, unmodified.
-- [ ] Nothing under `setup/payload/` reads the anchor or `verify/`; the practice grader prints
-      the raw metric only.
+- [ ] `tests/robotics_grader/` is the canonical copy from `shared/robotics_grader/`, unmodified.
+- [ ] Nothing under `environment/setup/payload/` reads the anchor or `tests/`; the practice
+      grader prints the raw metric only.
 - [ ] No `__pycache__`, `.ale-cache`, `assets/` or large binaries in the folder. Large data is
-      fetched by `image/Dockerfile` at build time.
-- [ ] `metadata.platform` is one of the keys in `tasks/platforms.json` (a new platform needs a
-      maintainer: say so below), and `verify/anchor.json` declares `metric` and `direction`;
-      the grader reports that metric under the same name (`metric_name=` in `verify/verify.py`).
+      fetched by `environment/Dockerfile` at build time.
+- [ ] `[metadata].platform` is one of the keys in `tasks/platforms.json` (a new platform needs a
+      maintainer: say so below), and `tests/anchor.json` declares `metric` and `direction`;
+      the grader reports that metric under the same name (`metric_name=` in `tests/verify.py`).
 
 ## Frontier-model results
 
 For each run: the task commit it ran on, model, harness, run budget, `reward` and the run's
-`ratio`.
+`ratio` (`metrics.ratio` in the episode's `verification.json`).
 
 ## Notes for the maintainers
 

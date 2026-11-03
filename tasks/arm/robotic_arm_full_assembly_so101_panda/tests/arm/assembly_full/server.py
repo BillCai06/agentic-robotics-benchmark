@@ -58,7 +58,7 @@ DEFAULT_FULL_CONFIG.update({
 
 
 class FullArmInfoServer(InfoCellServer):
-    """`kit_dir` = the GT kit (verify/gt), `bench_plan` = {part: {R, xy, z, grasp}} (hidden), `cache_dir` = the cell's
+    """`kit_dir` = the GT kit (tests/gt), `bench_plan` = {part: {R, xy, z, grasp}} (hidden), `cache_dir` = the cell's
     collision-piece cache (the carved / finer convex pieces, deterministic per kit)."""
 
     def __init__(self, kit_dir, panda_dir, bench_plan, cache_dir, config=None, mode="hidden", privileged=False, render=True, log=None,

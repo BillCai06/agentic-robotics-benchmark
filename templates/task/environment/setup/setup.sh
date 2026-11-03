@@ -1,13 +1,18 @@
 #!/usr/bin/env bash
-# Setup — runs as trusted root, cwd = this staged folder, before the agent phase.
+# Setup — the engine uploads all of environment/setup/ to /opt/ale/setup once the sandbox
+# is up and runs `bash setup.sh` there as trusted root (cwd = that folder, network open),
+# before the agent phase, within a fixed 1800 s. This folder is not part of the image's
+# build context.
 #
 # One job here: put the agent-visible material (the practice grader, the agent's own
 # editable copy of the environment) into the agent home, owned by the agent. Keep this
-# stage dynamic-only: package installation and fixed downloads belong in image/Dockerfile,
-# and lint rejects them here.
+# stage dynamic-only: package installation and fixed downloads belong in
+# environment/Dockerfile, and lint rejects them here.
 #
 # Everything under payload/ is staged, whatever it is called — add, rename or remove
-# payload files without touching this script.
+# payload files without touching this script. Uploads ignore the modes in git (files
+# arrive as 0644, folders as 0755), so a staged file that must be executable gets its
+# mode here.
 set -euo pipefail
 
 HOME_DIR="${ALE_HOME:-/home/user}"

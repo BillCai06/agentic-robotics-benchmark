@@ -2,12 +2,12 @@
 # Setup: trusted root, cwd = this staged folder, before the agent phase. Stages the givens (brief, build log, quote, photos,
 # datasheet pages, the two lot reports, schemas, the structure check and the public, catalogue-free grading modules) into
 # the agent home, owned by the agent. Nothing hidden is in this folder: the arm's ground truth and the vendors' own
-# numbers live in verify/ (absent during the agent phase). Dynamic-only: packages are in image/Dockerfile.
+# numbers live in tests/ (absent during the agent phase). Dynamic-only: packages are in environment/Dockerfile.
 set -euo pipefail
 HOME_DIR="${ALE_HOME:-/home/user}"
 AGENT_USER="$(basename "$HOME_DIR")"
 cp -r payload/. "$HOME_DIR/"
-# the large givens (photos, datasheet pages, lot reports) come from the image (image/Dockerfile, task assets)
+# the large givens (photos, datasheet pages, lot reports) come from the image (environment/Dockerfile, task assets)
 if [ -d /opt/task-assets/payload ]; then
   cp -r /opt/task-assets/payload/. "$HOME_DIR/"
 fi

@@ -1,6 +1,6 @@
 """Grader of robotic_arm_requirements_replica_from_photos (info tier, requirements stage, rung I2). Root, verify stage, agent gone.
 
-  0. FIRST THING, stdlib only (`_early_lockdown`; run.sh has already chmod 0700 the stage and its parent): record when
+  0. FIRST THING, stdlib only (`_early_lockdown`; test.sh has already chmod 0700 the stage and its parent): record when
      the engine began uploading this folder (earliest ctime of its files), freeze and kill every process of the agent
      account (stats agent_processes_killed / _left: a survivor voids the run -> task error), lock the stage (0700 / 0600,
      restored at the end; stat stage_locked), take a root-owned 0700 snapshot of the submission that every later read
@@ -26,6 +26,7 @@
 No agent code runs here (no network audit needed, E-REQ-14). Knobs: grader_config.json.
 """
 import json
+import math
 import os
 import pwd
 import stat as statmod
@@ -130,10 +131,27 @@ def _restore(early):
         pass
 
 
+def _finite_metrics(metrics):
+    """`metrics` in name order, finite numbers only: ale_verify.write refuses NaN and infinity, so a statistic that is
+    not a finite number stays out of the engine's record instead of failing the verdict."""
+    out = {}
+    for k, v in sorted(metrics.items()):
+        try:
+            x = float(v)
+        except (TypeError, ValueError):
+            continue
+        if math.isfinite(x):
+            out[k] = x
+    return out
+
+
 def write_verdict(rewards, weights, stats, diagnostics):
     """One gated `reward` (the kit's envelope); the criteria and stats go to `metrics`, the per-criterion diagnostics
-    into the reward check's text (the record keeps them for the run's reader)."""
+    into the verdict's `diagnostic` text (the record keeps them for the run's reader). In the engine (ALE_VERIFY_PYTHON
+    set) the kit writes /logs/verifier/reward.json and verification.json through ale_verify; a host-side run writes the
+    plain envelope to verdict.local.json in the stage folder."""
     from robotics_grader import ratio_rewards, read_anchor
+    from robotics_grader import write_verdict as kit_write
     overall = sum(float(rewards[c]) * weights[c] for c in CRITERIA) / sum(weights[c] for c in CRITERIA)
     anchor, meta = read_anchor()
     extra = {k: float(v) for k, v in stats.items() if isinstance(v, (int, float)) and not isinstance(v, bool)}
@@ -142,19 +160,12 @@ def write_verdict(rewards, weights, stats, diagnostics):
                             metric_name=meta.get("metric", "requirements_score"), extra=extra,
                             full_at=meta.get("full_at", 1.0))
     text = "; ".join("%s %.4f: %s" % (c, float(rewards[c]), str(diagnostics.get(c, ""))[:380]) for c in CRITERIA)
-    if os.environ.get("ALE_VERIFICATION_PATH"):
-        from ale_verify import CheckResult, Verification
-        rec = Verification()
-        rec.check("reward", CheckResult(float(verdict["rewards"]["reward"]), text[:2000]))  # ale_verify's diagnostic cap
-        for k, v in sorted(verdict["metrics"].items()):
-            try:
-                rec.stat(k, float(v))
-            except (TypeError, ValueError):
-                pass
-        rec.write()
+    if os.environ.get("ALE_VERIFY_PYTHON"):
+        recorded = {"rewards": verdict["rewards"], "metrics": _finite_metrics(verdict["metrics"])}
+        # text[:2000]: the diagnostic cap of the earlier ale_verify API, kept so the recorded text is unchanged
+        kit_write(recorded, diagnostic=text[:2000])
         return overall
-    from robotics_grader import write_verdict as kit_write
-    kit_write(verdict, os.environ.get("ALE_VERDICT_PATH", os.path.join(STAGE_DIR, "verdict.local.json")))
+    kit_write(verdict, path=os.path.join(STAGE_DIR, "verdict.local.json"), diagnostic=text)
     return overall
 
 

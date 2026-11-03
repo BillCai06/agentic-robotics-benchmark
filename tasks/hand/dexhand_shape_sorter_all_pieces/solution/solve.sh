@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Privileged reference: replays the plans stored in oracle/ref/plans/. They were produced offline by a ground-truth-state
+# Privileged reference: replays the plans stored in solution/ref/plans/. They were produced offline by a ground-truth-state
 # planner (scripted Wuji grasp, re-orientation and insertion primitives, servo alignment on the true state and roll-back
 # search over grasp variants; no refinement backend, see each plan's `_provenance`), using the TRUE hidden start states
 # (piece poses and cube offset), the TRUE hidden physics and the TRUE hidden calibration error of each scene (the plans

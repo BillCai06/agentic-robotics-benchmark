@@ -5,7 +5,7 @@ from pathlib import Path
 import shutil
 import subprocess
 
-TASK = Path(__file__).resolve().parents[1]
+TASK = Path(__file__).resolve().parents[2]
 
 
 def main():
@@ -17,9 +17,9 @@ def main():
     out.mkdir(parents=True, exist_ok=False)
     task = out/"task"
     shutil.copytree(TASK, task, ignore=shutil.ignore_patterns(".ale-cache", "__pycache__", "*.pyc"))
-    shutil.copy2(TASK/"tools/security_probe.py", task/"oracle/security_probe.py")
-    (task/"oracle/run.sh").write_text('#!/usr/bin/env bash\nset -euo pipefail\ncd "$(dirname "$0")"\nexec python3 security_probe.py\n')
-    (task/"oracle/run.sh").chmod(0o755)
+    shutil.copy2(TASK/"tests/review/security_probe.py", task/"solution/security_probe.py")
+    (task/"solution/solve.sh").write_text('#!/usr/bin/env bash\nset -euo pipefail\ncd "$(dirname "$0")"\nexec python3 security_probe.py\n')
+    (task/"solution/solve.sh").chmod(0o755)
     with (out/"ale.log").open("w") as log:
         process = subprocess.run([args.ale, "validate", str(task), "--runs-dir", str(out/"runs")],
                                  stdout=log, stderr=subprocess.STDOUT)

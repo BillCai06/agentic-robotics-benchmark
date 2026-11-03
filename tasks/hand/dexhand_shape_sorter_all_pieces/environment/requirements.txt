@@ -1,4 +1,4 @@
-# Python dependencies of the task image (installed into /opt/venv by image/Dockerfile).
+# Python dependencies of the task image (installed into /opt/venv by environment/Dockerfile).
 numpy==2.5.4
 scipy==1.18.1
 trimesh==5.1.1

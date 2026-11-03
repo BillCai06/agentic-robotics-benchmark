@@ -87,13 +87,17 @@ def write_verdict(verdict, path=None, diagnostic=None):
     score, the single key `reward` in [0, 1], and everything worth keeping but not gating
     (the raw metric, the capped ratio, lock outcomes, abort counts) goes in `metrics`.
 
-    With no `path` this is the engine's verify stage: the result goes through the engine's
-    `ale_verify.write`, which it stages into the verify-stage `python3`. It writes Harbor's
-    `/logs/verifier/reward.json` (`{"reward": ...}`, the only value the engine reads) and
-    `verification.json` beside it: the complete result, with `metrics`, the exact unrounded
-    reward as `metrics.reward_exact`, and the grader's `diagnostic` text when there is one
-    (the argument, or the verdict's own `diagnostic`). With a `path`, the plain envelope is
-    written there instead, for runs outside a sandbox (the kit's selftest, a host-side dry run).
+    With no `path`, inside the engine's verify stage (`ALE_VERIFY_PYTHON` is set), the result
+    goes through the engine's `ale_verify.write`, which it stages into the verify-stage
+    interpreter. It writes Harbor's `/logs/verifier/reward.json` (`{"reward": ...}`, the only
+    value the engine reads) and `verification.json` beside it: the complete result, with
+    `metrics`, the exact unrounded reward as `metrics.reward_exact`, and the grader's
+    `diagnostic` text when there is one (the argument, or the verdict's own `diagnostic`).
+
+    With a `path`, the plain envelope is written there instead, for runs outside a sandbox
+    (the kit's selftest, a host-side dry run). A grader run by hand outside the engine, such
+    as a maintainer re-measuring an anchor inside the task image, gets the same through the
+    `ROBOTICS_GRADER_VERDICT_PATH` environment variable without changing the grader.
     """
     rewards = verdict.get("rewards") or {}
     metrics = verdict.get("metrics") or {}
@@ -104,12 +108,15 @@ def write_verdict(verdict, path=None, diagnostic=None):
     metrics = {k: float(v) for k, v in metrics.items()}
     diagnostic = diagnostic if diagnostic is not None else verdict.get("diagnostic")
 
+    if path is None and not os.environ.get("ALE_VERIFY_PYTHON"):
+        path = os.environ.get("ROBOTICS_GRADER_VERDICT_PATH") or None
     if path is None:
         try:
             from ale_verify import write
         except ImportError:
             fail("ale_verify is not importable: the engine stages it into the verify-stage "
-                 "python3 (3.12+, ALE_VERIFY_PYTHON); outside a sandbox pass a path")
+                 "interpreter (3.12+, named by ALE_VERIFY_PYTHON); outside the engine pass a "
+                 "path or set ROBOTICS_GRADER_VERDICT_PATH")
         result = {"reward": rewards["reward"],
                   "metrics": dict(metrics, reward_exact=rewards["reward"])}
         if len(rewards) > 1:

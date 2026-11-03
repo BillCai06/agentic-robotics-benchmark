@@ -3,7 +3,7 @@
 This is the closed_loop pattern: the grader owns the simulator and drives the agent's
 policy step by step. The three properties that make the resulting number trustworthy:
 
-* `verify/` is absent from the sandbox while the agent works, so nothing here — this file,
+* `tests/` is absent from the sandbox while the agent works, so nothing here — this file,
   the anchor, the config — was ever readable by the agent.
 * The solver runs at the AGENT's UID (`robotics_grader.Solver` spawns it through
   `runuser`), so the agent's code cannot read this process, its environment, or /opt/ale,
@@ -35,9 +35,9 @@ import os
 import sys
 
 # Sibling files — env.py and the vendored robotics_grader/ package — import from this
-# stage folder. The canonical robotics_grader lives at the repo root (shared/); the copy
-# here is byte-identical, CI-checked, and travels with the task, because the engine
-# stages exactly this folder and nothing else.
+# stage folder (tests/, staged at /opt/ale/tests). The canonical robotics_grader lives at
+# the repo root (shared/); the copy here is byte-identical, CI-checked, and travels with
+# the task, because the engine stages exactly this folder and nothing else.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from env import TemplateReach  # noqa: E402
@@ -145,8 +145,8 @@ def main():
         costs, aborted, lock = run_episodes(config, rng)
     except (SolverMissing, SolverAborted) as exc:
         # An untouched sandbox is a real, gradeable outcome: `ale validate` fails the run
-        # unless it yields an all-zero verdict, so a missing submission scores 0 instead
-        # of crashing. So does a submission that never comes up (no READY, or it exits
+        # unless it scores reward 0.0, so a missing submission scores 0 instead of
+        # crashing. So does a submission that never comes up (no READY, or it exits
         # at once): `Solver(...)` raises SolverAborted before the first episode.
         # A crash here would read as a broken task, which this is not.
         write_verdict(zero_verdict(reason=str(exc), anchored=anchor is not None))
@@ -165,10 +165,12 @@ def main():
         locks_ok=lock.ok,
         extra=dict(lock.rewards(), episodes_aborted=aborted),
         # Where the reward saturates to 1.0, in ratio units: the tolerance that lets an
-        # honest oracle land on exactly 1.0 under fresh seeds. The engine fails validation
-        # (`oracle_not_full`) when any oracle reward is below 1.0.
+        # honest oracle land on 1.0 under fresh seeds. The engine rounds the oracle's
+        # reward to two decimals and fails validation (`oracle_not_full`) below 1.0.
         full_at=anchor_meta.get("full_at", 1.0),
     )
+    # Through the engine's ale_verify.write: /logs/verifier/reward.json gets `reward`
+    # (the engine rounds it to two decimals), verification.json beside it the metrics.
     write_verdict(verdict)
     print("[grader] measured={:.3f} anchor={} ratio={:.3f} reward={:.3f} "
           "lock={} aborted={}".format(measured, anchor, verdict["metrics"]["ratio"],

@@ -17,11 +17,14 @@ cover everything around it.
 - [`task-assets.md`](task-assets.md) — large agent-visible files (photo sets, scans, meshes): the Hugging Face
   dataset they live in, named once in [`task-assets.toml`](../task-assets.toml); wiring a task, uploading, and
   redirecting every task to a renamed dataset or a mirror.
-- [`evidence/`](evidence/) — real `ale validate` verdicts and the isolation audit.
+- [`evidence/`](evidence/) — real `ale validate` records and the isolation audit, made on the
+  engine before the Harbor migration; [`evidence/README.md`](evidence/README.md) lists them
+  and says what was re-checked in the code of the current engine on 2026-11-03.
 - [`dev/`](dev/) — dated design records
   ([`dev/20260902-engine-run-submission.md`](dev/20260902-engine-run-submission.md) and
   [`dev/20260902-contribute-download-upload.md`](dev/20260902-contribute-download-upload.md);
-  their 2026-10-15 notes say what is retired);
+  their 2026-10-15 notes say what is retired, their 2026-11-03 notes map the old task layout
+  to the Harbor one);
   [`dev/registry-export.md`](dev/registry-export.md) documents `scripts/export_registry.py`.
   The pre-ALE task form and the pre-rebrand repositories are archived on GitHub
   (`ale-robotics-benchmark-private`, tag `legacy-harness-final`; `ale-robotics-benchmark`,

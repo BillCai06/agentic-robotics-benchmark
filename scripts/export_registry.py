@@ -5,12 +5,16 @@ The document's contract is ``schemas/task-registry.schema.json`` in this reposit
 tests hold the export to it. The one rule that shapes this script is that *task identity
 comes from the engine*: ``spec_hash`` and ``content_digest`` are read off
 ``ale.run.tasksets.manifest.load_tasks`` and never re-implemented here, so a run's
-``lock.json`` can be matched against exactly the numbers the engine computes for the
-committed tree. Everything else is assembled from files the task folder already carries
-(``task.yaml``'s ``metadata.platform``, ``instruction.md``, ``verify/anchor.json`` for the
-metric, its direction and the anchor, ``verify/grader_config.json``) plus git provenance. The
-document's ``platforms`` list is this repository's ``tasks/platforms.json``: the benchmark
-owns its taxonomy, and a consumer (the website) only displays what this export hands it.
+``lock.json`` (``task.spec_hash``, ``task.content_digest``) can be matched against exactly
+the numbers the engine computes for the committed tree. A task's ``task_id`` is the engine's
+own id, ``[task].name`` in ``task.toml`` (``org/name``); its ``slug`` is the part after the
+``/``, which is also the task's folder name and the key of the identity history and the
+release's ``task_set``. Everything else is assembled from files the task folder already
+carries (``task.toml``'s ``[metadata].platform``, ``instruction.md``, ``tests/anchor.json``
+for the metric, its direction and the anchor, ``tests/grader_config.json``) plus git
+provenance. The document's ``platforms`` list is this repository's ``tasks/platforms.json``:
+the benchmark owns its taxonomy, and a consumer (the website) only displays what this export
+hands it.
 
 The loader lives in the pinned engine's venv (``vendor/ale``), not in this repo's. When
 ``ale`` is not importable the script re-executes itself through ``uv run`` in that venv, so
@@ -45,7 +49,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 ENGINE_DIR = REPO_ROOT / "vendor" / "ale"
 DEFAULT_TASKS = REPO_ROOT / "tasks"
 DEFAULT_HISTORY = REPO_ROOT / "identity-history.json"
-#: The platform vocabulary (``metadata.platform`` keys, labels), exported as ``platforms``.
+#: The platform vocabulary (``[metadata].platform`` keys, labels), exported as ``platforms``.
 PLATFORMS_FILE = REPO_ROOT / "tasks" / "platforms.json"
 
 SCHEMA_VERSION = "ale-robotics-task-registry/v2"
@@ -55,10 +59,11 @@ DEFAULT_SCORE_CAP = 1.5
 DEFAULT_FULL_AT = 1.0
 DEFAULT_RELEASE_NAME = "Agentic Robotics Benchmark"
 DEFAULT_RELEASE_VERSION = "v0.5"
-#: Only the base variant is registered (§4): variant runs are unknown identities.
-REGISTERED_VARIANT = "base"
 #: Guard against the re-exec loop when the engine venv itself lacks ``ale``.
 _REEXEC_FLAG = "ALE_EXPORT_REGISTRY_REEXEC"
+#: The engine's task id shape (``ale.core.ids.TaskId``): ``org/name``, each part a lowercase
+#: slug. The schema's ``task_id`` pattern is the same expression.
+_TASK_ID = re.compile(r"^[a-z0-9][a-z0-9_-]*/[a-z0-9][a-z0-9_-]*$")
 
 #: A real h1 line only: ``#`` + horizontal whitespace + text. ``\s`` would also match a
 #: newline, turning a bare ``#`` followed by the next line into a "title".
@@ -85,8 +90,7 @@ class LoadedTask:
     ``from_manifest_task`` is the only place that touches engine objects.
     """
 
-    slug: str
-    variant: str
+    task_id: str
     root: Path
     spec_hash: str
     content_digest: str
@@ -94,19 +98,30 @@ class LoadedTask:
     resources: dict[str, Any] = field(default_factory=dict)
     timeouts: dict[str, Any] = field(default_factory=dict)
 
+    @property
+    def slug(self) -> str:
+        """The part of ``task_id`` after the ``/``: the folder name and the registry's key."""
+        return self.task_id.rpartition("/")[2]
+
 
 def from_manifest_task(task: Any) -> LoadedTask:
-    """Project an ``ale.run.tasksets.manifest.ManifestTask`` onto ``LoadedTask``."""
+    """Project an ``ale.run.tasksets.manifest.ManifestTask`` onto ``LoadedTask``.
+
+    ``task_digest`` is the folder's ``content_digest``, the value the engine writes into every
+    episode's ``lock.json``. ``task.toml`` declares no setup timeout: the engine bounds every
+    setup stage by one fixed ``SETUP_TIMEOUT_SEC``, and that is the ``setup`` exported.
+    """
+    from ale.run.protocol.episode_protocol import SETUP_TIMEOUT_SEC
+
     spec = task.spec
     return LoadedTask(
-        slug=str(spec.name),
-        variant=str(spec.variant),
+        task_id=str(spec.name),
         root=Path(task.folder.root),
         spec_hash=spec.spec_hash,
-        content_digest=task.folder.content_digest,
+        content_digest=task.task_digest,
         metadata=dict(spec.metadata),
         resources=spec.resources.model_dump(mode="json"),
-        timeouts=spec.timeouts.model_dump(mode="json"),
+        timeouts={"setup": SETUP_TIMEOUT_SEC, **spec.timeouts.model_dump(mode="json")},
     )
 
 
@@ -136,8 +151,8 @@ def read_title(task_dir: Path, slug: str) -> str:
 
 
 def read_score_cap(task_dir: Path) -> float:
-    """``verify/grader_config.json`` ``scoring_cap``; the file and the key are both optional."""
-    config = task_dir / "verify" / "grader_config.json"
+    """``tests/grader_config.json`` ``scoring_cap``; the file and the key are both optional."""
+    config = task_dir / "tests" / "grader_config.json"
     if not config.is_file():
         return DEFAULT_SCORE_CAP
     loaded = json.loads(config.read_text(encoding="utf-8"))
@@ -148,16 +163,16 @@ def read_score_cap(task_dir: Path) -> float:
 
 
 def read_anchor(task_dir: Path, score_cap: float) -> dict[str, Any]:
-    """``verify/anchor.json`` → the four ``anchor*`` registry fields.
+    """``tests/anchor.json`` → the four ``anchor*`` registry fields.
 
     ``full_at`` defaults to 1.0 and must lie in ``(0, cap]`` and ``value`` must be positive —
     the same rules the kit applies at grading time, so a registry that disagrees with the
     grader is impossible to export. A ``null`` value is allowed: it is the authoring state
     ("not admissible yet"): nobody can be scored against such a task yet.
     """
-    path = task_dir / "verify" / "anchor.json"
+    path = task_dir / "tests" / "anchor.json"
     if not path.is_file():
-        raise RegistryError(f"{task_dir.name}: missing verify/anchor.json")
+        raise RegistryError(f"{task_dir.name}: missing tests/anchor.json")
     anchor = json.loads(path.read_text(encoding="utf-8"))
     value = anchor.get("value")
     if value is not None and (not isinstance(value, (int, float)) or isinstance(value, bool)):
@@ -188,21 +203,21 @@ def read_anchor(task_dir: Path, score_cap: float) -> dict[str, Any]:
 
 
 def metric_fields(task_dir: Path, slug: str) -> dict[str, Any]:
-    """``verify/anchor.json``'s ``metric``/``direction`` → ``metric_name``/``metric_label``/``metric_direction``.
+    """``tests/anchor.json``'s ``metric``/``direction`` → ``metric_name``/``metric_label``/``metric_direction``.
 
     The anchor is the one place a task declares its metric: the grader reads it there, and
     this export publishes the same name and direction.
     """
-    path = task_dir / "verify" / "anchor.json"
+    path = task_dir / "tests" / "anchor.json"
     if not path.is_file():
-        raise RegistryError(f"{slug}: missing verify/anchor.json")
+        raise RegistryError(f"{slug}: missing tests/anchor.json")
     anchor = json.loads(path.read_text(encoding="utf-8"))
     name = anchor.get("metric")
     if not isinstance(name, str) or not name or name == "TODO":
-        raise RegistryError(f"{slug}: verify/anchor.json `metric` is required")
+        raise RegistryError(f"{slug}: tests/anchor.json `metric` is required")
     direction = _METRIC_DIRECTION.get(str(anchor.get("direction")))
     if direction is None:
-        raise RegistryError(f"{slug}: verify/anchor.json `direction` must be higher|lower")
+        raise RegistryError(f"{slug}: tests/anchor.json `direction` must be higher|lower")
     return {
         "metric_name": name,
         "metric_label": name.replace("_", " ").capitalize(),
@@ -211,7 +226,7 @@ def metric_fields(task_dir: Path, slug: str) -> dict[str, Any]:
 
 
 def _integral(value: Any) -> Any:
-    """Engine timeouts are floats (``120.0``); the registry shows the authored integers."""
+    """Engine timeouts are floats (``3600.0``); the registry shows a whole number as an integer."""
     if isinstance(value, float) and value.is_integer():
         return int(value)
     return value
@@ -224,19 +239,26 @@ def task_entry(
 ) -> dict[str, Any]:
     """One ``tasks[]`` element; ``identities`` already carries the current identity first.
 
-    ``metadata.platform`` must be one of ``platform_keys`` (default: ``tasks/platforms.json``).
+    ``task_id`` must have the engine's ``org/name`` shape, and ``[metadata].platform`` must be
+    one of ``platform_keys`` (default: ``tasks/platforms.json``).
     """
+    if not _TASK_ID.match(task.task_id):
+        raise RegistryError(
+            f"{task.root}: task id {task.task_id!r} is not the engine's org/name "
+            f"({_TASK_ID.pattern})"
+        )
     platform = task.metadata.get("platform")
     keys = platform_keys if platform_keys is not None else frozenset(
         entry["key"] for entry in load_platforms()
     )
     if platform not in keys:
         raise RegistryError(
-            f"{task.slug}: metadata.platform {platform!r} is not one of the benchmark's "
+            f"{task.slug}: [metadata].platform {platform!r} is not one of the benchmark's "
             f"platforms (tasks/platforms.json)"
         )
     score_cap = read_score_cap(task.root)
     entry: dict[str, Any] = {
+        "task_id": task.task_id,
         "slug": task.slug,
         "title": read_title(task.root, task.slug),
         "platform": platform,
@@ -351,7 +373,8 @@ def _git(args: list[str], cwd: Path) -> str:
 def require_clean(path: Path) -> None:
     """Refuse a task folder (or one input file) with any uncommitted or ignored content.
 
-    ``content_digest`` covers every regular file in the folder, so an ignored
+    ``content_digest`` covers every regular file in the folder outside the asset roots
+    (``environment|tests|solution/assets/``) and ``.ale-cache``, so an ignored
     ``__pycache__`` or an unstaged edit would register an identity no commit reproduces;
     ``tasks/platforms.json`` goes into the document as ``platforms`` and is held to the same rule.
     """
@@ -420,7 +443,7 @@ def engine_provenance(engine_dir: Path) -> dict[str, Any]:
 def load_platforms(path: Path = PLATFORMS_FILE) -> list[dict[str, str]]:
     """``tasks/platforms.json`` → the document's ``platforms`` (``[{key, label}]``, file order).
 
-    This repository owns the taxonomy: the domain lint holds every ``metadata.platform`` to
+    This repository owns the taxonomy: the domain lint holds every ``[metadata].platform`` to
     these keys, and the website displays the list exactly as exported.
     """
     entries = json.loads(path.read_text(encoding="utf-8"))
@@ -473,6 +496,10 @@ def build_registry(
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     """Assemble the v2 document; returns ``(registry, updated_history)``.
 
+    Every loaded task is registered, in slug order. The engine refuses two tasks of one
+    ``task_id``; the registry also refuses two of one slug (``a/x`` and ``b/x``), because the
+    identity history, the release's ``task_set`` and every consumer key a task by its slug.
+
     With ``allow_dirty`` the clean-tree check is skipped and the provenance says so:
     ``source_commit`` gets a ``-dirty`` suffix and ``dirty: true`` is set, so a throwaway
     export can never pass for a release one (the schema marks it; never install one).
@@ -482,13 +509,18 @@ def build_registry(
             require_clean(platforms_file)
         platforms = load_platforms(platforms_file)
     platform_keys = frozenset(entry["key"] for entry in platforms)
-    base_tasks = sorted(
-        (task for task in tasks if task.variant == REGISTERED_VARIANT), key=lambda t: t.slug
-    )
-    if not base_tasks:
-        raise RegistryError("no base-variant task to register")
+    if not tasks:
+        raise RegistryError("no task to register")
+    claimed: dict[str, LoadedTask] = {}
+    for task in tasks:
+        other = claimed.setdefault(task.slug, task)
+        if other is not task:
+            raise RegistryError(
+                f"slug {task.slug!r} is claimed by both {other.task_id} ({other.root}) and "
+                f"{task.task_id} ({task.root}); the registry keys a task by its slug"
+            )
     entries: list[dict[str, Any]] = []
-    for task in base_tasks:
+    for task in sorted(tasks, key=lambda t: t.slug):
         if not allow_dirty:
             require_clean(task.root)
         history, identities = merge_history(history, task, now)

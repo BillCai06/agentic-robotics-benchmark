@@ -4,14 +4,14 @@
 # home, owned by the agent, and installs a second, ROOT-OWNED read-only copy of the same payload at /opt/arb:
 # the grader compiles its physics (the Panda) from that copy and the programs get it as ARB_GIVEN_DIR during
 # verify, so nothing the agent can write is ever an input of the grader (verify.py checks its sha256 against
-# given_hashes.json). Dynamic-only: packages live in image/Dockerfile.
+# given_hashes.json). Dynamic-only: packages live in environment/Dockerfile.
 set -euo pipefail
 HOME_DIR="${ALE_HOME:-/home/user}"
 AGENT_USER="$(basename "$HOME_DIR")"
 ROOT_PAYLOAD="${ARB_ROOT_PAYLOAD:-/opt/arb}"
 cp -r payload/. "$HOME_DIR/"
 # the large givens (the manual, the parts' STL files, the Panda model) and the cameras' scenery (render/) come from the
-# image (image/Dockerfile, task assets)
+# image (environment/Dockerfile, task assets)
 if [ -d /opt/task-assets/payload ]; then
   cp -r /opt/task-assets/payload/. "$HOME_DIR/"
 fi

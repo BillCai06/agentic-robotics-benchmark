@@ -81,12 +81,13 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "slug", "title", "platform", "identities", "score_cap", "resources", "timeouts", "status",
+        "task_id", "slug", "title", "platform", "identities", "score_cap", "resources", "timeouts", "status",
         "metric_name", "metric_label", "metric_direction",
         "anchor", "anchor_full_at", "anchor_source", "anchor_image_identity"
       ],
       "properties": {
-        "slug": {"$ref": "#/definitions/slug"},
+        "task_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_-]*/[a-z0-9][a-z0-9_-]*$", "description": "the engine's task id: task.toml [task].name (org/name), recorded as task.name in every lock.json"},
+        "slug": {"$ref": "#/definitions/slug", "description": "the part of task_id after the slash; the task's folder name, and the key of the identity history and of release.aggregation_policy.task_set"},
         "title": {"type": "string", "minLength": 1},
         "platform": {"$ref": "#/definitions/slug", "description": "one of the document's platforms[].key"},
         "identities": {"type": "array", "minItems": 1, "items": {"$ref": "#/definitions/identity"}, "description": "newest first; [0] is the current identity"},
@@ -106,9 +107,9 @@
           "additionalProperties": false,
           "required": ["setup", "agent", "verify"],
           "properties": {
-            "setup": {"type": ["number", "null"]},
-            "agent": {"type": ["number", "null"]},
-            "verify": {"type": ["number", "null"]}
+            "setup": {"type": ["number", "null"], "description": "seconds; the engine's fixed bound on the setup stage (task.toml has no setup timeout)"},
+            "agent": {"type": ["number", "null"], "description": "seconds; task.toml [agent].timeout_sec"},
+            "verify": {"type": ["number", "null"], "description": "seconds; task.toml [verifier].timeout_sec"}
           }
         },
         "status": {"const": "active"},

@@ -7,7 +7,7 @@ entries (measured 2026-10-02 on container-ubuntu22-base: an entry written in ~/.
 again within 42 s of `pkill -KILL -u user`). A stopped process cannot exit, so supervisord does not respawn it: the freezer
 SIGSTOPs every process of the agent account, polling /proc, until the verdict is written.
 
-Usage in a task's verify.py (stdlib only; vendor this file into verify/):
+Usage in a task's verify.py (stdlib only; vendor this file into tests/):
 
     freezer = verify_freeze.AgentFreezer.for_user("user").start()   # right after the existing kill / lockdown
     ...                                                                # grading

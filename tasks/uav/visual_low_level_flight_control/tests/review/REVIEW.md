@@ -8,7 +8,7 @@
 > 0.18 rad, gates moved by up to 0.25 m and turned by up to 0.2 rad, the start moved by up to 0.25 m and its heading
 > drawn within 90 degrees (layouts too close to the cabinet are redrawn); eight scenes; probes from a viewpoint
 > 3-6 cm and 1-3 degrees away, at least a quarter of them must change the action; a stated 1500 s budget of controller
-> reply time (`timeouts.verify` 5400 s: up to 2,640 onboard frames at about 0.55 s each on the task's two CPUs, plus
+> reply time (`[verifier].timeout_sec` 5400 s: up to 2,640 onboard frames at about 0.55 s each on the task's two CPUs, plus
 > the full budget); the oracle searches for the first gate and uses the new marker size. Measured:
 > a recorded oracle flight replayed on 128 fresh scenes completes 0 (0 of 96 with the same quarter turn); the oracle
 > completed 24/24 scenes in three `ale validate` runs and 63/64 offline. The v7 notes below are historical.
@@ -18,10 +18,10 @@
 > scenery: no collision, no effect on the physics). The onboard camera is rendered by MuJoCo 3.16's Filament module on
 > the CPU (Mesa lavapipe), lit by an image light distilled from an OVRTX path-traced light probe of the hall plus the
 > sun, with per-class gains calibrated against OVRTX renders of the onboard view on the recorded oracle flight
-> (`verify/fil_render.py`, byte-identical to `setup/runtime/fil_render.py`). The gates keep the task's colours, with
+> (`tests/fil_render.py`, byte-identical to `environment/setup/runtime/fil_render.py`). The gates keep the task's colours, with
 > worn-paint textures and twice the glow, so their colour cues hold under the hall's light. The scenery (meshes and
 > 256 px textures), the course's textures and the two KTX maps (image light, sky) are fetched at image build from the
-> benchmark's Hugging Face dataset, pinned in `image/assets.sha256`, into the root-owned `/opt/task-assets/payload/render`.
+> benchmark's Hugging Face dataset, pinned in `environment/assets.sha256`, into the root-owned `/opt/task-assets/payload/render`.
 > A frame takes about 0.54 s on the task's two CPUs; the verify process peaks at about 1.3 GB (textures at 256 px, the
 > heap trimmed after every scene). Measured: `ale validate` validate-aeacedc0, the oracle completed 7 of 8 fresh scenes
 > (ratio 0.875, at or above `full_at` 0.85: reward 1.0), verify 22.9 min, zero collisions and aborts; the task's own tests pass.
@@ -58,17 +58,17 @@ goal panel makes the final hover observable without a second camera.
 The original 300-action / 60-simulated-second flight budget is unchanged. The
 authoring timeout increases from 1800 to 3600 seconds to reduce timeout confounding.
 Difficulty is not created by shrinking budgets.
-`tools/privileged_reference.py` is explicitly a privileged state-feedback
+`tests/review/privileged_reference.py` is explicitly a privileged state-feedback
 feasibility check, never copied into a submission. It completed development
 seeds 101-116 with zero collisions in 49.03-51.51 simulated seconds. This is not
 an image-only solution, frontier result or substitute for `ale validate`.
-The separate reference in `oracle/` uses only images at runtime but has disclosed
+The separate reference in `solution/` uses only images at runtime but has disclosed
 author-supplied design priors, including nominal route topology and safe transit
 waypoints. It completed 26 development/regression/holdout scenes without collision.
 Canonical calibration `validate-2f68303c`, oracle `c48dafab`, completed 4/4 new
 scenes with no collisions/aborts and 70/92 aggregate observation probes. One
 scene was 11/23, below half; the aggregate lock still passed. See
-`verify/anchor.json` for provenance. No earlier-version result is reused.
+`tests/anchor.json` for provenance. No earlier-version result is reused.
 
 ## Interpretation Limits
 
@@ -94,8 +94,8 @@ repository root, with that engine installed:
 ```bash
 TASK=tasks/uav/visual_low_level_flight_control
 ale lint "$TASK"
-python scripts/lint_domain.py "$TASK"
-ale validate "$TASK" --runs-dir runs/crazyflie-validate
+uv run python scripts/lint_domain.py "$TASK"
+ale validate "$TASK" --runs-dir runs/crazyflie-validate --set artifacts.collect=host
 ```
 
 The image build fetches checksum-locked robot meshes. Execution is offline and
@@ -104,19 +104,19 @@ The successful submitted files, camera captures and interaction JSON are in the
 oracle episode's collected artifacts. The trusted evaluation episode outcomes
 and post-run replay seeds are in `trace.execution.jsonl` and `verification.json`.
 
-For a host-side visual demo, install `image/requirements.txt`, `libosmesa6`, and
+For a host-side visual demo, install `environment/requirements.txt`, `libosmesa6`, and
 optionally `imageio==2.37.0 imageio-ffmpeg==0.6.0` for video:
 
 ```bash
-python "$TASK/image/fetch_visual_assets.py" "$TASK/image/visual_assets.json" runs/crazyflie-assets
+python "$TASK/environment/fetch_visual_assets.py" "$TASK/environment/visual_assets.json" runs/crazyflie-assets
 export MUJOCO_GL=osmesa LIBGL_ALWAYS_SOFTWARE=1 LP_NUM_THREADS=2 OPENBLAS_NUM_THREADS=1
 export VISUAL_ROBOTICS_ASSETS="$PWD/runs/crazyflie-assets"
-python -m unittest discover -s "$TASK/tools/tests" -v
-python "$TASK/tools/privileged_reference.py" --out runs/crazyflie-physical-check
-python "$TASK/tools/review.py" --out runs/crazyflie-fpv-media --seeds 101 --mode privileged --video
-python "$TASK/tools/review.py" --out runs/crazyflie-demo --seeds 101 102 103 --video
-python "$TASK/tools/review.py" --out runs/crazyflie-random --seeds 101 102 103 --mode random
-python "$TASK/tools/check_security.py" --ale "$(command -v ale)" --out runs/crazyflie-security
+python -m unittest discover -s "$TASK/tests/review/tests" -v
+python "$TASK/tests/review/privileged_reference.py" --out runs/crazyflie-physical-check
+python "$TASK/tests/review/review.py" --out runs/crazyflie-fpv-media --seeds 101 --mode privileged --video
+python "$TASK/tests/review/review.py" --out runs/crazyflie-demo --seeds 101 102 103 --video
+python "$TASK/tests/review/review.py" --out runs/crazyflie-random --seeds 101 102 103 --mode random
+python "$TASK/tests/review/check_security.py" --ale "$(command -v ale)" --out runs/crazyflie-security
 ```
 
 The preview/poster is a real simulator render. Its third-person reviewer camera

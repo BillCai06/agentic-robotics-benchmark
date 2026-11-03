@@ -3,9 +3,9 @@ name: onboard-closed-loop
 description: >-
   Build an CLOSED_LOOP task for the Agentic Robotics Benchmark (on the ALE engine): the grader owns the simulator and steps the agent's
   policy over a stdio JSON-lines wire, with hidden perturbation probes as the match lock.
-  Loaded by onboard-task with its spec payload. Drives image/Dockerfile → oracle (train + a
-  self-contained submission) → verify/verify.py on the vendored robotics_grader package →
-  practice grader → the anchor from a REAL run → a green `ale validate`.
+  Loaded by onboard-task with its spec payload. Drives environment/Dockerfile → solution
+  (train + a self-contained submission) → tests/verify.py on the vendored robotics_grader
+  package → practice grader → the anchor from a REAL run → a green `ale validate`.
 ---
 
 # onboard-closed-loop — build a closed_loop task
@@ -15,16 +15,17 @@ only what this pattern needs, then drive the build.
 
 The shape: the grader **owns** the simulator. It steps the agent's policy one observation at a
 time, computes the metric from its own state, and never treats anything the solver prints as a
-scoring input. The solver runs at the **agent's UID** — `verify/run.sh` is root, so spawning
+scoring input. The solver runs at the **agent's UID** — `tests/test.sh` is root, so spawning
 the solver directly would hand the agent the grader's privileges. `robotics_grader.Solver` does
-the drop through `runuser`; from there `/opt/ale`, the verdict file and the grader's memory are
-all out of reach (see `docs/evidence/isolation-audit.md` for the audited proof).
+the drop through `runuser`; from there `/opt/ale`, the result directory `/logs/verifier` and
+the grader's memory are all out of reach (see `docs/evidence/isolation-audit.md` for the
+audited proof).
 
 Worked example: `tasks/space/fault_adaptive_spacecraft_docking` — a real closed_loop task
 (a fault-adaptive docking controller for a six-thruster spacecraft) that validates green
 on the shared kit. It also shows what a task that hands the agent its simulator must do:
 64-bit seeds and a keyed-hash generator, so the source gives nothing away. Template:
-`templates/task/`, whose `verify/verify.py` is already this pattern.
+`templates/task/`, whose `tests/verify.py` is already this pattern.
 
 ## Mode-specific questions
 
@@ -43,8 +44,9 @@ on the shared kit. It also shows what a task that hands the agent its simulator 
    observation is applied. Pick a perturbation a real policy must respond to (shift the position
    components, move the goal, nudge the obstacle) and set `dims` in `ProbeLock` to cover exactly
    those leading components. A constant, a replay and an obs-blind policy must all fail it.
-5. **How long does the oracle need to train?** That is `timeouts.agent`, and `ale validate`
-   really pays it: an oracle that trains a policy (PPO, say) makes every validate that slow.
+5. **How long does the oracle need to train?** That is `[agent].timeout_sec` in `task.toml`,
+   and `ale validate` really pays it: an oracle that trains a policy (PPO, say) makes every
+   validate that slow.
 
 ## The solver contract (what the agent must build)
 
@@ -69,15 +71,16 @@ under the agent's own budget — that separation is why a scoring run is cheap a
 
 ## Build steps
 
-1. **`image/Dockerfile`.** Start from the template's: final stage directly FROM the official
-   ALE base, py3.12 `/opt/venv` with a world-traversable interpreter, and the agent-UID import
-   self-check at the end. Add the simulator at a pinned commit, and strip the reference
-   implementation's own recipe in the *same* layer that clones it — an image that ships the
-   exact training script hands the agent the answer.
-2. **`oracle/run.sh`** — the reference implementation, as it is. Train inside `timeouts.agent`,
-   then write a **self-contained** `/home/user/submission/` (checkpoint + solver + `run.sh`).
-   Self-contained matters: `verify` drives that folder, not your oracle directory.
-3. **`verify/verify.py`** — start from the template and change the physics only. Keep:
+1. **`environment/Dockerfile`.** Start from the template's: final stage directly FROM the
+   official ALE base at an exact version, py3.12 `/opt/venv` with a world-traversable
+   interpreter, and the agent-UID import self-check at the end. Add the simulator at a pinned
+   commit, and strip the reference implementation's own recipe in the *same* layer that clones
+   it — an image that ships the exact training script hands the agent the answer.
+2. **`solution/solve.sh`** — the reference implementation, as it is. Train inside
+   `[agent].timeout_sec`, then write a **self-contained** `/home/user/submission/`
+   (checkpoint + solver + `run.sh`). Self-contained matters: the verify stage drives that
+   folder, not your solution directory.
+3. **`tests/verify.py`** — start from the template and change the physics only. Keep:
    * `Solver(step_timeout=…)` for the UID drop and the per-step deadline;
    * the `SolverAborted` handler — an aborted episode is dropped from the metric and counted,
      so a solver that answers one episode in ten cannot average its way to a score;
@@ -85,16 +88,16 @@ under the agent's own budget — that separation is why a scoring run is cheap a
      to the simulator;
    * `seed_rng()` — hidden seeds from OS entropy, in memory only, never written anywhere;
    * `ratio_rewards(...)` + `write_verdict(...)` for scoring.
-   Leave the vendored `verify/robotics_grader/` untouched — CI diffs it against the canonical
+   Leave the vendored `tests/robotics_grader/` untouched — CI diffs it against the canonical
    copy at `shared/robotics_grader/`.
-4. **`verify/grader_config.json`** — episodes, `probe_rate`, `probe_pass_fraction`,
-   `step_timeout_s`, `scoring_cap`. Not `params:`: those render into the prompt and are strict
-   both ways. Not `config.json` either: the engine overwrites that name with its own judge
-   settings at verify time.
-5. **`setup/payload/practice_grader/grade.py`** — the agent's self-test on visible seeds;
-   `setup/run.sh` stages `payload/` into the agent home. Raw metric only: no anchor, no ratio,
-   no score, and no import from `verify/`.
-6. **`verify/anchor.json`** — leave `value` null. Gate once, take the measured value off the
+4. **`tests/grader_config.json`** — episodes, `probe_rate`, `probe_pass_fraction`,
+   `step_timeout_s`, `scoring_cap`. Not `task.toml`: it has no parameters, and its
+   `[metadata]` has no runtime behavior. Not `config.json` either: the engine overwrites that
+   name with its own judge settings at verify time.
+5. **`environment/setup/payload/practice_grader/grade.py`** — the agent's self-test on visible
+   seeds; `environment/setup/setup.sh` stages `payload/` into the agent home. Raw metric only:
+   no anchor, no ratio, no score, and no import from `tests/`.
+6. **`tests/anchor.json`** — leave `value` null. Gate once, take the measured value off the
    verdict, record it, gate again. Never a published figure: it came from other hardware,
    other seeds, and usually a kinder evaluation — the anchor is the reference implementation's
    own measured value.
@@ -105,11 +108,12 @@ under the agent's own budget — that separation is why a scoring run is cheap a
    ```
    `needs_anchor` on the first pass is expected (the engine reports it as `oracle_not_full`;
    `harness/ale_onboard.py` reads the measured value off the records). `built` means the
-   double pass held: an untouched sandbox scored an exact all-zero and the oracle an exact
-   all-one — the engine fails validation otherwise (`untouched_nonzero`, `oracle_not_full`).
-   That demands two things of your grader: catch a missing submission (`SolverMissing`) and
-   write `zero_verdict(...)` instead of crashing, and size the anchor's `full_at` from the
-   metric's measured seed-to-seed spread so an honest oracle saturates to 1.0.
+   double pass held: an untouched sandbox scored `reward` 0.0 and the oracle 1.0, after the
+   engine's rounding to two decimals — the engine fails validation otherwise
+   (`untouched_nonzero`, `oracle_not_full`). That demands two things of your grader: catch a
+   missing submission (`SolverMissing`) and write `zero_verdict(...)` instead of crashing, and
+   size the anchor's `full_at` from the metric's measured seed-to-seed spread so an honest
+   oracle saturates to 1.0.
 8. **Prove the lock bites.** Replace the oracle's solver with one that returns a constant,
    re-gate, and confirm `match_lock_ok: 0.0` and `reward: 0.0` — with the wire working. A lock
    nobody has seen fail is a lock nobody has tested. (Ours: 204 probes fired, 0 passed, reward

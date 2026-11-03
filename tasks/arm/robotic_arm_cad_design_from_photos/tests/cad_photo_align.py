@@ -1,6 +1,6 @@
 """cad_photo.align: per-part rigid alignment of a submitted part onto the ground-truth part (hardware_design.md 6.4).
 
-Shipped twice, byte-identical: inside verify/ (as cad_photo_align.py) and in the agent's practice checker. Pure geometry
+Shipped twice, byte-identical: inside tests/ (as cad_photo_align.py) and in the agent's practice checker. Pure geometry
 (numpy, scipy, trimesh); no hidden data. Lengths mm.
 
     align_part(agent_mesh_world, gt_mesh_world, seed) -> {"T": 4x4 (agent world -> gt world), "rms_mm", "multistart",

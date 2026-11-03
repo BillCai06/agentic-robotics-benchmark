@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """alelab: a budgeted lab service that holds a task's hidden "real" environment.
 
-Started once by a task's setup/run.sh as root:
+Started once by a task's environment/setup/setup.sh as root, cwd = the stage (/opt/ale/setup):
 
     env -i PATH=/opt/venv/bin:/usr/local/bin:/usr/bin:/bin LANG=C.UTF-8 HOME=/nonexistent \\
         python3 -I -B lab/alelab/server.py --config "$PWD/lab/lab.json"

@@ -5,6 +5,13 @@
 > template zip builder and the docs; the website: the upload endpoint, the landing credential,
 > the Contribute page).
 >
+> **2026-11-03 note.** The task folder named below (`task.yaml`, `image/`, `setup/run.sh`,
+> `oracle/run.sh`, `verify/`) is the layout before the Harbor migration. Since 2026-11-03
+> (engine `1cdbc02`) a task is `task.toml`, `environment/` (with `setup/setup.sh` and
+> `setup/payload/`), `tests/` and `solution/solve.sh`, and the engine runs every stage entry
+> through `bash`, so the `chmod +x` advice below no longer applies.
+> [`../contributing-a-task.md`](../contributing-a-task.md) describes the current path.
+>
 > **2026-10-15, second update: this design is retired.** The website became a display-only
 > front end. It offers no template download and no upload channel, and its submission page
 > links the project's contribution guidelines (two Google Docs, English and Chinese, linked

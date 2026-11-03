@@ -1,7 +1,7 @@
 """Hidden grader for robocasa_object_dynamics_from_video.
 
 Reads /home/user/submission/params.json (numbers only) and scores objects A, B, C on the fixed hidden tests in the
-grader's own copy of the true world (verify/ref): every action is planned on the true collision shape with the
+grader's own copy of the true world (tests/ref): every action is planned on the true collision shape with the
 submitted inertial parameters and friction, then executed once in the true world. Metric `object_dynamics_score`
 (mean over objects of the mean family score, higher is better). Separate verifier sandbox; agent processes are
 killed first (L3) and nothing else the agent left is read.

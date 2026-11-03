@@ -22,7 +22,7 @@ def main():
     denied("read hidden scene", lambda: Path("/var/lib/visual_robotics/runtime/world.py").read_text())
     denied("rewrite ledger", lambda: Path("/var/lib/visual_robotics/state.json").write_text('{"success":true}'))
     denied("rewrite MCP", lambda: Path("/opt/visual_robotics/client/mcp_stdio.py").write_text("pass"))
-    denied("read verifier", lambda: Path("/opt/ale/verify/grader.py").read_text())
+    denied("read verifier", lambda: Path("/opt/ale/tests/grader.py").read_text())
     client = Client()
     start = client.observe()["steps_remaining"]
     client.act([.52, 0, 0, 0])

@@ -1,9 +1,12 @@
-# The task's environment image. `image/` is the sole build context, and the final stage
-# must derive directly from an official ALE base — lint enforces the FROM. The engine
-# builds it on demand; nothing here is pushed by hand.
+# The task's environment image. The build context is `environment/` without `setup/`
+# (setup/ reaches the sandbox only when its stage runs). The final stage derives from the
+# official ALE base at an exact version: `ale lint` rejects `latest` and an untagged FROM,
+# and the task keeps this base until its author moves the tag. The engine builds the image
+# on demand and adds its own layer on top (its guest service); nothing here is pushed by
+# hand.
 #
 # What belongs here: the simulator and every stable dependency, installed for an
-# interpreter every identity can use. What must NOT be here: verify/, oracle/, the
+# interpreter every identity can use. What must NOT be here: tests/, solution/, the
 # anchor, or anything derived from them — an image layer is readable by anyone who can
 # run the image.
 FROM ghcr.io/agentslastexam/container-ubuntu22-base:0.1.1
@@ -17,7 +20,9 @@ COPY --from=ghcr.io/astral-sh/uv:0.11 /uv /usr/local/bin/uv
 # ModuleNotFoundError with world-readable site-packages sitting right there.
 #
 # Python 3.12, not a style choice: at verify time the engine stages its own `ale_verify`
-# package into whatever interpreter answers `python3`, and refuses anything below 3.12.
+# package into the first of `python3` and `python3.12` that is 3.12 or newer and hands it to
+# tests/test.sh as ALE_VERIFY_PYTHON; an image with neither fails every verify stage. With
+# /opt/venv/bin first on PATH, that interpreter is this venv's `python3`.
 ENV UV_PYTHON_INSTALL_DIR=/opt/uv-python
 ENV UV_PROJECT_ENVIRONMENT=/opt/venv
 ENV VIRTUAL_ENV=/opt/venv
@@ -32,9 +37,9 @@ RUN uv venv /opt/venv --python 3.12 \
 # ships a standalone CPython 3.12 (at /opt/python, behind /usr/local/bin/python3), so uv
 # links the venv against that instead of downloading one.
 
-# The declared artifact path must exist even when nobody works — the engine captures
-# declared artifacts after every episode, untouched validation passes included, and a
-# missing path is an explicit episode error, not a zero.
+# The declared artifact path (task.toml `artifacts`), owned by the agent. The engine never
+# creates an artifact path or fixes its ownership, so the image does both, and the agent
+# (or the oracle, which runs as the agent) writes its submission into it.
 RUN mkdir -p /home/user/submission && chown -R user:user /home/user/submission
 
 # Headless by default: a task that renders opts in, rather than every task inheriting a

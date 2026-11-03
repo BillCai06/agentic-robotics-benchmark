@@ -1,6 +1,6 @@
 """Privileged reference controller for arm_hidden_mechanism_box (stdio wire, kit protocol).
 
-It knows every hidden box's mechanism (boxes.json, shipped from oracle/ref/) and estimates the
+It knows every hidden box's mechanism (boxes.json, shipped from solution/ref/) and estimates the
 box pose from the two fixed cameras at t = 0; then it drives scripted primitives through the
 stages in order. The plan runs in a worker thread; each wire query is answered from the plan's
 current absolute target and the queried observation, so repeated queries of the same step are

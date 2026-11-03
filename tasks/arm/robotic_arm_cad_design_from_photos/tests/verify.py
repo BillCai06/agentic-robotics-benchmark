@@ -26,6 +26,7 @@ verify stage, agent gone.
 No agent code runs here (the document is data that FreeCAD reads). Knobs: grader_config.json.
 """
 import json
+import math
 import os
 import pwd
 import shutil
@@ -244,11 +245,28 @@ def extract(doc_path, servo_step, timeout_s, stats):
     return os.path.join(work, "out"), tail
 
 
+def _finite_metrics(metrics):
+    """`metrics` in name order, finite numbers only: ale_verify.write refuses NaN and infinity, so a statistic that is
+    not a finite number stays out of the engine's record instead of failing the verdict."""
+    out = {}
+    for k, v in sorted(metrics.items()):
+        try:
+            x = float(v)
+        except (TypeError, ValueError):
+            continue
+        if math.isfinite(x):
+            out[k] = x
+    return out
+
+
 def write_verdict(G, checks, rewards, weights, stats, details):
     """One gated `reward` in the benchmark kit's envelope (robotics_grader.ratio_rewards against anchor.json: value 1.0 =
     the oracle, full_at 1.0, so reward = design_score); the checks, the criteria and every statistic go to `metrics`, the
-    per-check and per-criterion diagnostics into the reward check's text (the run record keeps them)."""
+    per-check and per-criterion diagnostics into the verdict's `diagnostic` text (the run record keeps them). In the
+    engine (ALE_VERIFY_PYTHON set) the kit writes /logs/verifier/reward.json and verification.json through ale_verify;
+    a host-side run writes the plain envelope to verdict.local.json in the stage folder."""
     from robotics_grader import ratio_rewards, read_anchor
+    from robotics_grader import write_verdict as kit_write
     crit = G.CRITERIA
     overall = sum(float(rewards[c]) * weights[c] for c in crit) / sum(weights[c] for c in crit)
     anchor, meta = read_anchor()
@@ -259,20 +277,12 @@ def write_verdict(G, checks, rewards, weights, stats, details):
                             full_at=meta.get("full_at", 1.0))
     text = "; ".join("%s %.4f: %s" % (k, float(rewards[k]), " | ".join(str(d) for d in details.get(k, []))[:150])
                      for k in list(checks) + list(crit))
-    if os.environ.get("ALE_VERIFICATION_PATH"):
-        from ale_verify import CheckResult, Verification
-        rec = Verification()
-        rec.check("reward", CheckResult(float(verdict["rewards"]["reward"]), text[:2000]))  # ale_verify's diagnostic cap
-        for k, v in sorted(verdict["metrics"].items()):
-            try:
-                rec.stat(k, float(v))
-            except (TypeError, ValueError):
-                pass
-        rec.write()
+    if os.environ.get("ALE_VERIFY_PYTHON"):
+        recorded = {"rewards": verdict["rewards"], "metrics": _finite_metrics(verdict["metrics"])}
+        # text[:2000]: the diagnostic cap of the earlier ale_verify API, kept so the recorded text is unchanged
+        kit_write(recorded, diagnostic=text[:2000])
         return overall
-    out = dict(verdict, diagnostics=details)
-    with open(os.environ.get("ALE_VERDICT_PATH", os.path.join(STAGE_DIR, "verdict.local.json")), "w") as fh:
-        json.dump(out, fh, indent=1, default=str)
+    kit_write(verdict, path=os.path.join(STAGE_DIR, "verdict.local.json"), diagnostic=text)
     return overall
 
 

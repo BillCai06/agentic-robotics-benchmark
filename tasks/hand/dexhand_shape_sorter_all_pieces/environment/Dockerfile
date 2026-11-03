@@ -1,7 +1,7 @@
 # Environment image for dexhand_shape_sorter_all_pieces. Final stage derives from the official ALE base.
 # Contains the public SuperDex 1.0.0 simulator (double precision), the public SuperDex assets this task uses
 # (shape_box prefab, Wuji Hand 2 right hand) and a finer collision SDF of the box baked at build time from the
-# public mesh. setup/, verify/, oracle/ and the anchor are never copied into the image.
+# public mesh. environment/setup/, tests/, solution/ and the anchor are never copied into the image.
 FROM ghcr.io/agentslastexam/container-ubuntu22-base:0.1.1
 
 ENV VIRTUAL_ENV=/opt/venv
@@ -16,8 +16,8 @@ RUN python3 -m venv /opt/venv \
     && chmod -R a+rX /opt/venv
 
 # ---- task assets: fetched at the dataset commit pinned in assets.sha256, checked file by file (docs/task-assets.md):
-# the agent's images (setup/run.sh stages them into the home) and the public SuperDex assets this task uses (subset of
-# the SuperDex asset tree, non-internal, see superdex_assets/*/LICENSE), moved to /opt/superdex_assets.
+# the agent's images (environment/setup/setup.sh stages them into the home) and the public SuperDex assets this task
+# uses (subset of the SuperDex asset tree, non-internal, see superdex_assets/*/LICENSE), moved to /opt/superdex_assets.
 COPY fetch_assets.py assets.sha256 /opt/task-assets/
 RUN python3 /opt/task-assets/fetch_assets.py /opt/task-assets/assets.sha256 /opt/task-assets/payload \
     && mv /opt/task-assets/payload/superdex_assets /opt/superdex_assets \

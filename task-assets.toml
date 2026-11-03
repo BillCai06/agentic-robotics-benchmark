@@ -1,9 +1,9 @@
 # Where every task's large agent-visible files (photo sets, document scans, meshes) are served from.
 #
 # This file is the one place that names the asset repository. A task's image cannot read it (the image's build
-# context is the task's image/ folder only), so `scripts/task_assets.py sync` writes these values into the header
-# of every task's image/assets.sha256, and CI (`scripts/task_assets.py check`) fails a pull request whose tasks
-# disagree with this file. To move the assets (a renamed dataset, a mirror): edit this file, run
+# context is the task's environment/ folder, less setup/), so `scripts/task_assets.py sync` writes these values into
+# the header of every task's environment/assets.sha256, and CI (`scripts/task_assets.py check`) fails a pull request
+# whose tasks disagree with this file. To move the assets (a renamed dataset, a mirror): edit this file, run
 #     python3 scripts/task_assets.py sync
 # and commit the result. Details: docs/task-assets.md.
 

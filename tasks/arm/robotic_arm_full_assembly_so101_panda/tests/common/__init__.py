@@ -6,7 +6,7 @@
   mjcf_canonical  canonical form of a robot subtree for identity check C3 (1e-9 numeric, attribute order free)
 
 Destined for shared/robotics_grader/ in the benchmark repo (seeds.py replaces the kit's seeds.py,
-anchored_mean lands in scoring.py); until then tasks vendor these files into verify/.
+anchored_mean lands in scoring.py); until then tasks vendor these files into tests/.
 stdlib only in seeds / anchored_mean / mjcf_whitelist / mjcf_canonical (the kit rule: a verify
 stage cannot assume numpy).
 """

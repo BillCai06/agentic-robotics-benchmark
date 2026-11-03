@@ -10,12 +10,12 @@ HIDDEN photos_gt.json with everything exact (grader-only).
     render_record(gt_doc)                                            # RA6: per shot LOD + backend build, explicit
     assert_independent_sets(practice_gt, hidden_gt)                  # a practice set shares no seed / lens / camera
 
-public_dir/                          (agent-visible: a task's setup/payload/...)
+public_dir/                          (agent-visible: a task's environment/setup/payload/...)
     photo_01.jpg ...                 the photographs (no EXIF / PNG text chunks)
     photos.json                      per photo: file, size, format, sha256, the shot's public label, a focal-length
                                      CLASS (35 mm-equivalent band), which scale references are in view; the nominal
                                      sizes of the scale references; the author's public notes
-hidden_dir/                          (grader-only: a task's verify/hidden/... or -dev/)
+hidden_dir/                          (grader-only: a task's tests/hidden/... or -dev/)
     photos_gt.json                   the exact RenderRequests (scene, cameras incl. intrinsics / extrinsics /
                                      distortion / exposure, photo spec, seeds), provenance (backend + version + request
                                      digest + GL / library versions + image sha256), per-view visible pixels of every

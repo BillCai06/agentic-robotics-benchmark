@@ -6,7 +6,7 @@ Defensively it still stops any lab or agent-UID process first (rev-leak R14, SPE
 restored submission (size-capped) to the agent account in place, at /home/user/submission, the folder the
 instruction names (ownership changes never follow a symlink). It owns its own copy of
 the robot environment (box_env.py, byte-identical to the agent's dev sim) and builds the hidden boxes
-from verify/ref/boxes.json with mech.py, draws 64-bit episode seeds from OS entropy (kit `seed_rng`:
+from tests/ref/boxes.json with mech.py, draws 64-bit episode seeds from OS entropy (kit `seed_rng`:
 box placement jitter and sensor noise), drives the agent's controller over the kit wire at the agent's
 UID, and scores every episode from its own simulator state (fraction of the box's stages unlocked).
 

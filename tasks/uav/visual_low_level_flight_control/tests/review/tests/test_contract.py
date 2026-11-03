@@ -4,8 +4,8 @@ from pathlib import Path
 import sys
 import unittest
 
-TASK = Path(__file__).resolve().parents[2]
-sys.path[:0] = [str(TASK/"verify"), str(TASK/"oracle")]
+TASK = Path(__file__).resolve().parents[3]
+sys.path[:0] = [str(TASK/"tests"), str(TASK/"solution")]
 import mujoco
 import numpy as np
 from PIL import Image
@@ -156,7 +156,7 @@ class FlightContract(unittest.TestCase):
         self.assertFalse(w.success)
 
     def test_runtime_and_verifier_world_identical(self):
-        self.assertEqual((TASK/"setup/runtime/world.py").read_bytes(), (TASK/"verify/world.py").read_bytes())
+        self.assertEqual((TASK/"environment/setup/runtime/world.py").read_bytes(), (TASK/"tests/world.py").read_bytes())
 
 
 class Images(unittest.TestCase):

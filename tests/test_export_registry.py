@@ -11,6 +11,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -35,33 +36,36 @@ NOW = "2026-09-02T00:00:00Z"
 HASH_A = "sha256:" + "a" * 64
 HASH_B = "sha256:" + "b" * 64
 HASH_C = "sha256:" + "c" * 64
-#: What every anchor now declares: the metric and its direction live in verify/anchor.json.
+#: The org part of every task id ([task].name = "<org>/<slug>").
+ORG = "grounded-intelligence-initiative"
+#: What every anchor now declares: the metric and its direction live in tests/anchor.json.
 _METRIC = {"metric": "mean_episode_reward", "direction": "higher"}
 
 
 def _task_dir(tmp_path: Path, *, anchor: dict | None = None, grader_config: dict | None = None,
               instruction: str = "prose only\n\n## Goal\n") -> Path:
     root = tmp_path / "some_task"
-    (root / "verify").mkdir(parents=True)
+    (root / "tests").mkdir(parents=True)
     (root / "instruction.md").write_text(instruction, encoding="utf-8")
     if anchor is not None:
-        (root / "verify" / "anchor.json").write_text(json.dumps(anchor), encoding="utf-8")
+        (root / "tests" / "anchor.json").write_text(json.dumps(anchor), encoding="utf-8")
     if grader_config is not None:
-        (root / "verify" / "grader_config.json").write_text(
+        (root / "tests" / "grader_config.json").write_text(
             json.dumps(grader_config), encoding="utf-8"
         )
     return root
 
 
-def _loaded(root: Path, *, slug: str = "some_task", variant: str = "base",
+def _loaded(root: Path, *, slug: str = "some_task", task_id: str | None = None,
             spec_hash: str = HASH_A, content_digest: str = HASH_B,
             metadata: dict | None = None) -> xr.LoadedTask:
+    """What ``from_manifest_task`` makes of an engine task (setup = the engine's fixed bound)."""
     return xr.LoadedTask(
-        slug=slug, variant=variant, root=root, spec_hash=spec_hash,
-        content_digest=content_digest,
+        task_id=f"{ORG}/{slug}" if task_id is None else task_id, root=root,
+        spec_hash=spec_hash, content_digest=content_digest,
         metadata={"platform": "uav"} if metadata is None else metadata,
         resources={"cpus": 4, "memory_mb": 8192, "storage_mb": None, "gpus": 0, "sudo": False},
-        timeouts={"setup": 120.0, "agent": 10800.0, "verify": 1800.0},
+        timeouts={"setup": 1800.0, "agent": 10800.0, "verify": 1800.0},
     )
 
 
@@ -155,6 +159,19 @@ def test_task_entry_refuses_an_unregistered_or_missing_platform(tmp_path):
         xr.task_entry(_loaded(root, metadata={}), [])
 
 
+@pytest.mark.parametrize("task_id", [
+    "some_task",                                    # the old bare slug: no org
+    f"{ORG.upper()}/some_task",                     # uppercase
+    f"{ORG}/some/task",                             # two slashes
+    f"{ORG}/",                                      # no name
+])
+def test_task_entry_refuses_a_task_id_that_is_not_org_name(tmp_path, task_id):
+    """The engine's TaskId shape; the schema's `task_id` pattern is the same expression."""
+    root = _task_dir(tmp_path, anchor=dict(_METRIC, value=1.0))
+    with pytest.raises(xr.RegistryError, match="org/name"):
+        xr.task_entry(_loaded(root, task_id=task_id), [])
+
+
 def test_score_cap_default_and_override(tmp_path):
     assert xr.read_score_cap(_task_dir(tmp_path)) == 1.5
     assert xr.read_score_cap(_task_dir(tmp_path / "b", grader_config={"episodes": 3})) == 1.5
@@ -178,7 +195,7 @@ def test_metric_fields_come_from_the_anchor(tmp_path):
     for index, (anchor, match) in enumerate(cases):
         with pytest.raises(xr.RegistryError, match=match):
             xr.metric_fields(_task_dir(tmp_path / f"case{index}", anchor=anchor), "t")
-    with pytest.raises(xr.RegistryError, match="missing verify/anchor.json"):
+    with pytest.raises(xr.RegistryError, match="missing tests/anchor.json"):
         xr.metric_fields(_task_dir(tmp_path / "none"), "t")
 
 
@@ -188,14 +205,15 @@ def test_task_entry_assembles_every_v2_field(tmp_path):
     identities = [{"spec_hash": HASH_A, "content_digest": HASH_B, "since": NOW}]
     entry = xr.task_entry(_loaded(root), identities)
     assert entry == {
-        "slug": "some_task", "title": "Some Task", "platform": "uav",
+        "task_id": f"{ORG}/some_task", "slug": "some_task", "title": "Some Task",
+        "platform": "uav",
         "metric_name": "mean_episode_reward", "metric_label": "Mean episode reward",
         "metric_direction": "higher_is_better",
         "identities": identities,
         "anchor": 472.07, "anchor_full_at": 0.825, "anchor_source": "oracle",
         "anchor_image_identity": None, "score_cap": 1.5,
         "resources": {"cpus": 4, "memory_mb": 8192, "gpus": 0},
-        "timeouts": {"setup": 120, "agent": 10800, "verify": 1800},
+        "timeouts": {"setup": 1800, "agent": 10800, "verify": 1800},
         "status": "active",
     }
     for key in ("genre", "mode", "paper_title", "paper_arxiv", "direction", "hardware_invariant"):
@@ -358,8 +376,8 @@ def _git_repo_with_task(tmp_path: Path) -> Path:
 def test_clean_tree_passes_and_dirty_or_ignored_files_refuse(tmp_path):
     root = _git_repo_with_task(tmp_path)
     xr.require_clean(root)
-    (root / "verify" / "__pycache__").mkdir()
-    (root / "verify" / "__pycache__" / "x.pyc").write_bytes(b"\x00")
+    (root / "tests" / "__pycache__").mkdir()
+    (root / "tests" / "__pycache__" / "x.pyc").write_bytes(b"\x00")
     with pytest.raises(xr.RegistryError, match="not clean"):
         xr.require_clean(root)
 
@@ -411,7 +429,7 @@ def test_an_uncommitted_platform_vocabulary_is_refused(tmp_path):
 
 def _full_build(root: Path, **overrides) -> dict:
     kwargs = {"history": [], "now": NOW, "source_commit_sha": "0123abcd" * 5,
-              "engine": {"commits": ["90a7c1c" * 5 + "fffff"], "version": "0.1.0",
+              "engine": {"commits": ["1cdbc02" * 5 + "fffff"], "version": "0.1.1",
                          "ale_verify_content_hash": HASH_C},
               "platforms_file": root.parent / "platforms.json"}
     kwargs.update(overrides)
@@ -439,6 +457,24 @@ def test_the_schema_refuses_what_the_export_retired(tmp_path):
     stale["directions"] = []
     with pytest.raises(jsonschema.ValidationError):
         jsonschema.validate(stale, SCHEMA)
+
+
+def test_the_schema_requires_the_engine_task_id(tmp_path):
+    """`task_id` is required and holds the engine's org/name, not the bare slug."""
+    root = _git_repo_with_task(tmp_path)
+    registry = _full_build(root)
+    assert registry["tasks"][0]["task_id"] == f"{ORG}/some_task"
+    missing = json.loads(json.dumps(registry))
+    del missing["tasks"][0]["task_id"]
+    with pytest.raises(jsonschema.ValidationError, match="task_id"):
+        jsonschema.validate(missing, SCHEMA)
+    for value in ("some_task", f"{ORG}/Some_Task", f"{ORG}/some/task"):
+        bare = json.loads(json.dumps(registry))
+        bare["tasks"][0]["task_id"] = value
+        with pytest.raises(jsonschema.ValidationError):
+            jsonschema.validate(bare, SCHEMA)
+    # the export's own check and the schema's pattern are one expression
+    assert SCHEMA["definitions"]["task"]["properties"]["task_id"]["pattern"] == xr._TASK_ID.pattern
 
 
 @pytest.mark.parametrize("url, slug", [
@@ -476,20 +512,36 @@ def test_parse_args_history_defaults_to_none_so_explicitness_is_known():
     assert xr.parse_args(["--out", "r.json", "--history", "h.json"]).history == Path("h.json")
 
 
-def test_build_registry_registers_only_base_variants(tmp_path):
-    root = _task_dir(tmp_path, anchor=dict(_METRIC, value=1.0))
-    base = _loaded(root)
-    variant = _loaded(root, variant="hard", spec_hash=HASH_C)
+def test_build_registry_registers_every_task_in_slug_order(tmp_path):
+    """The engine has no variants any more: every loaded task is registered, by slug."""
+    zeta = _loaded(_task_dir(tmp_path / "z", anchor=dict(_METRIC, value=1.0)), slug="zeta",
+                   spec_hash=HASH_C)
+    alpha = _loaded(_task_dir(tmp_path / "a", anchor=dict(_METRIC, value=1.0)), slug="alpha")
     registry, history = xr.build_registry(
-        [variant, base], history=[], now=NOW, source_commit_sha="abc", engine={},
+        [zeta, alpha], history=[], now=NOW, source_commit_sha="abc", engine={},
         allow_dirty=True,
     )
-    assert [t["slug"] for t in registry["tasks"]] == ["some_task"]
-    assert registry["tasks"][0]["identities"][0]["spec_hash"] == HASH_A
-    assert len(history) == 1
-    with pytest.raises(xr.RegistryError, match="base"):
-        xr.build_registry([variant], history=[], now=NOW, source_commit_sha="abc", engine={},
+    assert [t["slug"] for t in registry["tasks"]] == ["alpha", "zeta"]
+    assert [t["task_id"] for t in registry["tasks"]] == [f"{ORG}/alpha", f"{ORG}/zeta"]
+    assert registry["release"]["aggregation_policy"]["task_set"] == ["alpha", "zeta"]
+    assert registry["tasks"][1]["identities"][0]["spec_hash"] == HASH_C
+    # the identity history stays keyed by slug, in the format it always had
+    assert sorted(record["slug"] for record in history) == ["alpha", "zeta"]
+    assert all(set(record) == {"slug", "spec_hash", "content_digest", "since"}
+               for record in history)
+    with pytest.raises(xr.RegistryError, match="no task"):
+        xr.build_registry([], history=[], now=NOW, source_commit_sha="abc", engine={},
                           allow_dirty=True)
+
+
+def test_build_registry_refuses_one_slug_under_two_task_ids(tmp_path):
+    """`a/x` and `b/x` are two ids to the engine but one key to the registry and its history."""
+    ours = _loaded(_task_dir(tmp_path / "a", anchor=dict(_METRIC, value=1.0)))
+    theirs = _loaded(_task_dir(tmp_path / "b", anchor=dict(_METRIC, value=1.0)),
+                     task_id="someone-else/some_task")
+    with pytest.raises(xr.RegistryError, match="'some_task' is claimed by both"):
+        xr.build_registry([ours, theirs], history=[], now=NOW, source_commit_sha="abc",
+                          engine={}, allow_dirty=True)
 
 
 def test_dump_json_is_stable(tmp_path):
@@ -501,12 +553,14 @@ def test_dump_json_is_stable(tmp_path):
 # --------------------------------------------------------------------------- #
 # integration: the real loader over a copy of the template (engine venv required)
 def _register_platform(task_copy: Path) -> None:
-    """The template ships `platform: TODO` and an anchor naming no metric (`TODO`); an
-    exported task needs a registered platform and the metric its grader reports."""
-    manifest = task_copy / "task.yaml"
-    manifest.write_text(manifest.read_text(encoding="utf-8").replace("platform: TODO", "platform: arm"),
-                        encoding="utf-8")
-    anchor_path = task_copy / "verify" / "anchor.json"
+    """The template ships `[metadata] platform = "TODO"` and an anchor naming no metric
+    (`TODO`); an exported task needs a registered platform and the metric its grader reports."""
+    manifest = task_copy / "task.toml"
+    text, count = re.subn(r'(?m)^(\s*platform\s*=\s*)"TODO"', r'\1"arm"',
+                          manifest.read_text(encoding="utf-8"))
+    assert count == 1, 'the template\'s task.toml no longer ships platform = "TODO"'
+    manifest.write_text(text, encoding="utf-8")
+    anchor_path = task_copy / "tests" / "anchor.json"
     anchor = json.loads(anchor_path.read_text(encoding="utf-8"))
     anchor["metric"] = "mean_goal_distance"          # what the template's grader reports
     anchor_path.write_text(json.dumps(anchor, indent=2) + "\n", encoding="utf-8")
@@ -546,8 +600,10 @@ def test_real_loader_on_template_copy(tmp_path):
     assert registry["schema_version"] == "ale-robotics-task-registry/v2"
     jsonschema.validate(registry, SCHEMA)
     (task,) = registry["tasks"]
+    # the engine's id is [task].name; the slug is its part after the slash
+    assert task["task_id"] == f"{ORG}/template_reach"
     assert task["slug"] == "template_reach"
-    # the metric is the one verify/anchor.json declares (the template grades a cost)
+    # the metric is the one tests/anchor.json declares (the template grades a cost)
     assert task["metric_name"] == "mean_goal_distance"
     assert task["metric_direction"] == "lower_is_better"
     assert task["platform"] == "arm" and "direction" not in task
@@ -556,12 +612,25 @@ def test_real_loader_on_template_copy(tmp_path):
     assert registry["provenance"]["dirty"] is True
     assert registry["provenance"]["source_commit"].endswith("-dirty")
     assert task["resources"] == {"cpus": 2, "memory_mb": 4096, "gpus": 0}
-    assert task["timeouts"] == {"setup": 120, "agent": 3600, "verify": 900}
+    # agent / verify: [agent].timeout_sec, [verifier].timeout_sec; setup: the engine's fixed bound
+    assert task["timeouts"] == {"setup": 1800, "agent": 3600, "verify": 900}
     identity = task["identities"][0]
     assert identity["spec_hash"].startswith("sha256:") and len(identity["spec_hash"]) == 71
     assert identity["content_digest"].startswith("sha256:")
+    # exactly the pair the engine writes into an episode's lock.json (task.spec_hash,
+    # task.content_digest), read here straight off the engine's loader
+    program = ("import json, sys; from pathlib import Path; "
+               "from ale.run.tasksets.manifest import load_tasks; "
+               "(t,) = load_tasks(Path(sys.argv[1])); "
+               "print(json.dumps([str(t.spec.name), t.spec.spec_hash, t.task_digest]))")
+    engine_view = subprocess.run(
+        [str(ENGINE_PYTHON), "-c", program, str(tmp_path / "tasks")],
+        capture_output=True, text=True, check=True, env={**os.environ, "VIRTUAL_ENV": ""},
+    )
+    assert json.loads(engine_view.stdout) == [
+        task["task_id"], identity["spec_hash"], identity["content_digest"]]
     assert registry["provenance"]["engine"]["ale_verify_content_hash"].startswith("sha256:")
-    assert registry["provenance"]["engine"]["version"] == "0.1.0"
+    assert registry["provenance"]["engine"]["version"] == "0.1.1"
     saved = json.loads(history.read_text(encoding="utf-8"))
     assert saved[0]["slug"] == "template_reach"
     assert saved[0]["spec_hash"] == identity["spec_hash"]

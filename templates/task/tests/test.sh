@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
-# The verify stage's entry point. Runs as root, cwd = this staged folder, after the agent
-# phase — while the agent worked this folder was absent, which is the whole mechanism
-# keeping the anchor and the grader out of reach.
+# The verify stage's entry point. After the agent phase the engine uploads tests/ to
+# /opt/ale/tests (root-only) and runs `bash test.sh` there as root, cwd = that folder,
+# network open — while the agent worked this folder was absent, which is the whole
+# mechanism keeping the anchor and the grader out of reach.
 #
-# `python3` and nothing else: the engine stages `ale_verify` into the interpreter that
-# answers to that name, so selecting a different one would import from a python that
-# package was never installed into.
+# `$ALE_VERIFY_PYTHON` and nothing else: before this script starts, the engine stages its
+# `ale_verify` package into the first interpreter that is Python 3.12 or newer — `python3`,
+# else `python3.12` — and names that interpreter in ALE_VERIFY_PYTHON (in this image, the
+# /opt/venv `python3`). The kit's write_verdict writes /logs/verifier/reward.json through
+# that package, so any other interpreter would import from a python it was never installed
+# into.
 set -euo pipefail
 
 exec "$ALE_VERIFY_PYTHON" verify.py

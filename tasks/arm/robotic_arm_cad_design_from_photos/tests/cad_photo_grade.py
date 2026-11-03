@@ -1,5 +1,5 @@
 """cad_photo.grade: the grader of arm_links_from_photo_set (hardware_design.md 6 as amended by its Editor's changes,
-E-HD-12 and the as-built deviations of the task's DESIGN.md). Shipped twice, byte-identical: verify/cad_photo_grade.py
+E-HD-12 and the as-built deviations of the task's DESIGN.md). Shipped twice, byte-identical: tests/cad_photo_grade.py
 (hidden run: the GT of the photographed unit) and the agent's practice checker (the GT of a practice unit). It never
 reads hidden material itself: the caller passes the reference folder, the practice templates and the cases. Lengths mm,
 angles rad unless named.

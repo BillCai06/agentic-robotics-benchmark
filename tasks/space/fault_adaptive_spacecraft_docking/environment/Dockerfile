@@ -1,9 +1,10 @@
-# The task's environment image. `image/` is the sole build context, and the final stage
-# must derive directly from an official ALE base — lint enforces the FROM. The engine
-# builds it on demand; nothing here is pushed by hand.
+# The task's environment image. `environment/` (less `setup/`) is the build context, and
+# the final stage derives directly from an official ALE base at an exact version — lint
+# rejects `latest` and an untagged FROM. The engine builds it on demand; nothing here is
+# pushed by hand.
 #
 # What belongs here: the simulator and every stable dependency, installed for an
-# interpreter every identity can use. What must NOT be here: verify/, oracle/, the
+# interpreter every identity can use. What must NOT be here: tests/, solution/, the
 # anchor, or anything derived from them — an image layer is readable by anyone who can
 # run the image.
 FROM ghcr.io/agentslastexam/container-ubuntu22-base:0.1.1

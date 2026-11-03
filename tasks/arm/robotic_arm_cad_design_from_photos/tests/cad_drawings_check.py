@@ -1,7 +1,7 @@
 """checks: the deterministic CAD / kinematics / drawing checks of the "arm links from orthographic views" task.
 
 Shipped twice, byte-identical: in the agent's home (practice_checker.py runs it on the given drawings and the public
-cases) and inside verify/ (the grader runs it with the hidden reference). It never reads hidden material itself; the
+cases) and inside tests/ (the grader runs it with the hidden reference). It never reads hidden material itself; the
 caller passes the cases and the reference in. Lengths mm, angles rad unless a name says otherwise. CPU only.
 
 The arm: six identical bus servos S1..S6, seven links (base, shoulder, upper_arm, lower_arm, wrist, gripper, jaw),

@@ -1,10 +1,10 @@
 """Verify stage (root, separate verification sandbox): re-simulate every submitted plan on its hidden layout
-(verify/ref/layouts.json) with exactly the public simulator code (verify/sorter = the payload's sorter package) and
+(tests/ref/layouts.json) with exactly the public simulator code (tests/sorter = the payload's sorter package) and
 score the outcome with the public rule (sorter/score.py): pieces that passed through their own hole.
 
 Nothing the agent wrote is trusted beyond the plan numbers: each plan file is size-checked, opened without following
 symlinks, parsed as plain JSON and validated by sorter/plan.py. The four instances run in parallel worker processes
-(single-threaded SuperDex, bit-reproducible), under a wall-clock budget below timeouts.verify.
+(single-threaded SuperDex, bit-reproducible), under a wall-clock budget below task.toml's [verifier].timeout_sec.
 """
 
 import json

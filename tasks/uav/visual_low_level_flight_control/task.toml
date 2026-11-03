@@ -12,6 +12,11 @@ cpus = 2
 memory_mb = 4096
 gpus = 0
 
+# The robot service's MCP bridge, which setup copies from environment/setup/payload/ into the root-owned
+# /opt/visual_robotics/client. Before the Harbor format its descriptor also set cwd = "/home/user"; task.toml has no
+# such field, and the bridge needs no wrapper to replace it, because nothing in it depends on the working directory:
+# Python resolves its one local import (client.py) from the script's own folder, and the bridge uses only stdin,
+# stdout and the world socket, at an absolute path.
 [[environment.mcp_servers]]
 name = "robot"
 transport = "stdio"

@@ -6,7 +6,7 @@ dataset is named in exactly one place, [`task-assets.toml`](../task-assets.toml)
 the assets (the dataset renamed, a mirror) is one edit and one command (section 4).
 
 Only agent-visible material goes there: the dataset is public and its files end up in the image the agent runs in.
-The grader's ground truth and the oracle's reference artifact stay in the task's `verify/` and `oracle/` in git
+The grader's ground truth and the oracle's reference artifact stay in the task's `tests/` and `solution/` in git
 (they reach the sandbox only when their stage runs; see [`security-model.md`](security-model.md)).
 
 ## 1. The pieces
@@ -15,8 +15,8 @@ The grader's ground truth and the oracle's reference artifact stay in the task's
 |---|---|
 | `task-assets.toml` | the asset repository: `[huggingface] dataset` (`<owner>/<name>`) and `endpoint` (the Hub, or a mirror serving the same `/resolve/` paths) |
 | `shared/task_assets/fetch_assets.py` | the canonical download script (stdlib only) |
-| `tasks/<platform>/<name>/image/fetch_assets.py` | a byte-identical copy (the image's build context is the task's `image/` folder only) |
-| `tasks/<platform>/<name>/image/assets.sha256` | the task's asset list: a header, then one `<sha256>  <relative path>` line per file |
+| `tasks/<platform>/<name>/environment/fetch_assets.py` | a byte-identical copy (the image's build context is the task's `environment/` folder, less `setup/`) |
+| `tasks/<platform>/<name>/environment/assets.sha256` | the task's asset list: a header, then one `<sha256>  <relative path>` line per file |
 | `scripts/task_assets.py` | `sync`, `check`, `list`, `url` (below) |
 
 An asset list looks like this:
@@ -41,7 +41,7 @@ the agent's home, and `shared/` holds assets several tasks use. Its README is th
 
 ## 2. Wiring a task
 
-In `image/Dockerfile`, after the toolchain layers:
+In `environment/Dockerfile`, after the toolchain layers:
 
 ```dockerfile
 # ---- task assets: fetched at the dataset commit pinned in assets.sha256, checked file by file (docs/task-assets.md)
@@ -50,7 +50,7 @@ RUN python3 /opt/task-assets/fetch_assets.py /opt/task-assets/assets.sha256 /opt
     && chmod -R a+rX /opt/task-assets
 ```
 
-In `setup/run.sh`, stage them into the agent home next to `setup/payload/`:
+In `environment/setup/setup.sh`, stage them into the agent home next to `environment/setup/payload/`:
 
 ```bash
 if [ -d /opt/task-assets/payload ]; then
@@ -59,7 +59,8 @@ if [ -d /opt/task-assets/payload ]; then
 fi
 ```
 
-The files are not in git: keep them out of `setup/payload/` (a `setup/.gitignore` helps while you author).
+The files are not in git: keep them out of `environment/setup/payload/` (an `environment/setup/.gitignore` helps
+while you author).
 
 ## 3. Adding or updating a task's assets
 
@@ -93,7 +94,7 @@ Replacing a file is the same procedure: upload, re-run `list` with the new commi
 3. Run the sync and commit the result together with the configuration change:
 
    ```bash
-   python3 scripts/task_assets.py sync     # rewrites endpoint / repo in every image/assets.sha256
+   python3 scripts/task_assets.py sync     # rewrites endpoint / repo in every environment/assets.sha256
    python3 scripts/task_assets.py check    # what CI runs
    ```
 
@@ -107,8 +108,19 @@ task to confirm the new location serves the files.
 `python3 scripts/task_assets.py check` runs on every pull request (`.github/workflows/pr-checks.yml`). It fails when:
 
 - a task's `endpoint` or `repo` line differs from `task-assets.toml`;
-- its `image/fetch_assets.py` is missing or differs from `shared/task_assets/fetch_assets.py`;
+- its `environment/fetch_assets.py` is missing or differs from `shared/task_assets/fetch_assets.py`;
 - its `prefix` is not `tasks/<platform>/<name>/payload`, its `revision` is not a 40-hex commit, or a line is
   malformed.
 
 CI does not download anything; the downloads happen in the image build that `ale validate` runs.
+
+## 6. This flow and the engine's `ale assets`
+
+The engine has an asset mechanism of its own (`vendor/ale/docs/specs/task-assets.md`): files in a task's
+`environment/assets/`, `tests/assets/` and `solution/assets/` stay out of git, and `ale assets pull` / `push`
+synchronize them through Git LFS with one gated Hugging Face dataset per source repository,
+`<namespace>/<repository name>`; they are pulled before the build, and running a task never downloads them. This
+repository keeps the flow above: one dataset, named in `task-assets.toml`, whose files the image build fetches itself,
+pinned per task by a dataset commit and a sha256 per file. Moving to the engine's mechanism would mean a new dataset
+for this repository (`grounded-intelligence-initiative/agentic-robotics-benchmark`) holding every task's files.
+`.gitignore` lists the engine's asset roots and `environment/setup/assets/`, so that nothing placed there reaches git.

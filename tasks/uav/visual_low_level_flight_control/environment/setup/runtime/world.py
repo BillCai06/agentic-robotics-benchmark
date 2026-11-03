@@ -136,7 +136,7 @@ def decal_mesh(path):
 def asset_root():
     path = Path(os.environ.get("VISUAL_ROBOTICS_ASSETS", "/opt/visual_robotics/assets"))
     if not (path/"bitcraze_crazyflie_2/cf2.xml").is_file():
-        raise FileNotFoundError("Fetch the pinned image/visual_assets.json before running")
+        raise FileNotFoundError("Fetch the pinned environment/visual_assets.json before running")
     return path
 
 

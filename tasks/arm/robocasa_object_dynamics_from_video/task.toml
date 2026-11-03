@@ -15,7 +15,7 @@ memory_mb = 8192
 timeout_sec = 28800
 network_mode = "no-network"
 
-# Fixed hidden instances: the grader reads its ground truth from verify/ref (staged only at verify) in a fresh
+# Fixed hidden instances: the grader reads its ground truth from tests/ref (staged only at verify) in a fresh
 # verifier sandbox; it never trusts anything the agent left besides params.json.
 [verifier]
 timeout_sec = 2400

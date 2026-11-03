@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# The task's own reference solution, run in place of the agent by `ale validate` — as the
-# same unprivileged account, with the same timeout. That identity is not a detail: an
-# oracle with more privilege would pass exactly the tasks a real agent then fails on
-# access alone.
+# The task's own reference solution. `ale validate` uploads solution/ to ~/.ale-solution
+# and runs `bash solve.sh` there (cwd = that folder, ALE_HOME set) in place of the agent —
+# as the same unprivileged account, under the same [agent] timeout and network. That
+# identity is not a detail: an oracle with more privilege would pass exactly the tasks a
+# real agent then fails on access alone. A real agent's sandbox never holds this folder.
 #
 # Two jobs: (1) produce whatever the real method produces — for a learning task, TRAIN
 # here, inside the agent's budget, and save a checkpoint; (2) leave a self-contained

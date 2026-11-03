@@ -7,9 +7,8 @@
 > before every hand-off. Where it disagrees with the code or `git log`, the code wins: fix
 > this file.
 >
-> Last updated: 2026-10-21 (task assets: `task-assets.toml`). Before that: 2026-10-15, later the same day (§6: the website is display-only; the
-> spacecraft task is the worked example and `uav_hover` is gone; `ale-export` and the template
-> download are retired; the registry's schema lives here).
+> Last updated: 2026-11-03 (§8: the tasks move to the Harbor-based engine, `vendor/ale` @
+> `1cdbc02`). Before that: 2026-10-21 (§7: task assets: `task-assets.toml`).
 
 ## 0. 2026-09-07 — created by the rebrand from "ALE Robotics"
 
@@ -252,6 +251,92 @@ assets then gets a new content digest (re-export the registry after the merge). 
 - Uses: `robotic_arm_cad_design_from_photos` (#15, merged; dataset commit `ccf1b9b`) and the open #13
   (`robotic_arm_replica_requirements_from_photos`), both on the canonical fetcher and the synced header.
 - Next: export the registry for #15's new slug (`identity-history.json`).
+
+## 8. 2026-11-03 — the tasks move to the Harbor-based engine
+
+Upstream ALE adopted Harbor's task format. `vendor/ale` moves from `90a7c1c` to upstream
+`main` `1cdbc02` (engine version 0.1.1), which no longer loads a `task.yaml`, so every task,
+the template, the kit and the docs move with it. What a task measures does not change: the
+instructions, the images' software, the graders' numbers, the anchors, the hidden data and
+the agent-visible payloads are the same.
+
+- **The task folder.** `task.yaml` → `task.toml`: `schema_version = "1.4+ale.1"`, strict
+  (an unknown key fails); `[task] name = "grounded-intelligence-initiative/<slug>"`, the slug
+  still the folder name, the registry `slug` and the Task Name; `[metadata] platform`;
+  resources in `[environment]`; `timeouts.agent` / `timeouts.verify` → `[agent].timeout_sec`
+  / `[verifier].timeout_sec`; `network: {mode: block}` →
+  `[agent].network_mode = "no-network"`; separate verification →
+  `[verifier] environment_mode = "separate"` + `[verifier.environment]`;
+  `tools/mcp/*.toml` → `[[environment.mcp_servers]]`. `image/` →
+  `environment/` (build context: `environment/` less `setup/`); the base
+  `container-ubuntu22-base:latest` → `:0.1.1`, since `ale lint` refuses `latest` and an
+  untagged `FROM`. `setup/run.sh` + `setup/payload/` → `environment/setup/setup.sh` +
+  `environment/setup/payload/`, staged at `/opt/ale/setup` and run there as root (a fixed
+  1800 s bound; no timeout field). `verify/` → `tests/` (`run.sh` → `test.sh`), staged
+  root-only at `/opt/ale/tests`. `oracle/run.sh` → `solution/solve.sh`, staged at
+  `~/.ale-solution` and run there as the agent. A task's top level holds only `task.toml`,
+  `instruction.md`, `environment/`, `tests/`, `solution/` and `.ale-cache`; review tooling
+  that sat in a task's `tools/` moved to `tests/review/`. `params`, variants and instruction
+  templates are gone upstream (no task used them).
+- **The result.** The engine reads `/logs/verifier/reward.json` (`{"reward": x}`, x finite in
+  [0, 1], rounded half-up to two decimals) and keeps `verification.json` beside it. The kit's
+  `write_verdict(verdict, path=None, diagnostic=None)` takes the same `{"rewards", "metrics"}`
+  verdict as before. In the engine it calls `ale_verify.write`, which writes both files
+  (`verification.json` carries `metrics`, the unrounded `metrics.reward_exact` and the
+  grader's `diagnostic`); with a `path` it writes the plain envelope there (the selftest, a
+  host-side run). `ale_verify.Verification` / `CheckResult`, `ALE_VERDICT_PATH` and
+  `ALE_VERIFICATION_PATH` are gone.
+- **The gates.** `ale lint` and `ale validate` still run from `vendor/ale`, whose venv is set
+  up with `uv sync --frozen --all-groups`. Validate gates `reward` alone, after the rounding:
+  untouched 0.0, oracle 1.0 (`untouched_nonzero`, `oracle_not_full`; an episode that does not
+  complete fails as `untouched_not_completed` / `oracle_not_completed`; exit 2). The kit is
+  vendored at `tests/robotics_grader/`, and `pr-checks.yml` compares that path.
+- **Unchanged on purpose.** The Hugging Face asset flow (`environment/assets.sha256` + the
+  vendored `environment/fetch_assets.py`, at image build, pinned by dataset commit and per-file
+  sha256); upstream's `ale assets` (one gated dataset per source repository, pulled before the
+  build) is a different mechanism and is not adopted. Each task's verification mode (shared,
+  or separate where a task already was). Processes started by setup outlive it, shared
+  verification runs in the solver's sandbox as root, separate verification restores only the
+  declared `artifacts`, and `tests/` and `solution/` are absent while the agent works.
+- **Identity.** Every task's `spec_hash` and `content_digest` change (the name gains the
+  organization, and every file moved), so the registry identity cross-check reports each
+  known slug until `identity-history.json` records the new identities.
+- **Validated so far.** `tasks/space/fault_adaptive_spacecraft_docking`, converted, on
+  `1cdbc02`: run `validate-44ad164a` passed, untouched `reward` 0.0 ("scoring 0: no
+  submission at /home/user/submission/run.sh") and oracle 1.0 (ratio 1.02,
+  `mean_docking_quality` 0.759, 48 episodes, 690 probes, match lock ok). The other tasks and
+  the template have not been validated on the new engine yet.
+- **Agent-run limits** (Open items). At `1cdbc02` the claude-code adapter raises the CLI's two
+  stream idle timers from 300 s to 600 s, and the gateway writes an SSE keep-alive after 15 s
+  of upstream silence; the harness's values win over an image `ENV` of the same names, so the
+  evaluation copies' timer workaround no longer changes anything. The harness now keeps the
+  sandbox's own `PATH` instead of a fixed `/usr/local/bin:/usr/bin:/bin`. Neither change has
+  been measured on our tasks yet. The CLI's response cap and the gateway's 1800 s request
+  limit are unchanged (`docs/contributing-a-task.md` §7).
+
+Gotchas found on the way:
+
+- **`ale-qemu-runner`.** The docker provider runs `ghcr.io/agentslastexam/ale-qemu-runner` at
+  the engine's version to install each sandbox's iptables rules, and upstream has not
+  published `0.1.1`. Without it both episodes end in `env_error` at provision ("could not
+  route the sandbox's access to the host: … manifest unknown") and validate reports
+  `untouched_not_completed` / `oracle_not_completed`. Build it once per machine:
+  `cd vendor/ale && images/build.sh ale-qemu-runner` (the script pulls a published version
+  and builds one that is not). The base `container-ubuntu22-base:0.1.1` is published.
+- **`ALE_VERIFY_PYTHON`.** The engine stages `ale_verify` into `python3`, else `python3.12`
+  (3.12+ required), and names the one it used in `ALE_VERIFY_PYTHON`, set for the verify
+  stage only. `tests/test.sh` runs `exec "$ALE_VERIFY_PYTHON" verify.py`, never a bare
+  `python3`. A grader that must tell an engine run from a host-side run tests
+  `os.environ.get("ALE_VERIFY_PYTHON")`; outside the engine, `write_verdict` needs a `path`.
+  This replaces the `python3` line under Gotchas below.
+- **Rounding.** `reward` is rounded half-up to two decimals before validate or a run reads it:
+  an oracle at 0.995 passes as 1.0 and an untouched run at 0.004 reads 0.0, where the old
+  gate wanted exactly 0 and exactly 1. The unrounded value is `metrics.reward_exact` in the
+  episode's `verification.json`; `full_at` is sized as before.
+- The engine writes `config.json`, `instruction.md` and `trajectory.json` into the staged
+  `tests/`, replacing a task file of that name (grader knobs stay in `grader_config.json`).
+- Uploads ignore host modes (files 0644, directories 0755): stage entries run through `bash`,
+  and a stage that starts another of its own files calls the interpreter.
 
 ## Open items
 

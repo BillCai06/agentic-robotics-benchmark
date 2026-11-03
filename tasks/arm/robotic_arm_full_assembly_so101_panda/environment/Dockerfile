@@ -1,12 +1,12 @@
 # robotic_arm_full_assembly_so101_panda's environment image (information tier, assembly stage: the whole arm from loose parts).
 #
-# `image/` is the sole build context and the final stage derives DIRECTLY from the official ALE base (`ale lint`
-# rejects any other final FROM). The block below is the chain's shared base `shared/images/arb-base-mujoco/Dockerfile`
+# `environment/` (less its `setup/`) is the sole build context and the final stage derives DIRECTLY from the official
+# ALE base, at an exact version. The block below is the chain's shared base `shared/images/arb-base-mujoco/Dockerfile`
 # reproduced verbatim (same RUN / COPY / ENV lines, same requirements.txt bytes), so its layers come from the Docker
 # layer cache of that base. Task layers: opencv-python-headless + scikit-image (the assembly engineer's camera-calibration
 # and image tools), Mesa's Vulkan drivers (the agent cameras' Filament renderer), the task assets (when the task fetches
 # them from the asset repository), then the Q15 idle-timeout ENV block. No hidden data: the givens are staged by
-# setup/run.sh, the grader and the hidden kit live in verify/ (absent from the image).
+# environment/setup/setup.sh, the grader and the hidden kit live in tests/ (absent from the image).
 FROM ghcr.io/agentslastexam/container-ubuntu22-base:0.1.1
 
 COPY --from=ghcr.io/astral-sh/uv:0.11 /uv /usr/local/bin/uv
@@ -69,7 +69,7 @@ RUN touch /tmp/.before-photo-layer && sleep 1 \
     && rm -f /tmp/.before-photo-layer
 RUN runuser -u user -- python3 -c "import cv2, skimage, numpy, scipy, mujoco, yaml, jsonschema; print('[arm-assemble-info] agent-UID import OK cv2', cv2.__version__, 'skimage', skimage.__version__)"
 
-# The agent cameras' renderer (verify: arm/assembly_full/agent_render.py): MuJoCo's Filament module (in the mujoco wheel)
+# The agent cameras' renderer (tests/arm/assembly_full/agent_render.py): MuJoCo's Filament module (in the mujoco wheel)
 # on Vulkan; Mesa's lavapipe is the CPU Vulkan driver (no GPU in the task's resources). Proved at build: a Filament
 # context on lavapipe.
 RUN apt-get update && apt-get install -y --no-install-recommends mesa-vulkan-drivers libvulkan1 \
@@ -80,10 +80,10 @@ RUN python3 -c "import mujoco._render_filament as F, mujoco.experimental.studio.
 # The picture manual, the printed parts' STL files, the Panda model and the scenery of the agent cameras' renderer
 # (render/: the factory hall, the bench top's wood maps) live in the benchmark's Hugging Face asset repository
 # (tasks/arm/robotic_arm_full_assembly_so101_panda/payload/ there). They are fetched at the commit pinned in
-# assets.sha256 and checked file by file against the sha256 recorded there; setup/run.sh stages them into the agent home
-# and into the grader's root-owned copy next to setup/payload/. fetch_assets.py is the benchmark's canonical copy
-# (shared/task_assets/) and the repository named in assets.sha256 is written from the benchmark's task-assets.toml
-# (scripts/task_assets.py sync; docs/task-assets.md).
+# assets.sha256 and checked file by file against the sha256 recorded there; environment/setup/setup.sh stages them into
+# the agent home and into the grader's root-owned copy next to environment/setup/payload/. fetch_assets.py is the
+# benchmark's canonical copy (shared/task_assets/) and the repository named in assets.sha256 is written from the
+# benchmark's task-assets.toml (scripts/task_assets.py sync; docs/task-assets.md).
 COPY fetch_assets.py assets.sha256 /opt/task-assets/
 RUN python3 /opt/task-assets/fetch_assets.py /opt/task-assets/assets.sha256 /opt/task-assets/payload \
     && chmod -R a+rX /opt/task-assets

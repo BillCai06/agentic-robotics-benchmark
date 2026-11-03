@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Setup: trusted root, cwd = this staged folder, before the agent phase. Stages the givens (the photo set of the unit and
 # the bought servo's documents and STEP), fetched into the image from the benchmark's asset repository
-# (image/assets.sha256, docs/task-assets.md), into the agent home, owned by the agent. Nothing hidden is among them: the
-# photographed unit's ground truth lives in verify/ (absent during the agent phase).
+# (environment/assets.sha256, docs/task-assets.md), into the agent home, owned by the agent. Nothing hidden is among
+# them: the photographed unit's ground truth lives in tests/ (absent during the agent phase).
 set -euo pipefail
 HOME_DIR="${ALE_HOME:-/home/user}"
 AGENT_USER="$(basename "$HOME_DIR")"

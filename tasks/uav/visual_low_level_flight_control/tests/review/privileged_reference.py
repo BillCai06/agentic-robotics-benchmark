@@ -6,8 +6,8 @@ import os
 from pathlib import Path
 import sys
 
-TASK = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(TASK/"verify"))
+TASK = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(TASK/"tests"))
 from world import World, MASS, THRUST_MAX
 import numpy as np
 

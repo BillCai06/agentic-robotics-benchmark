@@ -6,7 +6,7 @@
 
 Here the Panda, its gripper and the physics do every placement; nothing else moves a part (no feeder, no jig).
 Privileged state only: the parts' exact poses, the design poses from the mating chain, the Panda's own kinematics
-(`verify/anchor/panda_ik.py`). The arm being built is physical: its servos are unpowered, a fastened joint turns
+(`panda_ik.py` in this package). The arm being built is physical: its servos are unpowered, a fastened joint turns
 against the gearbox friction within the arm's joint limits (`coupling.py`), so every target is computed from the arm
 as it is when the part's turn comes and is followed while the part goes in.
 

@@ -1,7 +1,7 @@
 """How the agent's program is executed during verify (CHAIN_PLAN 4.0 "stage lock", added after the rung-3
 exploit review): the same functions serve the hidden grader and the practice grader's `--wire` mode.
 
-The engine uploads the verify stage folder world-readable (repo modes, FRAMEWORK identity, no chown) and
+The engine uploads the verify stage folder world-readable (files 0644, directories 0755, FRAMEWORK identity) and
 this task executes agent code DURING verify, so the grader itself must
 
   * chmod 0700 the stage root and every hidden file for the duration of the runs (`lock_stage`, restored in

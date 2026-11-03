@@ -8,7 +8,7 @@ agent's UID can stat. This module adds what the chain needs on top of it:
   stage can log them as stats (`hidden_seed_hi`, `hidden_seed_lo`): the whole drawn stream is
   reproducible from the two numbers (splitmix64 is deterministic), which is what reverification
   and difficulty rounds need, without a seed file inside the sandbox;
-* `pinned`: an optional `verify/hidden/seeds.json` (root-only stage folder) either pins the
+* `pinned`: an optional `tests/hidden/seeds.json` (root-only stage folder) either pins the
   entropy (`{"entropy_hi", "entropy_lo"}`) or an explicit seed list (`{"seeds": [...]}`), for
   reverification and for difficulty rounds only: a published task ships without it;
 * `derive(label)`: independent sub-streams per criterion (assembly episodes, kitchen episodes,
@@ -125,7 +125,7 @@ def write_pinned(stream, path, note=None):
 def seed_rng(entropy=None, pinned=None):
     """The grader's hidden seed source. Call once per verify run.
 
-    `entropy` is for self-tests. `pinned` is a path to `verify/hidden/seeds.json`, a parsed
+    `entropy` is for self-tests. `pinned` is a path to `tests/hidden/seeds.json`, a parsed
     pin dict, or a list of seeds; absent (the published task) -> os.urandom.
     """
     if isinstance(pinned, str):

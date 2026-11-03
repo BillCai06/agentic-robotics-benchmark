@@ -1,7 +1,7 @@
-# NOTICE - source of the ground truth of this task (verify / -dev only; never shown to the agent)
+# NOTICE - source of the ground truth of this task (tests / -dev only; never shown to the agent)
 
 The photographed unit `H_hdg` of this task (its ground truth in `reference/`, the oracle document in
-`../oracle/reference/`) is a **modified derivative** of the open-hardware **SO-ARM101 follower arm** published by
+`../solution/reference/`) is a **modified derivative** of the open-hardware **SO-ARM101 follower arm** published by
 **TheRobotStudio** (with Hugging Face / LeRobot):
 
 - repository: https://github.com/TheRobotStudio/SO-ARM100
@@ -27,4 +27,4 @@ The photographed unit `H_hdg` of this task (its ground truth in `reference/`, th
   nominal member's re-exported parts; it contains no geometry.
 - FreeCAD 1.1.4 (LGPL-2.0-or-later, https://github.com/FreeCAD/FreeCAD) is installed unmodified in the task image from its
   release AppImage, with the FreeCAD MCP server neka-nat/freecad-mcp @ `78bf023` (MIT, https://github.com/neka-nat/freecad-mcp)
-  vendored unmodified (`image/vendor/freecad-mcp/`).
+  vendored unmodified (`environment/vendor/freecad-mcp/`).

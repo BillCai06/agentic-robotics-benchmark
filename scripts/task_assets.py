@@ -2,15 +2,16 @@
 """Task assets: keep every task's asset list pointing at the repository named in `task-assets.toml`.
 
 A task's large agent-visible files live in the benchmark's Hugging Face dataset, under
-`tasks/<platform>/<name>/payload/`. The task pins them in `image/assets.sha256` (a header naming the endpoint, the
-dataset, a dataset commit and the folder, then one sha256 per file), and `image/fetch_assets.py` downloads them while
-the image is built. The image's build context is the task's `image/` folder only, so the dataset name has to be
-written into each task; this script writes it from the one configuration file and checks that nothing drifted.
+`tasks/<platform>/<name>/payload/`. The task pins them in `environment/assets.sha256` (a header naming the endpoint,
+the dataset, a dataset commit and the folder, then one sha256 per file), and `environment/fetch_assets.py` downloads
+them while the image is built. The image's build context is the task's `environment/` folder (less `setup/`), so the
+dataset name has to be written into each task; this script writes it from the one configuration file and checks that
+nothing drifted.
 
     python3 scripts/task_assets.py sync            # rewrite every task's endpoint / repo header, re-vendor the fetcher
     python3 scripts/task_assets.py check           # CI: fail on any task that disagrees with task-assets.toml
     python3 scripts/task_assets.py list TASK_DIR PAYLOAD_DIR --revision COMMIT
-                                                   # write TASK_DIR/image/assets.sha256 for the files in PAYLOAD_DIR
+                                                   # write TASK_DIR/environment/assets.sha256 for PAYLOAD_DIR's files
     python3 scripts/task_assets.py url TASK_DIR    # print where a task's files are downloaded from
 
 Stdlib only. Usage and the rename procedure: docs/task-assets.md.
@@ -32,6 +33,8 @@ except ModuleNotFoundError:  # Python < 3.11: task-assets.toml uses only [tables
 ROOT = Path(__file__).resolve().parent.parent
 CONFIG = "task-assets.toml"
 CANONICAL_FETCHER = Path("shared") / "task_assets" / "fetch_assets.py"
+#: The task folder that holds the asset list and the fetcher: the image's build context.
+CONTEXT_DIR = "environment"
 LIST_NAME = "assets.sha256"
 FETCHER_NAME = "fetch_assets.py"
 HEADER_KEYS = ("endpoint", "repo", "revision", "prefix")
@@ -76,10 +79,10 @@ def load_config(root: Path = ROOT) -> dict[str, str]:
 
 
 def asset_lists(root: Path = ROOT) -> list[Path]:
-    """Every task's (and template's) image/assets.sha256."""
+    """Every task's (and template's) environment/assets.sha256."""
     found = []
     for base in ("tasks", "templates"):
-        found += sorted((root / base).glob(f"**/image/{LIST_NAME}"))
+        found += sorted((root / base).glob(f"**/{CONTEXT_DIR}/{LIST_NAME}"))
     return [p for p in found if "vendor" not in p.relative_to(root).parts]
 
 
@@ -180,12 +183,12 @@ def sha256(path: Path) -> str:
 
 
 def write_list(task_dir: Path, payload: Path, revision: str, root: Path = ROOT) -> Path:
-    """image/assets.sha256 for every regular file under `payload` (the folder uploaded to the dataset's
+    """environment/assets.sha256 for every regular file under `payload` (the folder uploaded to the dataset's
     tasks/<platform>/<name>/payload/), pinned at `revision`; vendors the fetcher next to it."""
     if not REVISION.match(revision):
         raise SystemExit(f"--revision must be the 40-hex dataset commit, got {revision!r}")
     task_dir = task_dir.resolve()
-    lst = task_dir / "image" / LIST_NAME
+    lst = task_dir / CONTEXT_DIR / LIST_NAME
     prefix = expected_prefix(lst, root)
     if prefix is None:
         raise SystemExit(f"{task_dir} is not at tasks/<platform>/<name>/ in {root}")
@@ -203,7 +206,7 @@ def main(argv: list[str] | None = None) -> int:
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("sync", help="write task-assets.toml into every task's asset list and re-vendor the fetcher")
     sub.add_parser("check", help="fail if any task disagrees with task-assets.toml or the canonical fetcher")
-    p = sub.add_parser("list", help="write a task's image/assets.sha256 from a local copy of its payload")
+    p = sub.add_parser("list", help="write a task's environment/assets.sha256 from a local copy of its payload")
     p.add_argument("task_dir", type=Path)
     p.add_argument("payload_dir", type=Path)
     p.add_argument("--revision", required=True, help="the dataset commit that holds these files")
@@ -226,7 +229,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.cmd == "list":
         print(write_list(args.task_dir, args.payload_dir.resolve(), args.revision, root))
         return 0
-    head, files, _ = parse(args.task_dir.resolve() / "image" / LIST_NAME)
+    head, files, _ = parse(args.task_dir.resolve() / CONTEXT_DIR / LIST_NAME)
     endpoint = (head.get("endpoint") or "https://huggingface.co").rstrip("/")
     print(f"{endpoint}/datasets/{head.get('repo')}/tree/{head.get('revision')}/{head.get('prefix')}  ({len(files)} files)")
     return 0

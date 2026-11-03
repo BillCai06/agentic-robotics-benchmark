@@ -75,11 +75,20 @@ def test_no_skill_cites_the_retired_gate():
     """
     retired = ("run_task.py", "--agent example", "grader_protocol", "eval.mode",
                "description.md", "practice_grader/grade.py at the task root",
-               # the pre-core/v1 layout: the visible channel is setup/payload/, the
-               # shared machinery is vendored under verify/robotics_grader/, every
-               # task owns image/Dockerfile, and the grader entry is verify/verify.py
+               # the pre-core/v1 layout, which core/v1 replaced with setup/payload/ for the
+               # visible channel, a vendored verify/robotics_grader/, a per-task
+               # image/Dockerfile and verify/verify.py as the grader entry
                "files/", "kits/", "ale-domain/kits", "ale-domain/images",
                "robotics-cli", "verify/grade.py",
+               # the core/v1 layout the Harbor format replaced on 2026-11-03: the engine
+               # at vendor/ale loads none of these names, so a skill that tells an agent
+               # to write one produces a folder `ale lint` rejects
+               "task.yaml", "core/v1", "image/Dockerfile", "image/requirements.txt",
+               "image: {kind", "setup/run.sh", "oracle/run.sh", "verify/run.sh",
+               "verify/verify.py", "verify/env.py", "verify/anchor.json",
+               "verify/grader_config.json", "verify/robotics_grader", "params:",
+               # where the old engine staged the oracle and the verdict
+               ".ale-oracle", "/opt/ale/verify", "ALE_VERDICT_PATH", "ALE_VERIFICATION_PATH",
                # the retired reproduction / open-ended genre split (design 20260902 §8)
                "genre", "reproduction", "open_ended", "open-ended", "faithful", "\"probe\": true")
     for skill_file in SKILLS_DIR.rglob("SKILL.md"):
@@ -91,23 +100,25 @@ def test_no_skill_cites_the_retired_gate():
 
 
 def test_skills_name_the_current_layout():
-    """The load-bearing paths of the core/v1 shape must be spelled out, so an agent
+    """The load-bearing paths of the Harbor layout must be spelled out, so an agent
     following a skill lands files where the engine and the domain lint look for them."""
     for skill_file in SKILLS_DIR.rglob("SKILL.md"):
         if skill_file.parent.name not in ONBOARDING_SKILLS:
             continue
         text = skill_file.read_text(encoding="utf-8")
-        for current in ("setup/payload", "verify/verify.py", "verify/robotics_grader",
-                        "image/Dockerfile"):
+        for current in ("task.toml", "environment/Dockerfile", "environment/setup/payload",
+                        "tests/verify.py", "tests/robotics_grader", "tests/anchor.json",
+                        "solution/solve.sh"):
             assert current in text, f"{skill_file}: does not name {current!r}"
 
 
 def test_skills_name_the_engine_oracle_gate():
-    """Engine >= 90a7c1c fails validation when any oracle reward is below one
-    (`oracle_not_full`); the old `partial_oracle` warning and the "domain policy" framing
-    are gone. A skill that still calls the rule a warning teaches an agent to accept a
-    broken oracle; one that trusts the exit status alone mistakes the null-anchor bootstrap
-    run for a broken task, so every skill also names the record reader."""
+    """The engine fails validation unless the oracle's `reward`, rounded to two decimals,
+    is 1.0 (`oracle_not_full`; since 90a7c1c); the old `partial_oracle` warning and the
+    "domain policy" framing are gone. A skill that still calls the rule a warning teaches an
+    agent to accept a broken oracle; one that trusts the exit status alone mistakes the
+    null-anchor bootstrap run for a broken task, so every skill also names the record
+    reader."""
     for skill_file in SKILLS_DIR.rglob("SKILL.md"):
         if skill_file.parent.name not in ONBOARDING_SKILLS:
             continue

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Setup (root, cwd = this staged folder, before the agent phase): stage the agent-visible payload into the home.
-# Nothing hidden is used here: the hidden start states live only in verify/ref.
+# Nothing hidden is used here: the hidden start states live only in tests/ref.
 set -euo pipefail
 umask 022
 HOME_DIR="${ALE_HOME:-/home/user}"
@@ -13,7 +13,7 @@ for entry in payload/* payload/.[!.]*; do
   # fixed, content-independent timestamps (no ordering signal)
   find "$HOME_DIR/$(basename "$entry")" -exec touch -h -d "2026-01-01 00:00:00" {} +
 done
-# the agent's images, fetched into the image at build time (image/assets.sha256, docs/task-assets.md)
+# the agent's images, fetched into the image at build time (environment/assets.sha256, docs/task-assets.md)
 if [ -d /opt/task-assets/payload ]; then
   cp -r /opt/task-assets/payload/. "$HOME_DIR/"
   for entry in /opt/task-assets/payload/*; do

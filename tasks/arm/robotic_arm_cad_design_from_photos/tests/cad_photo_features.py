@@ -1,5 +1,5 @@
 """cad_photo.features: model-agnostic feature probes of the hardware-design grader (hardware_design.md 6.3
-feature_fidelity). Shipped twice, byte-identical (verify/cad_photo_features.py and the practice checker). Pure geometry
+feature_fidelity). Shipped twice, byte-identical (tests/cad_photo_features.py and the practice checker). Pure geometry
 (numpy, scipy, PIL, manifold3d, trimesh); the ground-truth records are passed in by the caller. Lengths mm.
 
     section_mask(mesh, frame, window, px)       material of a planar section, rasterised (even-odd over the loops)

@@ -7,16 +7,23 @@
 # tasks/<platform>/<slug>/, so every check below runs over that final path; there is no
 # staging area and nothing relocates a task after merge.
 #
+# A task folder has the engine's Harbor-based layout: task.toml, instruction.md,
+# environment/ (Dockerfile, setup/setup.sh, setup/payload/), tests/ (test.sh, verify.py,
+# anchor.json, grader_config.json, the vendored robotics_grader/) and solution/solve.sh.
+#
 # What is gated:
 #   - the pinned engine's `ale lint` over tasks/ and templates/;
 #   - the registry identity cross-check for every task the committed history knows
 #     (a new slug is a notice: the maintainer exports the registry after the merge);
-#   - the domain lint (hardware-invariant + positive-scale metrics, agent-visible-surface
-#     isolation, image hygiene, anchor provenance, a metadata.platform from
-#     tasks/platforms.json and placement at tasks/<platform>/<slug>/);
+#   - the domain lint (hardware-invariant + positive-scale metrics in tests/anchor.json,
+#     isolation of the agent-visible environment/setup/payload/, image hygiene, anchor
+#     provenance, a [metadata].platform from tasks/platforms.json and placement at
+#     tasks/<platform>/<slug>/);
 #   - the shared verify-stage kit: robotics_grader selftest + canonical-vs-vendored byte
-#     equality (a task that ships a modified kit fails here; nothing re-vendors it later);
-#   - every task's asset list against task-assets.toml and its vendored fetcher against
+#     equality of every tests/robotics_grader/ (a task that ships a modified kit fails here;
+#     nothing re-vendors it later);
+#   - every task's asset list (environment/assets.sha256) against task-assets.toml and its
+#     vendored fetcher (environment/fetch_assets.py) against
 #     shared/task_assets/fetch_assets.py (scripts/task_assets.py check);
 #   - the pytest suite (onboarding gate, registry export and its schema, skills, template,
 #     domain lint, task assets).
@@ -31,7 +38,10 @@ jobs:
   # The engine's own static gate, from the pinned submodule (the exact `ale lint` a
   # contributor and a maintainer run locally), plus the registry identity cross-check.
   # Static only: no docker, no episodes. vendor/ale is the public AgentsLastExam/ale
-  # engine; the default token clones it.
+  # engine; the default token clones it. `uv run` there syncs the engine's venv from its own
+  # uv.lock: the workspace packages (the `ale` CLI is ale-run's) and the default `dev` group,
+  # whose jsonschema the schema check below uses. `dev` is the engine's only group, so this
+  # is the same set as the `uv sync --frozen --all-groups` a contributor runs.
   engine-lint:
     runs-on: ubuntu-latest
     steps:
@@ -114,8 +124,8 @@ jobs:
 
       # The shared verify-stage machinery. Stdlib-only by contract, so it runs on the bare
       # system python. Upstream has no repository-kit mechanism, so the canonical copy lives
-      # at shared/ and each task vendors it into verify/; the diff below keeps every vendored
-      # copy byte-identical to the canonical one.
+      # at shared/ and each task vendors it into tests/robotics_grader/; the diff below keeps
+      # every vendored copy byte-identical to the canonical one.
       - name: robotics_grader selftest (canonical copy, shared/)
         run: |
           cd shared
@@ -127,19 +137,27 @@ jobs:
       - name: robotics_grader vendored copies match the canonical byte-for-byte
         run: |
           status=0
-          for vendored in $(find tasks templates -type d -path "*/verify/robotics_grader" 2>/dev/null); do
+          copies=$(find tasks templates -type d -path "*/tests/robotics_grader" 2>/dev/null)
+          # A find that matches nothing would pass silently (it did once, when the kit moved
+          # from verify/ to tests/): the template always carries a copy, so zero is an error.
+          if [ -z "$copies" ]; then
+            echo "::error::no vendored kit found under tasks/*/*/tests/robotics_grader or templates/task/tests/robotics_grader"
+            exit 1
+          fi
+          for vendored in $copies; do
             echo "--- $vendored"
             if ! diff -r --exclude=__pycache__ shared/robotics_grader "$vendored"; then
               status=1
-              echo "::error file=$vendored::vendored kit differs from shared/robotics_grader. Every task carries the canonical kit: run 'cp -r shared/robotics_grader/. $vendored/' and re-run ale validate before merging"
+              echo "::error file=$vendored::vendored kit differs from shared/robotics_grader. Every task carries the canonical kit at tests/robotics_grader/: run 'cp -r shared/robotics_grader/. $vendored/' and re-run ale validate before merging"
             fi
           done
           exit $status
 
       # Large agent-visible files come from the asset repository named once in task-assets.toml
-      # (docs/task-assets.md). Each task copies that name into its image/assets.sha256 (the image
-      # cannot read the repository root) and vendors shared/task_assets/fetch_assets.py; a task
-      # that disagrees with either is a failure: run 'python3 scripts/task_assets.py sync'.
+      # (docs/task-assets.md). Each task copies that name into its environment/assets.sha256
+      # (the image is built from environment/ alone, so it cannot read the repository root) and
+      # vendors shared/task_assets/fetch_assets.py as environment/fetch_assets.py; a task that
+      # disagrees with either is a failure: run 'python3 scripts/task_assets.py sync'.
       - name: Task assets match task-assets.toml and the canonical fetcher
         run: python3 scripts/task_assets.py check
 
@@ -148,9 +166,9 @@ jobs:
 
       # The domain's own policy lints over tasks/ and templates/: metrics that measure the
       # machine, non-positive anchors (which invert the ratio silently), agent-visible
-      # material that reaches the grader, image hygiene, unattributed anchors, platforms
-      # outside tasks/platforms.json, and the placement of every landed task at
-      # tasks/<platform>/<slug>/. `ale lint` is generic
+      # material (environment/setup/payload/) that reaches the grader in tests/, image
+      # hygiene, unattributed anchors, platforms outside tasks/platforms.json, and the
+      # placement of every landed task at tasks/<platform>/<slug>/. `ale lint` is generic
       # and knows none of it.
       - name: Domain lint (tasks/ and templates/, placement included)
         run: uv run python scripts/lint_domain.py .

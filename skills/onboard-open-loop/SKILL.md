@@ -5,8 +5,8 @@ description: >-
   trajectories, one-shot solutions) and the verify stage RE-SIMULATES every one of them under
   its own dynamics, rejecting any answer that does not start where it claims, teleports between
   states, or breaks the declared constraints. Loaded by onboard-task with its spec payload.
-  Drives image/Dockerfile → oracle → verify/verify.py on the vendored robotics_grader package →
-  practice grader → the anchor from a REAL run → a green `ale validate`.
+  Drives environment/Dockerfile → solution → tests/verify.py on the vendored robotics_grader
+  package → practice grader → the anchor from a REAL run → a green `ale validate`.
 ---
 
 # onboard-open-loop — build an open_loop task
@@ -15,20 +15,20 @@ Loaded by **onboard-task** with `{task, platform, metric, image, task_dir}`. Ask
 only what this pattern needs, then drive the build.
 
 The shape: the agent's work product is **answers**, not a policy. By the time the verify stage
-runs they are already on disk, under a path the task declared in `artifacts:` — the agent wrote
-them during its own phase, and `verify/` was not in the sandbox while it did. So there is no
-solver process, no wire, and no `ProbeLock`. What `verify/verify.py` does instead is arithmetic
-on those answers **under its own dynamics**, plus a structural check that they are answers to
-the questions that were asked.
+runs they are already on disk, under a path the task declared in `task.toml`'s `artifacts` —
+the agent wrote them during its own phase, and `tests/` was not in the sandbox while it did. So
+there is no solver process, no wire, and no `ProbeLock`. What `tests/verify.py` does instead is
+arithmetic on those answers **under its own dynamics**, plus a structural check that they are
+answers to the questions that were asked.
 
 Recomputation is the whole pattern. A number the agent printed next to its answer is not
 evidence, it is a claim by the party being measured — and a plan file is the easiest artifact in
 robotics to write without solving anything. Read the raw answer, step your own model, let your
 own state produce the metric.
 
-Template: `templates/task/` — its `verify/verify.py` is the closed_loop pattern, and
+Template: `templates/task/` — its `tests/verify.py` is the closed_loop pattern, and
 its module docstring says exactly what to delete for this one. Shared machinery: the vendored
-`verify/robotics_grader/` package (canonical copy at `shared/robotics_grader/`, byte-equality
+`tests/robotics_grader/` package (canonical copy at `shared/robotics_grader/`, byte-equality
 enforced in CI). Audited trust boundary: `docs/evidence/isolation-audit.md`.
 
 ## Mode-specific questions
@@ -38,21 +38,24 @@ enforced in CI). Audited trust boundary: `docs/evidence/isolation-audit.md`.
 2. **Who owns the authoritative copy of the instances?** Two arrangements work, and both rest on
    the agent being unable to move the goalposts:
    * **Grader-owned, with a visible copy.** The instances the metric is computed over live in
-     `verify/` (or are generated there from a fixed definition), and `setup/payload/` carries
-     the copy the agent works from. If the agent edits its copy it simply answers the wrong
-     questions — the same argument the template makes for `verify/env.py` versus
-     `setup/payload/template_env.py`.
-   * **Handed out per run by `setup/run.sh`.** Runs before the agent, as root — so `chown`
-     whatever the agent must read or rewrite, or your own oracle hits the wall first. The
-     generator's per-run seed must stay inside `/opt/ale`, which is `drwx------ root:root` and
-     untraversable for the agent's UID, and `verify/verify.py` re-derives from it the exact
-     instances that were handed out. A seed on an agent-stattable path turns "solve the task"
-     into "memorize the evaluation".
-3. **What is one answer, byte for byte, and at exactly which path?** Upstream renders
-   `instruction.md` once and checks placeholders strictly both ways, so write the paths
+     `tests/` (or are generated there from a fixed definition), and `environment/setup/payload/`
+     carries the copy the agent works from. If the agent edits its copy it simply answers the
+     wrong questions — the same argument the template makes for `tests/env.py` versus
+     `environment/setup/payload/template_env.py`.
+   * **Handed out per run by `environment/setup/setup.sh`.** Runs before the agent, as root —
+     so `chown` whatever the agent must read or rewrite, or your own oracle hits the wall first.
+     The generator's per-run seed must stay inside `/opt/ale`, which is `drwx------ root:root`
+     and untraversable for the agent's UID, and `tests/verify.py` re-derives from it the exact
+     instances that were handed out. Keep it in setup's own `/opt/ale/setup` (the engine
+     clears `/opt/ale/tests` before it uploads `tests/`), and keep verification shared (the
+     default): a separate verifier starts from a fresh sandbox that holds only the declared
+     artifacts. A seed on an agent-stattable path turns "solve the task" into "memorize the
+     evaluation".
+3. **What is one answer, byte for byte, and at exactly which path?** The engine uses
+   `instruction.md` verbatim, with no templating and no path rewriting, so write the paths
    literally; the task chose them and the image is fixed.
 4. **How do you re-simulate one answer?** Integrator, timestep, collision model, tolerances. The
-   dynamics the grader uses must live in `verify/`, imported from there or from the image —
+   dynamics the grader uses must live in `tests/`, imported from there or from the image —
    never from a file in the agent's workspace.
 5. **What does a missing or unparseable answer score?** Zero for that instance, counted in the
    denominator. Dropping it lets an agent that answered three of fifty problems average its way
@@ -83,30 +86,30 @@ rules.
 
 ## Build steps
 
-1. **`image/Dockerfile`.** Start from the template's: final stage directly FROM the official
-   ALE base, py3.12 `/opt/venv` with a world-traversable interpreter, and the agent-UID import
-   self-check at the end. Add the simulator or planning library at a pinned commit, with the
-   reference implementation's own recipe stripped in the *same* layer that clones it.
-2. **`oracle/run.sh`** — the reference implementation, as it is, run in place of the agent by
-   `ale validate` as the same unprivileged account and inside `timeouts.agent`. It leaves its
-   answers exactly where `instruction.md` tells the agent to leave them; its real measured
-   score becomes the anchor.
-3. **`verify/verify.py`** — a plain script, no base class, no hooks. Import from
+1. **`environment/Dockerfile`.** Start from the template's: final stage directly FROM the
+   official ALE base at an exact version, py3.12 `/opt/venv` with a world-traversable
+   interpreter, and the agent-UID import self-check at the end. Add the simulator or planning
+   library at a pinned commit, with the reference implementation's own recipe stripped in the
+   *same* layer that clones it.
+2. **`solution/solve.sh`** — the reference implementation, as it is, run in place of the agent
+   by `ale validate` as the same unprivileged account and inside `[agent].timeout_sec`. It
+   leaves its answers exactly where `instruction.md` tells the agent to leave them; its real
+   measured score becomes the anchor.
+3. **`tests/verify.py`** — a plain script, no base class, no hooks. Import from
    `robotics_grader`: `seed_rng()` for anything sampled at verify time (OS entropy, in memory
    only), `stage_config()` for knobs, `read_anchor()`, `ratio_rewards(...)`, `write_verdict(...)`,
    and `require(...)` **only** for your own preconditions — the anchor file, the simulator
    import. Read each answer, re-simulate it, apply the lock, aggregate. Leave the vendored
-   `verify/robotics_grader/` untouched.
-4. **`verify/grader_config.json`** — instance count, tolerances, step bounds, `scoring_cap`
-   (`config.json` is overwritten by the engine at verify time). Not
-   `params:`: those render into the prompt and are strict both ways, so a declared parameter the
-   prompt never mentions is a lint error.
-5. **`setup/payload/practice_grader/grade.py`** — `setup/payload/` is the visible-material
-   channel; `setup/run.sh` stages it into the agent's home. The practice grader re-simulates on
-   *visible* instances and prints the raw metric only: no anchor, no ratio, no score, no import
-   from `verify/`. It should apply the same structural checks, so the agent learns the rules
-   while working instead of at scoring time.
-6. **`verify/anchor.json`** — leave `value` null, and make sure the metric is on a positive scale
+   `tests/robotics_grader/` untouched.
+4. **`tests/grader_config.json`** — instance count, tolerances, step bounds, `scoring_cap`
+   (`config.json` is overwritten by the engine at verify time). Not `task.toml`: it has no
+   parameters, its `[metadata]` has no runtime behavior, and an unknown key fails lint.
+5. **`environment/setup/payload/practice_grader/grade.py`** — `environment/setup/payload/` is
+   the visible-material channel; `environment/setup/setup.sh` stages it into the agent's home.
+   The practice grader re-simulates on *visible* instances and prints the raw metric only: no
+   anchor, no ratio, no score, no import from `tests/`. It should apply the same structural
+   checks, so the agent learns the rules while working instead of at scoring time.
+6. **`tests/anchor.json`** — leave `value` null, and make sure the metric is on a positive scale
    (the package fails the run on a non-positive anchor, because the ratio would order every
    future score backwards). Gate once, take the measured value off the verdict, record it, gate
    again. Never a published figure: other hardware, other seeds, usually a kinder evaluation —
@@ -121,9 +124,10 @@ rules.
    ```
    `needs_anchor` on the first pass is expected and carries the measurement (the engine
    reports that run as `oracle_not_full`; `harness/ale_onboard.py` reads the records). `built`
-   means the double pass held: untouched all-zero and oracle all-one, both the engine's own
-   gates (`untouched_nonzero`, `oracle_not_full`). Catch the missing-answers case with
-   `zero_verdict(...)` and size the anchor's `full_at` from measured spread.
+   means the double pass held: untouched `reward` 0.0 and oracle `reward` 1.0 after two-decimal
+   rounding, both the engine's own gates (`untouched_nonzero`, `oracle_not_full`). Catch the
+   missing-answers case with `zero_verdict(...)` and size the anchor's `full_at` from measured
+   spread.
 8. **Prove the lock bites.** Replace the oracle's answers with the cheapest fake your format
    admits — the start state echoed back, or a straight line from start to goal through the
    obstacles — re-gate, and confirm it scores 0. A lock nobody has watched fail is a lock nobody

@@ -2,18 +2,20 @@
 adversarial review). stdlib only: verify.py runs it BEFORE numpy / mujoco are imported.
 
 The review demonstrated, inside the real image, a background process left by the agent (its own uid, started with
-`nohup` during the agent phase) that polls for `/opt/ale/verify/anchor/*` and copies the reference program into the
-still-writable `/home/user/submission` WHILE the engine uploads the verify stage -- i.e. before the first line of
-verify.py runs, so no lock inside the grader can be early enough. The copy scored 1.0. Nothing in the engine kills the
-agent account's processes between the agent phase and verify (Q13), and a byte comparison with the anchor cannot be a
-gate because `ale validate`'s oracle phase legitimately stages the very same files.
+`nohup` during the agent phase) that polls for `/opt/ale/verify/anchor/*` (the stage path of the engine at the time;
+now `/opt/ale/tests`, under a root-only `/opt/ale`) and copies the reference program into the still-writable
+`/home/user/submission` WHILE the engine uploads the verify stage -- i.e. before the first line of verify.py runs, so
+no lock inside the grader can be early enough. The copy scored 1.0. Nothing in the engine kills the agent account's
+processes between the agent phase and verify (Q13), and a byte comparison with the anchor cannot be a gate because
+`ale validate`'s oracle phase legitimately stages the very same files.
 
 What closes it (every function below is used by verify.py's `_early_lockdown`, run as root first thing):
 
-  * `stage_upload_time(stage)`: the earliest ctime of a regular file under the stage. `docker cp` preserves mtimes
-    but ctime is set by the kernel at extraction and the engine does not chown the verify stage (FRAMEWORK identity),
-    so this is the instant the engine began uploading it -- after the agent phase ended, before anything the agent
-    left running could see the anchor. ctime cannot be set from user space.
+  * `stage_upload_time(stage)`: the earliest ctime of a regular file under the stage. The engine writes every file of
+    the stage anew when it uploads it (guestd `put_tree`: files 0644, owner root; the engine of the review used
+    `docker cp`, which kept mtimes), so the kernel sets its ctime then and this is the instant the engine began
+    uploading the stage -- after the agent phase ended, before anything the agent left running could see the anchor.
+    ctime cannot be set from user space.
   * `late_entries(root, t_ref)`: every entry under `root` whose ctime or mtime is at or after `t_ref`, i.e. written,
     renamed, linked or re-permissioned after the agent phase ended. In the submission they zero the contract gate
     (the deliverable must be final when the session ends); elsewhere in the agent home and the world-writable sticky

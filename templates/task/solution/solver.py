@@ -1,4 +1,5 @@
-"""The reference policy, serving the closed_loop wire.
+"""The reference policy, serving the closed_loop wire. solve.sh copies it into
+/home/user/submission/, beside the run.sh that starts it.
 
 A proportional-derivative controller on the goal error: accelerate toward the goal, damp
 with the current velocity. Deliberately simple and genuinely obs-dependent — a policy that
@@ -7,7 +8,8 @@ having one. Stateless, so a step asked twice with the same `t` is answered twice
 observation each request carries — repeated queries never advance anything here.
 
 At grading time a real task's solver only LOADS its trained artifact here; it never trains.
-Training happened during the agent phase, under the agent's budget.
+Training happened during the agent phase (for the oracle, in solve.sh), under the agent's
+budget.
 """
 
 import json

@@ -1,7 +1,7 @@
 """The full-arm assembly cell (the from-scratch assembly), shared by the floating-part check's successor
 `panda_assembly.py` (the privileged Panda program) and its video.
 
-`FullArmCell(task, cache_dir)` builds, from the task's hidden kit (`verify/gt`) and its vendored cell code:
+`FullArmCell(task, cache_dir)` builds, from the task's hidden kit (`tests/gt`) and its vendored cell code:
   * the six-servo cell with the mating graph's `default` scope (15 mates), only the base mounted on the fixture, every
     other part loose, no trays; recompiled from the build's spec with: contact exclusions bracket <-> its carrier and
     the servos and link <-> the servo whose horn it goes on (these interlocking interfaces are the coupling's,

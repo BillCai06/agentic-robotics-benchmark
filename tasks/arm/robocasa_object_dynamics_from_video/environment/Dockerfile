@@ -1,4 +1,4 @@
-# Task image. Nothing here depends on verify/, oracle/, the anchor or the hidden objects: an image layer is readable
+# Task image. Nothing here depends on tests/, solution/, the anchor or the hidden objects: an image layer is readable
 # by anyone who can run the image. The hidden objects' meshes and textures are NOT in the image.
 FROM ghcr.io/agentslastexam/container-ubuntu22-base:0.1.1
 
@@ -21,7 +21,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends libosmesa6 libg
     && rm -rf /var/lib/apt/lists/*
 
 # ---- task assets: fetched at the dataset commit pinned in assets.sha256, checked file by file (docs/task-assets.md):
-# the 120 input videos and 80 data arrays of data/objects/ (the agent-visible recordings; the JSON files stay in setup/payload)
+# the 120 input videos and 80 data arrays of data/objects/ (the agent-visible recordings; the JSON files stay in environment/setup/payload)
 COPY fetch_assets.py assets.sha256 /opt/task-assets/
 RUN python3 /opt/task-assets/fetch_assets.py /opt/task-assets/assets.sha256 /opt/task-assets/payload \
     && chmod -R a+rX /opt/task-assets

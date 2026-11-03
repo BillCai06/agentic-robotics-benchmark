@@ -248,6 +248,24 @@ def test_verdict():
             check("zero_verdict's reason becomes the diagnostic",
                   written and written[0]["reward"] == 0.0
                   and "no submission" in written[0].get("diagnostic", ""))
+
+            # A grader run by hand outside the engine writes the envelope where the
+            # variable says; inside the engine the variable is ignored.
+            by_hand = os.path.join(tmp, "by_hand.json")
+            os.environ["ROBOTICS_GRADER_VERDICT_PATH"] = by_hand
+            written[:] = []
+            try:
+                stage.write_verdict(verdict)
+                check("outside the engine ROBOTICS_GRADER_VERDICT_PATH gets the envelope",
+                      not written and os.path.isfile(by_hand))
+                os.remove(by_hand)
+                os.environ["ALE_VERIFY_PYTHON"] = "python3"
+                stage.write_verdict(verdict)
+                check("inside the engine the variable is ignored",
+                      len(written) == 1 and not os.path.exists(by_hand))
+            finally:
+                os.environ.pop("ROBOTICS_GRADER_VERDICT_PATH", None)
+                os.environ.pop("ALE_VERIFY_PYTHON", None)
         finally:
             if saved_module == "<absent>":
                 sys.modules.pop("ale_verify", None)

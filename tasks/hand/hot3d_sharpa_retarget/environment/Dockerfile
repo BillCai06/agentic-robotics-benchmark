@@ -43,8 +43,9 @@ RUN uv venv --seed /opt/perception-venv --python 3.12 \
 
 # Task assets: the nine clips (frames, calibration, headset pose) live in the benchmark's Hugging Face dataset
 # (tasks/hand/hot3d_sharpa_retarget/payload/ there). They are fetched at the commit pinned in assets.sha256 and checked
-# file by file; setup/run.sh stages them into the agent home. fetch_assets.py is the benchmark's canonical copy
-# (shared/task_assets/) and the repository named in assets.sha256 is written from task-assets.toml (docs/task-assets.md).
+# file by file; environment/setup/setup.sh stages them into the agent home. fetch_assets.py is the benchmark's
+# canonical copy (shared/task_assets/) and the repository named in assets.sha256 is written from task-assets.toml
+# (docs/task-assets.md).
 COPY fetch_assets.py assets.sha256 /opt/task-assets/
 RUN python3 /opt/task-assets/fetch_assets.py /opt/task-assets/assets.sha256 /opt/task-assets/payload \
     && chmod -R a+rX /opt/task-assets

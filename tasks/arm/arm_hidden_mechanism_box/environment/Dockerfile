@@ -1,6 +1,6 @@
 # Environment image for arm_hidden_mechanism_box. Final stage derives from the official ALE base.
-# Contains only the simulator stack and public scene/robot assets; verify/, oracle/, the hidden boxes
-# and the anchor are never copied into the image.
+# Contains only the simulator stack and public scene/robot assets; tests/, solution/, the hidden boxes
+# and the anchor are never copied into the image (the build context is environment/ less setup/).
 FROM ghcr.io/agentslastexam/container-ubuntu22-base:0.1.1
 
 # Python 3.12 venv owned by root, readable and traversable by every account, first on PATH for every
