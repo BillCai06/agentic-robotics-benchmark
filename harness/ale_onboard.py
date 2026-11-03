@@ -15,15 +15,17 @@ What it does:
 4. reports one of four honest outcomes.
 
 What it never does: invent a score, invent an anchor, or call something `built` that a real
-`ale validate` did not produce. `built` requires the engine's double pass to hold: an
-untouched sandbox scored exactly 0 on every reward key and the oracle exactly 1 on every
-reward key. The engine enforces both (`untouched_nonzero`, `oracle_not_full`; exit 2).
-This tool still classifies from the run records, not from the exit status, because the
-bootstrap case fails the engine's gate on purpose:
+`ale validate` did not produce. `built` requires the engine's double pass to hold: the
+untouched episode completed with `reward` 0.0 and the oracle episode completed with `reward`
+1.0. `reward` is the only value the engine reads, after rounding it to two decimals, and the
+engine enforces both (`untouched_not_completed`, `untouched_nonzero`, `oracle_not_completed`,
+`oracle_not_full`; exit 2). This tool still classifies from the run records, not from the
+exit status, because the bootstrap case fails the engine's gate on purpose:
 
 A task whose anchor is still null runs, measures, and scores 0 by design, so the engine
 reports `oracle_not_full`. Here that comes back as `needs_anchor` carrying the measured
-value, which is the one number the author needs and cannot get any other way.
+value (the `metrics` of the oracle episode's `verification.json`, where the kit records it),
+which is the one number the author needs and cannot get any other way.
 """
 
 from __future__ import annotations
@@ -33,6 +35,7 @@ import os
 import re
 import shutil
 import subprocess
+import tomllib
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
@@ -48,6 +51,13 @@ ENGINE_DIR = REPO_ROOT / "vendor" / "ale"
 #: The task collections the engine lints and the name-collision scan walks. Never the
 #: repository root itself: that would descend into vendor/ale and the venvs.
 COLLECTION_DIRS = ("tasks", "templates")
+#: Every task folder's definition file (Harbor's task.toml, schema "1.4+ale.1").
+MANIFEST = "task.toml"
+#: The org part of every task id, `[task].name = "<org>/<slug>"`: the GitHub and Hugging Face
+#: organization that owns the benchmark. The slug is the spec's `task` and the folder name.
+TASK_ORG = "grounded-intelligence-initiative"
+#: The stage entry scripts, relative to the task folder.
+STAGE_ENTRIES = ("environment/setup/setup.sh", "tests/test.sh", "solution/solve.sh")
 
 #: A metric naming a wall-clock quantity measures the machine, not the method — two
 #: contributors on different hardware would get different scores for identical work.
@@ -71,13 +81,12 @@ def hw_metric_token(name: str) -> str | None:
             return token
     return None
 
-#: Upstream's TaskId shape (ale.core.ids._SLUG). The stable `name:` in task.yaml must
-#: match it, and the engine rejects a collection with two tasks of the same name — so
-#: both are checked here, before a container is ever started.
+#: Each part of upstream's TaskId (ale.core.ids: `org/name`, both parts this shape). The
+#: spec's `task` becomes the name part, which is also the folder name and the registry's
+#: slug. The engine rejects a collection with two tasks of one id and the registry export
+#: two tasks of one slug, so both the shape and the uniqueness are checked here, before a
+#: container is ever started.
 _SLUG = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
-
-#: The placeholder name the template ships with; instantiate() must replace it.
-_TEMPLATE_NAME = "template_reach"
 
 
 @dataclass
@@ -136,24 +145,97 @@ def check_feasibility(spec: dict[str, Any]) -> str | None:
 def _substitute(text: str, spec: dict[str, Any]) -> str:
     """Fill the template manifest's TODOs with what the spec knows.
 
-    Only matters of record are filled: the task's name, its platform and a prebuilt image
-    (the metric and its direction go into verify/anchor.json, see `_record_metric`). Physics,
-    the environment layer and the grader body are left as they are, because inventing them is
-    exactly the failure mode this pipeline exists to prevent — an agent that "finishes" a task
-    by writing a plausible grader has produced a task that scores nothing.
+    Only matters of record are filled: the task's id (`[task].name`), its platform
+    (`[metadata].platform`) and a prebuilt image (`[environment].docker_image`); the metric
+    and its direction go into tests/anchor.json, see `_record_metric`. Physics, the
+    simulation and the grader body are left as they are, because inventing them is exactly
+    the failure mode this pipeline exists to prevent — an agent that "finishes" a task by
+    writing a plausible grader has produced a task that scores nothing.
     """
-    pairs = [
-        ("name: {}".format(_TEMPLATE_NAME), "name: {}".format(spec["task"])),
-        ("platform: TODO", "platform: {}".format(spec.get("platform", "TODO"))),
-    ]
+    text = _set_toml_string(text, "task", "name", f"{TASK_ORG}/{spec['task']}")
+    text = _set_toml_string(text, "metadata", "platform", str(spec.get("platform") or "TODO"))
     if spec.get("image"):
-        # A fully-qualified prebuilt image ref. The engine gives a local image/Dockerfile
-        # priority over a ref, so instantiate() removes the template's Dockerfile when a
-        # ref is declared (see there).
-        pairs.append(("image: {kind: container}",
-                      "image: {{kind: container, ref: {}}}".format(_quote(spec["image"]))))
-    for old, new in pairs:
-        text = text.replace(old, new)
+        # A fully-qualified prebuilt image ref. The engine runs an image named here in place
+        # of building environment/Dockerfile, so instantiate() removes the template's
+        # Dockerfile (see there).
+        text = _set_toml_string(text, "environment", "docker_image", str(spec["image"]))
+    return text
+
+
+#: A table header, `[name]` or `[[name]]` (an array of tables), with an optional comment.
+_TOML_HEADER = re.compile(r"^\s*(\[\[?)\s*([^\[\]#]+?)\s*\]\]?\s*(?:#.*)?$")
+
+
+def _set_toml_string(text: str, table: str, key: str, value: str) -> str:
+    """Set `key = "value"` in `[table]`, leaving every other line of the document as written.
+
+    The template's comments are its documentation, so the manifest is edited line by line
+    instead of being re-serialized. The key's line is replaced where the table has one;
+    otherwise the line goes right below the table's header, and a table the document lacks
+    is appended. `_filled_manifest` parses the result and refuses it unless every value
+    landed where it belongs.
+    """
+    lines = text.splitlines(keepends=True)
+    entry = f"{key} = {_toml_string(value)}\n"
+    assignment = re.compile(rf"^\s*{re.escape(key)}\s*=")
+    header: int | None = None
+    for index, line in enumerate(lines):
+        match = _TOML_HEADER.match(line)
+        if match:
+            if header is not None:
+                break                                   # the table ended without the key
+            if match.group(1) == "[" and match.group(2) == table:
+                header = index
+        elif header is not None and assignment.match(line):
+            lines[index] = entry
+            return "".join(lines)
+    if header is None:
+        body = "".join(lines)
+        if body and not body.endswith("\n"):
+            body += "\n"
+        return f"{body}\n[{table}]\n{entry}"
+    lines.insert(header + 1, entry)
+    return "".join(lines)
+
+
+def _toml_string(value: str) -> str:
+    """`value` as a TOML basic string."""
+    escaped = []
+    for char in value:
+        if char in '"\\':
+            escaped.append("\\" + char)
+        elif (ord(char) < 0x20 and char != "\t") or ord(char) == 0x7F:
+            escaped.append(f"\\u{ord(char):04x}")
+        else:
+            escaped.append(char)
+    return '"' + "".join(escaped) + '"'
+
+
+def _filled_manifest(spec: dict[str, Any]) -> str:
+    """The template's task.toml with the spec filled in, checked before anything is written.
+
+    A template whose text the line editor cannot fill (a renamed table, an inline table)
+    must fail here, not produce a task that silently keeps the template's id or platform.
+    """
+    source = TEMPLATE_DIR / MANIFEST
+    text = _substitute(source.read_text(encoding="utf-8"), spec)
+    try:
+        config = tomllib.loads(text)
+    except tomllib.TOMLDecodeError as exc:
+        raise ValueError(f"{source}: the filled-in manifest does not parse: {exc}") from exc
+    expected = {
+        ("task", "name"): f"{TASK_ORG}/{spec['task']}",
+        ("metadata", "platform"): str(spec.get("platform") or "TODO"),
+    }
+    if spec.get("image"):
+        expected[("environment", "docker_image")] = str(spec["image"])
+    for (table, key), value in expected.items():
+        section = config.get(table)
+        landed = section.get(key) if isinstance(section, dict) else None
+        if landed != value:
+            raise ValueError(
+                f"{source}: could not set [{table}].{key} to {value!r} (it reads {landed!r})"
+            )
     return text
 
 
@@ -163,7 +245,7 @@ def platform_keys() -> tuple[str, ...]:
 
 
 def _record_metric(anchor_path: Path, spec: dict[str, Any]) -> None:
-    """Write the spec's metric name and direction into the copied verify/anchor.json.
+    """Write the spec's metric name and direction into the copied tests/anchor.json.
 
     The anchor is the one place a task declares its metric: the grader reads `direction`
     there, and the registry export publishes both. The contributor's
@@ -183,32 +265,25 @@ def _record_metric(anchor_path: Path, spec: dict[str, Any]) -> None:
     anchor_path.write_text(json.dumps(anchor, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
-def _quote(value: Any) -> str:
-    """YAML-safe scalar: quote anything that could be read as structure."""
-    if value in (None, ""):
-        return "TODO"
-    text = str(value)
-    if any(ch in text for ch in ':#{}[]&*!|>%@`"\'') or text.strip() != text:
-        return json.dumps(text)
-    return text
-
-
 def _name_collision(repo: Path, task: str, target: Path) -> Path | None:
-    """The task.yaml of a DIFFERENT folder already claiming this stable name, if any.
+    """The folder of a DIFFERENT task already claiming this name, if any.
 
-    The engine refuses a collection with two tasks of one name, and the template itself
-    is discovered like any task — so the scan covers every collection, templates included.
+    The name is the part of `[task].name` after the `/`, whatever the org: the engine
+    refuses a collection with two tasks of one id, and the registry export refuses two
+    tasks of one slug. The template itself is discovered like any task, so the scan covers
+    every collection, templates included.
     """
-    import yaml
-
     for manifest in _manifests(repo):
         if manifest.parent == target:
             continue
         try:
-            existing = yaml.safe_load(manifest.read_text()) or {}
-        except (OSError, yaml.YAMLError):
+            with manifest.open("rb") as handle:
+                existing = tomllib.load(handle)
+        except (OSError, tomllib.TOMLDecodeError):
             continue
-        if isinstance(existing, dict) and str(existing.get("name", "")) == task:
+        table = existing.get("task")
+        name = table.get("name") if isinstance(table, dict) else None
+        if isinstance(name, str) and name.rpartition("/")[2] == task:
             return manifest.parent
     return None
 
@@ -223,16 +298,17 @@ def collection_roots(repo: Path) -> list[Path]:
 def _manifests(repo: Path) -> list[Path]:
     manifests: list[Path] = []
     for root in collection_roots(repo):
-        manifests += sorted(root.rglob("task.yaml"))
+        manifests += sorted(root.rglob(MANIFEST))
     return manifests
 
 
 def instantiate(spec: dict[str, Any], *, repo: Path, force: bool = False) -> Path:
     """Copy the template into `<repo>/tasks/<platform>/<task>/` and fill in what the spec knows.
 
-    The spec's `task` becomes the manifest's stable `name`, so it must be a valid slug
-    and unique across every task.yaml in the repo — checked here, because the engine's
-    own rejection would otherwise surface only at gate time with a cryptic message. Its
+    The spec's `task` becomes the name part of the task's id,
+    `[task].name = "grounded-intelligence-initiative/<task>"`, so it must be a valid slug and
+    unique across every task.toml in the repo — checked here, because the engine's own
+    rejection would otherwise surface only at gate time with a cryptic message. Its
     `platform` must be one of the benchmark's platforms (tasks/platforms.json): it names the
     folder the task lands in.
     """
@@ -250,6 +326,7 @@ def instantiate(spec: dict[str, Any], *, repo: Path, force: bool = False) -> Pat
     target = repo / "tasks" / platform / task
     if (claimed := _name_collision(repo, task, target)) is not None:
         raise ValueError(f"task name {task!r} is already claimed by {claimed}")
+    manifest = _filled_manifest(spec)
     if target.exists():
         if not force:
             raise FileExistsError(
@@ -260,17 +337,18 @@ def instantiate(spec: dict[str, Any], *, repo: Path, force: bool = False) -> Pat
     shutil.copytree(TEMPLATE_DIR, target,
                     ignore=shutil.ignore_patterns("__pycache__", "*.pyc", ".ale-cache"))
 
-    manifest = target / "task.yaml"
-    manifest.write_text(_substitute(manifest.read_text(), spec))
-    _record_metric(target / "verify" / "anchor.json", spec)
+    (target / MANIFEST).write_text(manifest, encoding="utf-8")
+    _record_metric(target / "tests" / "anchor.json", spec)
     if spec.get("image"):
-        # The manifest now declares a prebuilt ref, and a local Dockerfile would win
-        # over it — remove the template's so the declared image is the one that runs.
-        dockerfile = target / "image" / "Dockerfile"
+        # The manifest now names a prebuilt image, which the engine runs in place of a
+        # build: the template's Dockerfile would describe an image nobody runs, so it goes.
+        dockerfile = target / "environment" / "Dockerfile"
         if dockerfile.is_file():
             dockerfile.unlink()
-    # copytree preserves modes, but a template copied through a zip or a Windows checkout may not have.
-    for entry in ("setup/run.sh", "verify/run.sh", "oracle/run.sh"):
+    # The engine runs each entry through `bash`, whatever its mode; the bit is for running one
+    # by hand. copytree preserves modes, but a template copied through a zip or a Windows
+    # checkout may not have them.
+    for entry in STAGE_ENTRIES:
         path = target / entry
         if path.is_file():
             path.chmod(path.stat().st_mode | 0o111)
@@ -315,13 +393,17 @@ def lint(repo: Path, *, timeout: int = 120) -> subprocess.CompletedProcess[str]:
 class ValidatePasses:
     """The two episodes one `ale validate` runs per task, read from its run records.
 
-    `untouched` is the NopHarness pass (nobody touched the sandbox; every reward must be
-    exactly 0) and `oracle` is the OracleHarness pass (the reference solution ran; every
-    reward must be exactly 1). The engine fails validation on either miss
-    (`untouched_nonzero`, `oracle_not_full`); `engine_failures` carries those codes as
-    read from the run's `validation.json`. `metrics` are the oracle pass's diagnostics —
-    the raw metric, the capped ratio, the lock outcomes — which the engine records but
-    never gates on.
+    `untouched` is the NopHarness pass (nobody touched the sandbox; it must complete with
+    `reward` 0.0) and `oracle` is the OracleHarness pass (the reference solution ran; it
+    must complete with `reward` 1.0). Both maps are the episode's `result.json` `rewards`,
+    which hold only `reward`, rounded to two decimals: the one value the engine reads. The
+    `*_status` fields are the same records' `status`. The engine fails validation on any
+    miss (`untouched_not_completed`, `untouched_nonzero`, `oracle_not_completed`,
+    `oracle_not_full`); `engine_failures` carries those codes as read from the run's
+    `validation.json`. `metrics` are the oracle pass's diagnostics, the `metrics` of its
+    `verification.json` — the raw metric, the capped ratio, the lock outcomes and the kit's
+    unrounded `reward_exact` — which the engine records but never gates on; `*_diagnostic`
+    is the same file's `diagnostic`, the kit's reason for a zero.
     """
 
     untouched: dict[str, float] | None = None
@@ -329,6 +411,10 @@ class ValidatePasses:
     metrics: dict[str, float] = field(default_factory=dict)
     untouched_failure: str | None = None
     oracle_failure: str | None = None
+    untouched_status: str | None = None
+    oracle_status: str | None = None
+    untouched_diagnostic: str | None = None
+    oracle_diagnostic: str | None = None
     engine_failures: list[str] = field(default_factory=list)
 
 
@@ -338,72 +424,159 @@ def validate(task_dir: Path, *, runs_dir: Path, timeout: int = 14400
 
     The engine's exit status is not the verdict: it exits 2 on any validation failure,
     including the intended null-anchor bootstrap run (`oracle_not_full`), so `run_gates`
-    classifies from the run records instead. Returns `(process, passes)`. `passes` is None when the run produced no records at all
-    — a broken image, a crash before any episode — which is a real outcome and is reported
-    as such, never smoothed into a zero.
+    classifies from the run records instead. Returns `(process, passes)`. `passes` is None
+    when the run produced no records at all — a broken image, a crash before any episode —
+    which is a real outcome and is reported as such, never smoothed into a zero. Only a run
+    directory this call created is read: an engine that stops before its first episode
+    (an image that does not build) creates none, and an earlier run's records must not
+    stand in for it.
     """
+    before = {path.name for path in runs_dir.glob("validate-*")}
     try:
         proc = _engine(["validate", str(task_dir), "--runs-dir", str(runs_dir)],
                        timeout=timeout)
     except subprocess.TimeoutExpired:
         return None, None
-    return proc, _read_passes(runs_dir)
+    return proc, _read_passes(runs_dir, task_id=_task_id(task_dir), ignore=frozenset(before))
 
 
-def _read_passes(runs_dir: Path) -> ValidatePasses | None:
+def _task_id(task_dir: Path) -> str | None:
+    """`[task].name` of the folder's task.toml, or None when it cannot be read."""
+    try:
+        with (task_dir / MANIFEST).open("rb") as handle:
+            table = tomllib.load(handle).get("task")
+    except (OSError, tomllib.TOMLDecodeError):
+        return None
+    name = table.get("name") if isinstance(table, dict) else None
+    return name if isinstance(name, str) else None
+
+
+#: The two passes, as `validate` names their episodes and `validation.json` its fields.
+_PASSES = ("untouched", "oracle")
+#: An episode directory of a validate run: `<org>.<name>-<pass>-<8 hex>` (the engine's
+#: `task_component` of the task id, the pass, a random suffix).
+_EPISODE_DIR = re.compile(r"^(?P<task>.+)-(?P<pass>untouched|oracle)-[0-9a-f]{8}$")
+
+
+def _read_passes(runs_dir: Path, task_id: str | None = None,
+                 ignore: frozenset[str] = frozenset()) -> ValidatePasses | None:
     """Read both validation episodes out of the newest validate run directory.
 
-    The verdict comes from the framework's own `result.json` records, not from anything
-    the task printed: a number a task reports about itself is not evidence.
+    The verdict comes from the framework's own records, not from anything the task printed:
+    a number a task reports about itself is not evidence. Per pass, `result.json` gives the
+    status, the rounded `reward` and a failure's message; `verification.json` (what the
+    verify stage wrote, kept by the engine) gives the oracle's `metrics` and either pass's
+    `diagnostic`. With `task_id` (task.toml's `[task].name`) only that task's records count:
+    the newest run holding them is read, and a run of other tasks never answers for this
+    one. Without it, the newest run and its first task are read. Run directories named in
+    `ignore` are skipped.
     """
-    runs = sorted(runs_dir.glob("validate-*"), key=lambda p: p.stat().st_mtime,
-                  reverse=True)
-    if not runs:
+    runs = sorted((path for path in runs_dir.glob("validate-*")
+                   if path.is_dir() and path.name not in ignore),
+                  key=lambda p: p.stat().st_mtime, reverse=True)
+    for run in runs:
+        entry = _validation_entry(run / "validation.json", task_id)
+        episodes = _episode_dirs(run, entry, task_id)
+        if episodes or task_id is None:
+            break
+    else:
         return None
-    passes = ValidatePasses()
-    passes.engine_failures = _read_failure_codes(runs[0] / "validation.json")
+    passes = ValidatePasses(engine_failures=_failure_codes(entry))
     found = False
-    for episode in runs[0].iterdir():
-        record_path = episode / "result.json"
-        if not record_path.is_file():
+    for name, episode in episodes.items():
+        record = _read_json(episode / "result.json")
+        if not isinstance(record, dict):
             continue
-        try:
-            record = json.loads(record_path.read_text())
-        except ValueError:
-            continue
+        found = True
         rewards = record.get("rewards")
         rewards = ({k: float(v) for k, v in rewards.items()}
                    if isinstance(rewards, dict) else None)
-        failure = (record.get("failure") or {}).get("message")
-        if "-untouched-" in episode.name:
-            passes.untouched, passes.untouched_failure, found = rewards, failure, True
-        elif "-oracle-" in episode.name:
-            passes.oracle, passes.oracle_failure, found = rewards, failure, True
-            metrics = record.get("metrics")
-            if isinstance(metrics, dict):
-                passes.metrics = {k: float(v) for k, v in metrics.items()}
+        failure = record.get("failure")
+        failure = failure.get("message") if isinstance(failure, dict) else None
+        status = record.get("status")
+        status = str(status) if status is not None else None
+        verification = _read_json(episode / "verification.json")
+        verification = verification if isinstance(verification, dict) else {}
+        diagnostic = verification.get("diagnostic")
+        diagnostic = diagnostic if isinstance(diagnostic, str) and diagnostic else None
+        if name == "untouched":
+            passes.untouched, passes.untouched_failure = rewards, failure
+            passes.untouched_status, passes.untouched_diagnostic = status, diagnostic
+        else:
+            passes.oracle, passes.oracle_failure = rewards, failure
+            passes.oracle_status, passes.oracle_diagnostic = status, diagnostic
+            passes.metrics = _numbers(verification.get("metrics"))
     return passes if found else None
 
 
-def _read_failure_codes(validation_path: Path) -> list[str]:
-    """The engine's failure codes for the run (`validation.json`, `tasks[].failures[].code`).
+def _read_json(path: Path) -> Any:
+    """The parsed file, or None when it is missing or not JSON."""
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+
+
+def _numbers(value: Any) -> dict[str, float]:
+    """The numeric entries of a `metrics` object; `verification.json` may hold any JSON."""
+    if not isinstance(value, dict):
+        return {}
+    return {str(k): float(v) for k, v in value.items()
+            if isinstance(v, (int, float)) and not isinstance(v, bool)}
+
+
+def _validation_entry(path: Path, task_id: str | None) -> dict[str, Any] | None:
+    """The task's entry in the run's `validation.json` (`tasks[]`), or None without one.
+
+    The entry whose `name` is `task_id`; without a `task_id`, the first (every run this tool
+    starts validates exactly one task).
+    """
+    document = _read_json(path)
+    tasks = document.get("tasks") if isinstance(document, dict) else None
+    if not isinstance(tasks, list):
+        return None
+    entries = [entry for entry in tasks if isinstance(entry, dict)]
+    if task_id is None:
+        return entries[0] if entries else None
+    return next((entry for entry in entries if entry.get("name") == task_id), None)
+
+
+def _failure_codes(entry: dict[str, Any] | None) -> list[str]:
+    """The engine's failure codes for the task (`validation.json`, `tasks[].failures[].code`).
 
     Diagnostic only: `oracle_not_full` is the expected reading of a null-anchor run, so
     a code never decides the outcome by itself; the episode records do.
     """
-    if not validation_path.is_file():
-        return []
-    try:
-        document = json.loads(validation_path.read_text())
-    except ValueError:
-        return []
+    notices = entry.get("failures") if entry else None
     codes: list[str] = []
-    for entry in document.get("tasks") or []:
-        for notice in (entry.get("failures") if isinstance(entry, dict) else None) or []:
-            code = notice.get("code") if isinstance(notice, dict) else None
-            if code:
-                codes.append(str(code))
+    for notice in notices if isinstance(notices, list) else []:
+        code = notice.get("code") if isinstance(notice, dict) else None
+        if code:
+            codes.append(str(code))
     return codes
+
+
+def _episode_dirs(run: Path, entry: dict[str, Any] | None,
+                  task_id: str | None) -> dict[str, Path]:
+    """`{pass: episode directory}` for the task: as `validation.json` names them, else by name.
+
+    The engine writes `validation.json` only once both passes are over, so a run that
+    stopped early leaves just the episode directories, `<org>.<name>-<pass>-<suffix>`. With
+    a `task_id` only that task's directories count; without one, the first of each pass.
+    """
+    found: dict[str, Path] = {}
+    for name in _PASSES:
+        attempt = entry.get(name) if entry else None
+        result_path = attempt.get("result_path") if isinstance(attempt, dict) else None
+        if isinstance(result_path, str) and result_path:
+            found[name] = (run / result_path).parent
+    component = task_id.replace("/", ".") if task_id else None
+    for episode in sorted(run.iterdir()):
+        match = _EPISODE_DIR.match(episode.name)
+        if (match and episode.is_dir() and match.group("pass") not in found
+                and (component is None or match.group("task") == component)):
+            found[match.group("pass")] = episode
+    return found
 
 
 # --------------------------------------------------------------------------- #
@@ -417,18 +590,19 @@ _DIFFICULTY_STEP = (
     "pinned claude-code harness's two defects first (docs/contributing-a-task.md section 7)."
 )
 _NEXT_STEPS = [
-    "Write image/Dockerfile: the simulator and every stable dependency, final stage FROM "
-    "an official ALE base, python3 >= 3.12 world-traversable — or declare a prebuilt "
-    "`image: {kind: container, ref: ...}` and delete image/Dockerfile.",
-    "Replace the template's environment with your simulator, imported from the image.",
-    "Write oracle/run.sh: the reference method, trained/run inside the agent's own budget, "
-    "leaving a self-contained /home/user/submission/.",
-    "Adapt verify/verify.py to your physics, keeping the abort handling, the match lock and "
-    "the scoring untouched; its `metric_name=` must be verify/anchor.json's `metric`.",
-    "Record the anchor: run `ale validate`, take the measured metric off the oracle pass's "
-    "result.json, write it into verify/anchor.json (with a `full_at` sized from the "
-    "metric's measured seed-to-seed spread), re-run — `ale validate` fails with "
-    "`oracle_not_full` until the oracle lands on reward exactly 1.0.",
+    "Write environment/Dockerfile: the simulator and every stable dependency, final stage "
+    "FROM an official ALE base at an exact version (lint rejects `latest`), python3 >= 3.12 "
+    "world-traversable — or name a prebuilt image in task.toml "
+    "(`[environment].docker_image`) and delete environment/Dockerfile.",
+    "Replace the template's reach environment with your simulator, imported from the image.",
+    "Write solution/solve.sh: the reference method, trained/run inside the agent's own "
+    "budget, leaving a self-contained /home/user/submission/.",
+    "Adapt tests/verify.py to your physics, keeping the abort handling, the match lock and "
+    "the scoring untouched; its `metric_name=` must be tests/anchor.json's `metric`.",
+    "Record the anchor: run `ale validate`, take the measured metric off the `metrics` of "
+    "the oracle episode's verification.json, write it into tests/anchor.json (with a "
+    "`full_at` sized from the metric's measured seed-to-seed spread), re-run — `ale "
+    "validate` fails with `oracle_not_full` until the oracle lands on reward 1.0.",
 ]
 
 
@@ -483,13 +657,14 @@ def run_gates(*, task: str, task_dir: Path, repo: Path, runs_dir: Path,
     Separate from `onboard` because it is also the whole job when a task folder already
     exists: an agent that has just finished writing one asks exactly this question.
 
-    `built` means the double pass held: the untouched pass scored exactly 0 on every reward
-    key and the oracle pass exactly 1 on every reward key. Both are the engine's own gates
-    (`untouched_nonzero`, `oracle_not_full`). This function reads the records rather than
-    the exit status because the null-anchor bootstrap run fails the engine's gate on
-    purpose and must come back as `needs_anchor`, not as an error. The tolerance that lets
-    an honest oracle land on 1.0 under fresh seeds is the task's `full_at`
-    (verify/anchor.json), not a bar declared here.
+    `built` means the double pass held: the untouched episode completed with `reward` 0.0
+    and the oracle episode completed with `reward` 1.0, both as the engine rounds `reward`
+    (two decimals) and both the engine's own gates (`untouched_not_completed`,
+    `untouched_nonzero`, `oracle_not_completed`, `oracle_not_full`). This function reads the
+    records rather than the exit status because the null-anchor bootstrap run fails the
+    engine's gate on purpose and must come back as `needs_anchor`, not as an error. The
+    tolerance that lets an honest oracle land on 1.0 under fresh seeds is the task's
+    `full_at` (tests/anchor.json), not a bar declared here.
     """
     linted = lint(repo)
     if linted.returncode != 0:
@@ -506,8 +681,8 @@ def run_gates(*, task: str, task_dir: Path, repo: Path, runs_dir: Path,
         return OnboardResult(
             status="needs_input", task=task, task_dir=str(task_dir),
             detail=f"`ale validate` exceeded its {validate_timeout}s deadline. If the "
-                   f"oracle trains, raise `timeouts.agent` and the deadline; if it hangs, "
-                   f"the solver is not answering the wire.",
+                   f"oracle trains, raise task.toml's `[agent].timeout_sec` and the deadline; "
+                   f"if it hangs, the solver is not answering the wire.",
             next_steps=list(_NEXT_STEPS),
         )
     if passes is None or (passes.oracle is None and passes.oracle_failure is None):
@@ -530,8 +705,12 @@ def run_gates(*, task: str, task_dir: Path, repo: Path, runs_dir: Path,
         metric, measured = _primary_metric(metrics)
     anchored = metrics.get("anchor_recorded", 1.0) >= 1.0
     lock_ok = metrics.get("match_lock_ok")
-    untouched_zero = (passes.untouched is not None
-                      and all(v == 0.0 for v in passes.untouched.values()))
+    untouched_zero = (passes.untouched_status == "completed"
+                      and passes.untouched is not None
+                      and passes.untouched.get("reward") == 0.0)
+    oracle_full = (passes.oracle_status == "completed"
+                   and passes.oracle is not None
+                   and passes.oracle.get("reward") == 1.0)
     common = dict(
         task=task, task_dir=str(task_dir), reward=reward, ratio=metrics.get("ratio"),
         measured=measured, metric=metric, anchor_recorded=anchored,
@@ -542,10 +721,13 @@ def run_gates(*, task: str, task_dir: Path, repo: Path, runs_dir: Path,
 
     if metrics and declared is not None and declared not in metrics:
         reported = repr(metric) if metric else "no raw metric"
+        if not metric and passes.oracle_diagnostic:
+            # a zero verdict reports no raw metric on purpose; its reason says why
+            reported += f" (diagnostic: {passes.oracle_diagnostic})"
         return OnboardResult(
             status="needs_input",
-            detail=(f"verify/anchor.json names the metric {declared!r}, but the grader "
-                    f"reported {reported}. Set `metric_name=` in verify/verify.py to the "
+            detail=(f"tests/anchor.json names the metric {declared!r}, but the grader "
+                    f"reported {reported}. Set `metric_name=` in tests/verify.py to the "
                     f"anchor's metric, or fix the anchor: the anchor's name is what the "
                     f"registry export publishes for this task."),
             next_steps=list(_NEXT_STEPS),
@@ -556,50 +738,82 @@ def run_gates(*, task: str, task_dir: Path, repo: Path, runs_dir: Path,
         return OnboardResult(
             status="needs_anchor",
             detail=(f"the run measured {metric} = {measured}. Record it in "
-                    f"verify/anchor.json{name_it} and re-validate; until then the oracle scores 0 "
+                    f"tests/anchor.json{name_it} and re-validate; until then the oracle scores 0 "
                     f"by design and `ale validate` fails with `oracle_not_full`, because "
                     f"a task nobody has measured cannot score anybody."),
             next_steps=[_NEXT_STEPS[-1]],
             **common,
         )
-    if not untouched_zero:
+    broken = [f"the {name} pass ended with env_error ({failure})"
+              for name, status, failure in (
+                  ("untouched", passes.untouched_status, passes.untouched_failure),
+                  ("oracle", passes.oracle_status, passes.oracle_failure))
+              if status == "env_error"]
+    if broken:
         return OnboardResult(
             status="needs_input",
-            detail=("the untouched pass did not score an honest all-zero "
-                    f"({passes.untouched_failure or passes.untouched}). The verify stage "
-                    "must produce a real 0 verdict when nobody has touched the sandbox — "
-                    "catch the missing submission and write `zero_verdict(...)` instead "
-                    "of failing."),
+            detail=("; ".join(broken) + ". The sandbox side failed (provisioning, guest service "
+                    "or transport), so the run says nothing about the task yet."),
+            log_tail=_tail(proc.stderr or ""),
+            next_steps=["Fix the host side the failure names, then re-run `ale validate`."],
+            **common,
+        )
+    if not untouched_zero:
+        untouched = _pass_summary(passes.untouched, passes.untouched_status,
+                                  passes.untouched_failure, passes.untouched_diagnostic)
+        return OnboardResult(
+            status="needs_input",
+            detail=(f"the untouched pass did not complete with reward 0.0 ({untouched}). "
+                    "The verify stage must produce a real 0 verdict when nobody has touched "
+                    "the sandbox — catch the missing submission and write `zero_verdict(...)` "
+                    "instead of failing."),
             log_tail=_tail(proc.stderr or ""),
             next_steps=list(_NEXT_STEPS),
             **common,
         )
-    if passes.oracle is not None and all(v == 1.0 for v in passes.oracle.values()):
+    if oracle_full:
         return OnboardResult(
             status="built",
-            detail=f"verified: untouched all-zero and oracle all-one "
+            detail=f"verified: the untouched pass scored reward 0.0 and the oracle reward 1.0 "
                    f"({metric} = {measured}, ratio = {metrics.get('ratio')}).",
             next_steps=[_DIFFICULTY_STEP],
             **common,
         )
+    code = "oracle_not_full" if passes.oracle_status == "completed" else "oracle_not_completed"
+    oracle_summary = _pass_summary(passes.oracle, passes.oracle_status,
+                                   passes.oracle_failure, passes.oracle_diagnostic,
+                                   reward_exact=metrics.get("reward_exact"))
     return OnboardResult(
         status="needs_input",
-        detail=(f"the oracle pass did not reach an all-one verdict "
-                f"({passes.oracle_failure or passes.oracle}); `ale validate` fails this as "
-                f"`oracle_not_full`. A task its own reference implementation cannot pass "
-                f"is broken — either the oracle is not really solving it, the anchor came "
-                f"from a different setup, or `full_at` (verify/anchor.json) leaves no room "
-                f"for seed-to-seed variance."),
+        detail=(f"the oracle pass did not complete with reward 1.0 ({oracle_summary}); "
+                f"`ale validate` fails this as `{code}`. A task its own reference "
+                f"implementation cannot pass is broken — either the oracle is not really "
+                f"solving it, the anchor came from a different setup, or `full_at` "
+                f"(tests/anchor.json) leaves no room for seed-to-seed variance."),
         log_tail=_tail(proc.stderr or ""),
         next_steps=list(_NEXT_STEPS),
         **common,
     )
 
 
+def _pass_summary(rewards: dict[str, float] | None, status: str | None,
+                  failure: str | None, diagnostic: str | None,
+                  reward_exact: float | None = None) -> str:
+    """One pass as its records state it: the failure or the rewards, then what explains them."""
+    parts = [failure or str(rewards)]
+    if reward_exact is not None:
+        parts.append(f"reward_exact {reward_exact}")
+    if status not in (None, "completed"):
+        parts.append(f"status {status}")
+    if diagnostic:
+        parts.append(f"diagnostic: {diagnostic}")
+    return "; ".join(parts)
+
+
 def _declared_metric(task_dir: Path) -> str | None:
-    """The metric verify/anchor.json declares, or None when it names none (the template's `TODO`)."""
+    """The metric tests/anchor.json declares, or None when it names none (the template's `TODO`)."""
     try:
-        metric = json.loads((task_dir / "verify" / "anchor.json").read_text(encoding="utf-8")).get("metric")
+        metric = json.loads((task_dir / "tests" / "anchor.json").read_text(encoding="utf-8")).get("metric")
     except (OSError, ValueError, AttributeError):
         return None
     return metric if isinstance(metric, str) and metric not in ("", "TODO") else None
@@ -607,7 +821,7 @@ def _declared_metric(task_dir: Path) -> str | None:
 
 def _primary_metric(metrics: dict[str, float]) -> tuple[str | None, float | None]:
     """The task's raw metric — whichever metrics key is not framework bookkeeping."""
-    reserved = {"ratio", "anchor_recorded", "match_lock_ok",
+    reserved = {"ratio", "anchor_recorded", "match_lock_ok", "reward_exact",
                 "probes_total", "probes_passed", "episodes_aborted"}
     for name, value in metrics.items():
         if name not in reserved:

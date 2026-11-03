@@ -1,0 +1,7 @@
+{
+ "metric": "fraction_pieces_passed",
+ "direction": "higher",
+ "value": 0.5909090909090908,
+ "full_at": 0.85,
+ "source": "maintainer measurement (2026-10-31) with the pinned numerics of sorter/numerics.py: the privileged oracle plans (solution/ref/plans; GT-state planner, round r7) pass 26/44 pieces (inst_a 8, inst_b 6, inst_c 6, inst_d 6) in ale validate (validate-bfa0e62c, the grader's own mean of the four scene scores) on Docker with the official base image on an AMD Ryzen Threadripper PRO 5975WX; bit-identical in every run, and the same on every machine that passes the numerics check. The author's 37/44 (10/10 runs on the author's host) came from that host's OpenBLAS kernels and does not reproduce on other CPUs. full_at 0.85 as pre-registered by the author"
+}

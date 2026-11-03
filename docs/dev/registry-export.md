@@ -1,5 +1,11 @@
 # Exporting the task registry (`ale-robotics-task-registry/v2`)
 
+> **2026-11-03 note.** Since the Harbor migration the task files named below are
+> `task.toml` (for `task.yaml`), `tests/anchor.json` and `tests/grader_config.json` (for the
+> `verify/` files). A task's `slug` is the part of its `[task] name` after
+> `grounded-intelligence-initiative/`, and there are no variants. Where this page and
+> `scripts/export_registry.py` disagree, the script wins.
+
 `scripts/export_registry.py` turns the committed `tasks/` tree into `registry.json`, the
 document this repository publishes and the website displays. Its contract is
 `schemas/task-registry.schema.json`, owned here; the tests hold the export to it, so change
@@ -37,21 +43,27 @@ verbatim and there are no directions.
 
 ## Where each field comes from
 
-- `slug`, `platform` (refused unless it is a key of `tasks/platforms.json`), `resources`,
-  `timeouts`: `task.yaml` via the loader.
-- `metric_name`, `metric_direction`, `metric_label`: `verify/anchor.json` keys `metric` and
+- `task_id` (the engine's `org/name`, required, `grounded-intelligence-initiative/<slug>`),
+  `slug` (the part after `/`; two task ids that share a slug are refused), `platform`
+  (`[metadata].platform`, refused unless it is a key of `tasks/platforms.json`), `resources`,
+  `timeouts`: `task.toml` via the engine's loader. `timeouts.setup` is the engine's fixed
+  setup bound (1800 s; `task.toml` has no setup field), `agent` and `verify` are
+  `[agent].timeout_sec` and `[verifier].timeout_sec`.
+- `metric_name`, `metric_direction`, `metric_label`: `tests/anchor.json` keys `metric` and
   `direction` (`higher|lower` becomes `higher_is_better|lower_is_better`; the label is the
   metric name with underscores as spaces).
 - `platforms` (top level): `tasks/platforms.json`, `[{key, label}]` in file order.
 - `title`: first `# ` heading of `instruction.md`, else the title-cased slug.
 - `anchor`, `anchor_full_at` (default 1.0, must lie in `(0, score_cap]`), `anchor_source`,
-  `anchor_image_identity`: `verify/anchor.json` keys `value`, `full_at`, `source`,
+  `anchor_image_identity`: `tests/anchor.json` keys `value`, `full_at`, `source`,
   `image_identity`. A `null` value is the authoring state and is passed through.
-- `score_cap`: `verify/grader_config.json` `scoring_cap`, default 1.5.
-- `identities`: newest first; `[0]` is the loader's current pair, older entries come from
-  the history file.
-- `release.aggregation_policy.task_set`: every exported (active) slug. Only the `base`
-  variant is exported.
+- `score_cap`: `tests/grader_config.json` `scoring_cap`, default 1.5.
+- `identities`: newest first; `[0]` is the loader's current pair (`spec_hash` of the
+  `TaskSpec`, `content_digest` of the folder without the asset roots and `.ale-cache`), older
+  entries come from the history file.
+- `release.aggregation_policy.task_set`: every exported (active) slug. (Before the
+  2026-11-03 move to the Harbor-based engine only the `base` variant was exported; the engine
+  has no variants any more.)
 - `provenance.engine`: `vendor/ale` commit, `ale-run` package version, and the
   `ale_verify` content hash the engine stamps into every `lock.json`.
 

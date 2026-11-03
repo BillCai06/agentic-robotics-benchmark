@@ -15,9 +15,9 @@ solves it)* to a task the upstream ALE engine accepts. The Agentic Robotics Benc
 its tasks on `AgentsLastExam/ale`: each task drops an autonomous agent into a sandboxed
 robotics problem (develop a controller, plan a manipulation sequence, write code-as-policy,
 tune a planner, …) and scores the artifact it leaves behind with a hidden grader on hidden
-seeds. There is one kind of task; `metadata.platform` (one of `tasks/platforms.json`) is the
-taxonomy axis. The folder shape and the
-manifest are upstream's, and the pinned engine lives at `vendor/ale`.
+seeds. There is one kind of task; `[metadata].platform` (one of `tasks/platforms.json`) is the
+taxonomy axis. The folder shape and the configuration are upstream's (Harbor's task format),
+and the pinned engine lives at `vendor/ale`.
 
 Read first: `templates/README.md` (the task contract and what each template file is for —
 the source of truth for the layout) and the worked example
@@ -28,20 +28,24 @@ green.
 
 ```
 tasks/<platform>/<task>/
-├── task.yaml         the manifest (core/v1) — invisible to the agent
-├── instruction.md    the prompt — the only thing the agent is told
-├── image/Dockerfile  the environment; sole build context, final stage FROM an official ALE base
-├── setup/
-│   ├── run.sh        trusted root, before the agent: stages payload/ into the agent home
-│   └── payload/      agent-visible material (practice grader, dev copies)
-├── oracle/run.sh     the reference implementation; `ale validate` runs it in place of the agent
-└── verify/           the grader (verify.py), the anchor, grader_config.json, and the
-                      vendored robotics_grader/ package; ABSENT while the agent works
+├── task.toml          the configuration: [task] name, [metadata] platform, resources and
+│                      timeouts — invisible to the agent
+├── instruction.md     the prompt — the only thing the agent is told
+├── environment/
+│   ├── Dockerfile     the image; build context environment/ without setup/; final stage FROM
+│   │                  an exact version of an official ALE base
+│   └── setup/
+│       ├── setup.sh   trusted root, before the agent: stages payload/ into the agent home
+│       └── payload/   agent-visible material (practice grader, dev copies)
+├── solution/solve.sh  the reference implementation; `ale validate` runs it in place of the agent
+└── tests/             test.sh -> verify.py (the grader), the anchor, grader_config.json, and the
+                       vendored robotics_grader/ package; ABSENT while the agent works
 ```
 
-Every task owns its image. There is no shared image tree and no repository kit: the
+`[task] name` is `grounded-intelligence-initiative/<task>`, and `<task>` is also the folder
+name. Every task owns its image. There is no shared image tree and no repository kit: the
 Dockerfile is the whole environment, and the shared verify machinery travels inside
-`verify/robotics_grader/` (canonical copy at `shared/robotics_grader/`, byte-equality in CI).
+`tests/robotics_grader/` (canonical copy at `shared/robotics_grader/`, byte-equality in CI).
 
 ## Interaction contract
 
@@ -54,8 +58,8 @@ assume, and never interrogate.
 1. **The problem.** What the agent is dropped into, in one sentence: the simulator, the robot,
    the objective, and what artifact the agent leaves behind (a live policy, plans on disk, a
    frozen checkpoint). This becomes the first paragraph of `instruction.md`.
-2. **A reference implementation + a PINNED commit** — the code `oracle/run.sh` will run. No
-   runnable reference is a give-up condition, because the anchor is the reference
+2. **A reference implementation + a PINNED commit** — the code `solution/solve.sh` will run.
+   No runnable reference is a give-up condition, because the anchor is the reference
    implementation's own measured value and there is nothing to measure without it.
 3. **Headline metric.** It must be an outcome, hardware-invariant, and **on a positive scale**
    — success_rate, reward, SPL, ATE, collision_rate. Not ms / FPS / throughput / frequency:
@@ -68,27 +72,30 @@ assume, and never interrogate.
 
 ### Step 1 — the image (do this before writing anything)
 
-Start from the template's `image/Dockerfile` and keep its two load-bearing idioms:
+Start from the template's `environment/Dockerfile` and keep its two load-bearing idioms:
 
-* the final stage derives **directly** from an official ALE base
-  (`ghcr.io/agentslastexam/container-ubuntu22-base`) — lint enforces the FROM;
+* the final stage derives **directly** from an official ALE base at an exact version
+  (`ghcr.io/agentslastexam/container-ubuntu22-base:0.1.1`) — `ale lint` refuses `latest`
+  and an untagged base;
 * a **py3.12 `/opt/venv`** whose interpreter every account can traverse
   (`UV_PYTHON_INSTALL_DIR=/opt/uv-python`), because the engine stages its `ale_verify`
-  package into whatever answers `python3` and refuses anything older — and an
+  package into whatever answers `python3` (else `python3.12`) and refuses anything older
+  than 3.12 — and an
   **agent-UID import self-check** at the end. The single most common failure is a venv the
   agent account cannot traverse, which surfaces at solve time as a misleading
   `ModuleNotFoundError`.
 
 Install the simulator and every stable dependency at pinned versions; strip the reference
 implementation's own recipe in the *same* layer that clones it — an image that ships the
-exact training script hands the agent the answer. A prebuilt stack can instead declare
-`image: {kind: container, ref: ...}` and delete the Dockerfile.
+exact training script hands the agent the answer. A prebuilt stack can instead name
+`[environment].docker_image = "<registry>/<image>:<tag>"` in `task.toml` and delete the
+Dockerfile.
 
-### Step 2 — choose the verify pattern (an authoring choice, not a task.yaml field)
+### Step 2 — choose the verify pattern (an authoring choice, not a task.toml field)
 
-There is one template. The pattern only decides what `verify/verify.py` does:
+There is one template. The pattern only decides what `tests/verify.py` does:
 
-| Pattern | Use when | verify/verify.py |
+| Pattern | Use when | tests/verify.py |
 |---|---|---|
 | **open_loop** | a planner or one-shot solver: the agent produces whole plans offline | read the agent's answers, re-simulate them under your own dynamics, reject any answer that does not start from the state it claims |
 | **closed_loop** | a reactive policy: the action depends on the current observation | `Solver` + `ProbeLock` — the grader owns the sim and steps the agent's policy |
@@ -104,7 +111,7 @@ uv run python -m harness.ale_onboard <spec>.yaml --no-gate
 ```
 
 The spec is small: `task`, `platform` (one of `tasks/platforms.json`), `metric: {name,
-direction}` (written into `verify/anchor.json`), and an optional prebuilt `image` ref. It fills
+direction}` (written into `tests/anchor.json`), and an optional prebuilt `image` ref. It fills
 those and nothing else — the environment, the
 oracle and the grader's physics are yours to write, and inventing them is the one failure
 this pipeline exists to prevent.
@@ -119,7 +126,8 @@ That runs `ale lint`, then `ale validate` from the pinned engine. Validate runs 
 TWICE — an untouched sandbox, then the oracle in place of the agent — and the gate reads the
 run records and returns one of:
 
-* **`built`** — untouched all-zero and oracle all-one. The task runs; next, measure its
+* **`built`** — untouched `reward` 0.0 and oracle `reward` 1.0, after the engine rounds
+  `reward` half up to two decimals. The task runs; next, measure its
   difficulty with frontier models (`ale run`, target `reward` roughly below 0.5;
   `docs/contributing-a-task.md` §7), then open the pull request. Both are the engine's own
   gates: `ale validate` fails with `untouched_nonzero` or `oracle_not_full` (exit 2)
@@ -127,12 +135,12 @@ run records and returns one of:
   fails with `oracle_not_full` on purpose, and only the run records tell it apart from a
   broken oracle, which is what `harness/ale_onboard.py` reads.
 * **`needs_anchor`** — the anchor is still null; the result carries the **measured value**.
-  Write it into `verify/anchor.json` and re-gate. This is the normal second-to-last step, not
+  Write it into `tests/anchor.json` and re-gate. This is the normal second-to-last step, not
   a failure.
   ⚠ **Before you accept that number, check how much your metric moves between runs.** The
   anchor comes from ONE run, and the next run draws fresh hidden seeds — so if the spread is
   wide, an honest oracle misses 1.0 by luck. Run the gate a few times and compare;
-  raise `verify/grader_config.json` episodes until the spread is small, and set the anchor's
+  raise `tests/grader_config.json` episodes until the spread is small, and set the anchor's
   `full_at` (the ratio where the reward saturates to 1.0) below the worst realistic ratio.
   (The template measured 1.43x spread at 10 episodes and 1.16x at 60, which is why it ships
   60 episodes and `full_at: 0.8`.)
@@ -165,11 +173,12 @@ verdict or not at all.
 
 ## Trust boundary (never violate)
 
-* The anchor and the grader are hidden from the tested agent by **timing**: `verify/` reaches
-  the sandbox only when the verify stage runs. Nothing in `setup/payload/` or
+* The anchor and the grader are hidden from the tested agent by **timing**: `tests/` reaches
+  the sandbox only when the verify stage runs. Nothing in `environment/setup/payload/` or
   `instruction.md` may restate the anchor, and the practice grader reports the raw metric
   only — never a ratio, a score, or the reference value.
 * Do not print the anchor number into a contributor-facing summary.
-* The repository is public and a task folder travels whole, `verify/` and `oracle/`
+* The repository is public and a task folder travels whole, `tests/` and `solution/`
   included: the anchor is hidden from the tested agent by stage timing, not from people.
-  What must never happen is the anchor reaching `instruction.md` or `setup/payload/`.
+  What must never happen is the anchor reaching `instruction.md` or
+  `environment/setup/payload/`.

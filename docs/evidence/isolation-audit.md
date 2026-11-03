@@ -1,5 +1,42 @@
 # Isolation audit — what the tested agent can actually reach
 
+> **2026-11-03 note: made on the pre-Harbor engine.** This audit ran on 2026-07-28, on the
+> engine of that time and with its names: the grader's stage at `/opt/ale/verify`, the reward
+> map at `/opt/ale/rewards.json`, the kit declared under `verify.kits`. It was not repeated on
+> the Harbor-based engine. On 2026-11-03 each barrier was re-checked in the code of
+> `vendor/ale` `1cdbc02` (paths relative to `vendor/ale/packages/ale-run/src/ale/run/`):
+>
+> - `/opt/ale` is still root's and closed to every other account: the layer the engine adds
+>   to each task image runs `chown -R 0:0 /opt/ale` and `chmod -R go-rwx /opt/ale`
+>   (`framework.py:122-123`), and stage uploads land below it owned by root
+>   (`guestd/main.py:225-231`).
+> - The grader's stage is now `tests/`, uploaded to `/opt/ale/tests` only when the verify
+>   stage runs (`protocol/episode_protocol.py:757-783`). The oracle is now `solution/`,
+>   uploaded to `~/.ale-solution` as the agent and only in an oracle episode (`:500-501`,
+>   `:1290-1297`; `harnesses/builtin.py:26-37`). Neither exists while the agent works.
+> - The result no longer lives in `/opt/ale`. The verifier writes
+>   `/logs/verifier/reward.json` and `verification.json`; before every verification attempt
+>   the engine removes whatever is at `/logs/verifier`, makes `/logs` root's and unwritable
+>   for others, and recreates `/logs/verifier` empty with mode 0700
+>   (`protocol/episode_protocol.py:144-156`, run at `:777`). The fake-verdict check below
+>   maps to that directory. It was checked in the code and is covered by upstream's
+>   `test_an_agent_cannot_plant_or_redirect_a_result`
+>   (`vendor/ale/tests/integration/test_verification_security.py:210`), not by a run of ours.
+> - The kit is no longer installed by the engine: every task vendors it as
+>   `tests/robotics_grader/`, so it arrives with `tests/` in the root-only stage. The engine
+>   stages its own `ale_verify` into the image's `python3` site-packages at verify time
+>   (`protocol/episode_protocol.py:797-809`); in the template's image that directory is
+>   root's, as below.
+> - Setup and verification both run with egress open (`protocol/episode_protocol.py:466`,
+>   `:795`); the agent phase is sealed first (`:530`). The verify-stage hole in the last
+>   section is still open. Separate verification (`[verifier] environment_mode =
+>   "separate"`, a fresh sandbox that receives only the declared artifacts; four tasks use
+>   it) is the second sandbox the last section asks for, but it is provisioned with an open
+>   network (`:443`), so it does not close that hole either.
+> - The verdict under "The probe lock" lists every number as a reward key, as the engine of
+>   the time required. The kit now writes only `reward` as the score and the rest under
+>   `metrics` in `verification.json`.
+
 Every line below is output from a **real `ale validate` run** of
 the task template (now `templates/task`, then as `tasks/template/reach`) on 2026-07-28, with the oracle
 replaced by an audit script. The oracle stands in for the agent, runs as the same

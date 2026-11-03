@@ -4,6 +4,17 @@
 > data model / migration, operability, upstream semantics; 44 objections were confirmed against
 > the code and are folded in below). Status: **approved direction, implementation in progress.**
 >
+> **2026-11-03 update: the Harbor task format.** The engine pin moved to `1cdbc02` (engine
+> 0.1.1), whose task folder is Harbor's. Read `task.yaml` as `task.toml` (`[task] name =
+> "grounded-intelligence-initiative/<slug>"`; the slug is still the folder name and the
+> registry's key), `image/` as `environment/`, `setup/run.sh` as `environment/setup/setup.sh`,
+> `verify/` as `tests/` (so `verify/anchor.json` is `tests/anchor.json`) and `oracle/run.sh`
+> as `solution/solve.sh`. Variants are gone, and `lock.json` has no `task.variant`. A verifier
+> writes `/logs/verifier/reward.json` (`reward` only, rounded half up to two decimals) and
+> `verification.json`; the grader's metrics are in the episode's `verification.json`, no
+> longer in `result.json`. The content digest leaves out `environment/assets/`,
+> `tests/assets/`, `solution/assets/` and `.ale-cache`.
+>
 > **2026-10-15, second update: the leaderboard bridge is retired.** The website became a
 > display-only front end: no run or score submissions and no leaderboard. `ale-export`
 > (`harness/export_run.py`, `bundle_crypto.py`, `redact.py`, `trajectory.py`, `integrity.py`),

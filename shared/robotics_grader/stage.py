@@ -1,7 +1,9 @@
 """Verify-stage basics: where things are, who runs them, and how a run ends.
 
-The framework tells a stage script three things through the environment, and this module
-is the only place that reads them, so a task never hardcodes a path the framework owns.
+The framework tells a stage script where it is (`ALE_STAGE_DIR`) and whose home it works
+on (`ALE_HOME`) through the environment, and the result goes to Harbor's verifier directory;
+this module is the only place that knows them, so a task never hardcodes a path the
+framework owns.
 """
 
 import json
@@ -9,7 +11,12 @@ import os
 import subprocess
 import sys
 
+#: Harbor's verifier directory: `reward.json` (the score the engine reads) and
+#: `verification.json` (the complete result) go here.
+VERIFIER_DIR = "/logs/verifier"
+
 __all__ = [
+    "VERIFIER_DIR",
     "agent_user",
     "deprivileged",
     "fail",
@@ -21,7 +28,7 @@ __all__ = [
 
 
 def stage_dir():
-    """This stage's folder inside the sandbox (root-only, under the framework's /opt/ale).
+    """This stage's folder inside the sandbox (`/opt/ale/tests`: root-only, like all of /opt/ale).
 
     Assets that must not exist while the agent works — the anchor, grader config, hidden
     reference data — live here, because a stage folder is copied in when its stage runs.
@@ -30,8 +37,14 @@ def stage_dir():
 
 
 def verdict_path():
-    """Where rewards are written. The agent's UID cannot pre-create or overwrite it."""
-    return os.environ["ALE_VERDICT_PATH"]
+    """Harbor's reward file, where the engine reads the score back.
+
+    The agent's UID cannot pre-create or overwrite it: the engine empties `/logs/verifier`
+    and gives it to the framework alone before every verification attempt. Write it through
+    `write_verdict`, never directly: the file holds a flat object of numbers, not the
+    kit's `{"rewards": ..., "metrics": ...}` envelope.
+    """
+    return os.path.join(VERIFIER_DIR, "reward.json")
 
 
 def agent_home():
@@ -42,8 +55,8 @@ def agent_home():
 def agent_user():
     """The account the agent ran as, derived from its home.
 
-    The image declares it (`ale.user`) and the framework passes the home; taking the leaf
-    of the home keeps the two consistent without a second source of truth.
+    task.toml's `[agent].user` names it (default `user`) and the framework passes its home;
+    taking the leaf of the home keeps the two consistent without a second source of truth.
     """
     return os.path.basename(agent_home().rstrip("/")) or "user"
 
@@ -65,47 +78,59 @@ def require(condition, reason):
         fail(reason)
 
 
-def write_verdict(verdict, path=None):
-    """Write the verdict envelope the framework reads back.
+def write_verdict(verdict, path=None, diagnostic=None):
+    """Write the verdict the framework reads back.
 
     `verdict` is `{"rewards": {...}, "metrics": {...}}`. The split is load-bearing under
-    `ale validate`: every key in `rewards` must be exactly 0 on an untouched sandbox
-    (`untouched_nonzero` fails the run otherwise) and exactly 1 for the oracle
-    (`oracle_not_full` fails it otherwise), so `rewards` carries only the gated score —
-    normally the single key `reward`, in [0, 1] — and everything worth keeping but not
-    gating (the raw metric, the capped ratio, lock outcomes, abort counts) goes in
-    `metrics`, which the engine persists to the run record and never judges.
+    `ale validate`: `reward` must be exactly 0 on an untouched sandbox and exactly 1 for the
+    oracle (two decimals, as the engine rounds it), so `rewards` carries only the gated
+    score, the single key `reward` in [0, 1], and everything worth keeping but not gating
+    (the raw metric, the capped ratio, lock outcomes, abort counts) goes in `metrics`.
 
-    When the engine's own `ale_verify` package is present (it stages it into the sandbox's
-    `python3` at verify time), the same envelope is also recorded through it, because the
-    engine cross-checks the reward file against the verification record and rejects a
-    mismatch. Outside a sandbox — the kit's selftest, a practice run — the plain JSON
-    envelope is enough.
+    With no `path`, inside the engine's verify stage (`ALE_VERIFY_PYTHON` is set), the result
+    goes through the engine's `ale_verify.write`, which it stages into the verify-stage
+    interpreter. It writes Harbor's `/logs/verifier/reward.json` (`{"reward": ...}`, the only
+    value the engine reads) and `verification.json` beside it: the complete result, with
+    `metrics`, the exact unrounded reward as `metrics.reward_exact`, and the grader's
+    `diagnostic` text when there is one (the argument, or the verdict's own `diagnostic`).
+
+    With a `path`, the plain envelope is written there instead, for runs outside a sandbox
+    (the kit's selftest, a host-side dry run). A grader run by hand outside the engine, such
+    as a maintainer re-measuring an anchor inside the task image, gets the same through the
+    `ROBOTICS_GRADER_VERDICT_PATH` environment variable without changing the grader.
     """
     rewards = verdict.get("rewards") or {}
     metrics = verdict.get("metrics") or {}
     require("reward" in rewards, "rewards map has no primary 'reward' key")
     require(all(0.0 <= float(v) <= 1.0 for v in rewards.values()),
             "every gated reward must lie in [0, 1]; report raw values under metrics")
+    rewards = {k: float(v) for k, v in rewards.items()}
+    metrics = {k: float(v) for k, v in metrics.items()}
+    diagnostic = diagnostic if diagnostic is not None else verdict.get("diagnostic")
 
-    if os.environ.get("ALE_VERIFICATION_PATH"):
+    if path is None and not os.environ.get("ALE_VERIFY_PYTHON"):
+        path = os.environ.get("ROBOTICS_GRADER_VERDICT_PATH") or None
+    if path is None:
         try:
-            from ale_verify import CheckResult, Verification
+            from ale_verify import write
         except ImportError:
-            fail("ALE_VERIFICATION_PATH is set but ale_verify is not importable — the "
-                 "image's python3 is older than the engine's 3.12 floor, or the stage "
-                 "is running outside the engine")
-        record = Verification()
-        for name, value in sorted(rewards.items()):
-            record.check(name, CheckResult(float(value), "computed by the task's grader"))
-        for name, value in sorted(metrics.items()):
-            record.stat(name, float(value))
-        record.write()   # writes ALE_VERIFICATION_PATH and ALE_VERDICT_PATH atomically
+            fail("ale_verify is not importable: the engine stages it into the verify-stage "
+                 "interpreter (3.12+, named by ALE_VERIFY_PYTHON); outside the engine pass a "
+                 "path or set ROBOTICS_GRADER_VERDICT_PATH")
+        result = {"reward": rewards["reward"],
+                  "metrics": dict(metrics, reward_exact=rewards["reward"])}
+        if len(rewards) > 1:
+            result["rewards"] = rewards
+        if diagnostic:
+            result["diagnostic"] = str(diagnostic)
+        write(result)   # reward.json and verification.json, atomically, reward rounded
         return
 
-    with open(path or verdict_path(), "w") as handle:
-        json.dump({"rewards": {k: float(v) for k, v in rewards.items()},
-                   "metrics": {k: float(v) for k, v in metrics.items()}}, handle)
+    envelope = {"rewards": rewards, "metrics": metrics}
+    if diagnostic:
+        envelope["diagnostic"] = str(diagnostic)
+    with open(path, "w") as handle:
+        json.dump(envelope, handle)
 
 
 def deprivileged(argv, **kwargs):

@@ -1,0 +1,8 @@
+# Public SuperDex 1.0.0 component wheels (Apache-2.0), installed with --no-deps (the umbrella `superdex` package is
+# NOT used: it pulls GPL-3.0 tooling). The fp64 wheels provide the double-precision build selected by
+# SUPERDEX_PRECISION=double.
+superdex-physics==1.0.0
+superdex-physics-fp64==1.0.0
+superdex-robotics==1.0.0
+superdex-robotics-fp64==1.0.0
+superdex-lab==1.0.0

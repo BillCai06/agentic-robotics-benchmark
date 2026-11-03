@@ -1,0 +1,9 @@
+{
+  "metric": "TODO",
+  "direction": "lower",
+  "value": null,
+  "full_at": 0.8,
+  "source": "TODO: your reference implementation's own measured value from a real `ale validate` run, never a published figure",
+  "reference_commit": "TODO",
+  "note": "Authoring flow: leave `value` null and run `ale validate`. The run fails with `oracle_not_full` and the oracle episode's verification.json (key `metrics`) carries the measured metric. Write it here, run again, and the oracle lands on reward 1.0. A null anchor is not a broken task: the run scores 0 and reports the measurement until the value is recorded. `full_at` is where the reward saturates, in ratio units: the worst ratio an honest on-reference run lands on under fresh hidden seeds. Measure the spread across several oracle runs before choosing it. This template measured 1.16x over 12 independent 60-episode runs, so the worst honest ratio is about 0.86 and 0.8 clears it with margin (at 10 episodes the spread was 1.43x and the gate was a coin flip; raise grader_config.json episodes until the spread is small). The metric must be on a POSITIVE scale (0 = best for a cost, 0 = worst for a score); the kit refuses a non-positive anchor because it would invert the ordering."
+}

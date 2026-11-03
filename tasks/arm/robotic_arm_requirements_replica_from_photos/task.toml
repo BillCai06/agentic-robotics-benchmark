@@ -1,0 +1,34 @@
+# robotic_arm_requirements_replica_from_photos: the requirements stage of the robotic-arm full-stack workflow (an atomic task). The
+# agent specifies ten upgraded replicas of a six-servo desktop arm that is no longer on the bench, known only from one
+# fixed photo set (31 photos rendered with Blender Cycles in a lab room, sparse physical scale references), a build log,
+# a customer brief with a public acceptance procedure, vendor datasheet pages and two servo-lot reports (images only)
+# and a distributor quote. It delivers requirements.yaml, bom.json and kinematic_sketch.json.
+#
+# Grading (tests/verify.py; knobs in tests/grader_config.json; static, no agent code runs): gates G0 structure and G1
+# submission integrity (verify-start lockdown) x kinematic_replication 0.30, requirements_sheet 0.10,
+# derived_requirements 0.20, bom_acceptance 0.10 (the acceptance verdict on the true arm with the delivered lot's weakest
+# expected unit), bom_economy 0.30 (linear from the live true optimum J* to J* + one engineering change, on the
+# ECO-repaired cost). requirements_score = the weighted mean; reward = requirements_score (tests/anchor.json).
+
+schema_version = "1.4+ale.1"
+artifacts = ["/home/user/submission"]
+
+[task]
+name = "grounded-intelligence-initiative/robotic_arm_requirements_replica_from_photos"
+
+[metadata]
+platform = "arm"
+
+[environment]
+cpus = 4
+memory_mb = 8192
+
+# setup: stage the payload into the agent home (< 30 s). agent: photogrammetry on 31 photos, 30 document pages and two
+# lot reports read from images, a dynamics model and a BOM search (3-5 h of focused work). verify: lockdown, the
+# acceptance set, the regressor, the live optimum search (about 10-30 s).
+[agent]
+timeout_sec = 14400
+network_mode = "no-network"
+
+[verifier]
+timeout_sec = 900

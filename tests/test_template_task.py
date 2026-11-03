@@ -1,21 +1,20 @@
 """The shipped task template — what contributors copy — keeps its promises.
 
-These are the rehearsal findings of 2026-09-02, pinned: the probe wire is indistinguishable
-(step index `t`, never a probe marker), the two environment copies are byte-identical,
-`setup/run.sh` stages `payload/` without naming its files, the manifest's platform hint
-lists the benchmark's own platform keys, no contributor-facing file points at the maintainers'
-harness, and the instruction states what the kit actually enforces (cwd, READY deadline,
-repeated-`t` semantics, saturation).
+These are the rehearsal findings of 2026-09-02, pinned (paths as of the Harbor layout,
+2026-11-03): the probe wire is indistinguishable (step index `t`, never a probe marker),
+the two environment copies are byte-identical, `environment/setup/setup.sh` stages
+`payload/` without naming its files, the manifest's platform hint lists the benchmark's own
+platform keys, no contributor-facing file points at the maintainers' harness, and the
+instruction states what the kit actually enforces (cwd, READY deadline, repeated-`t`
+semantics, saturation).
 """
 
 from __future__ import annotations
 
 import json
 import re
+import tomllib
 from pathlib import Path
-
-import pytest
-import yaml
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 TEMPLATE = REPO_ROOT / "templates" / "task"
@@ -24,9 +23,11 @@ KIT = REPO_ROOT / "shared" / "robotics_grader"
 PLATFORM_KEYS = [entry["key"] for entry in
                  json.loads((REPO_ROOT / "tasks" / "platforms.json").read_text(encoding="utf-8"))]
 
-CONTRIBUTOR_FACING = ["task.yaml", "instruction.md", "verify/verify.py", "verify/anchor.json",
-                      "verify/env.py", "setup/run.sh", "oracle/run.sh", "oracle/solver.py",
-                      "setup/payload/template_env.py", "setup/payload/practice_grader/grade.py"]
+CONTRIBUTOR_FACING = ["task.toml", "instruction.md", "environment/Dockerfile",
+                      "environment/setup/setup.sh", "tests/test.sh", "tests/verify.py",
+                      "tests/anchor.json", "tests/env.py", "solution/solve.sh",
+                      "solution/solver.py", "environment/setup/payload/template_env.py",
+                      "environment/setup/payload/practice_grader/grade.py"]
 
 
 def _text(rel: str) -> str:
@@ -39,7 +40,8 @@ def _text(rel: str) -> str:
 def test_no_probe_marker_anywhere_on_the_agent_facing_surface():
     """Neither the instruction, the practice grader nor the kit ever says `"probe"` on
     the wire; a solver has nothing to key on."""
-    for rel in ("instruction.md", "setup/payload/practice_grader/grade.py", "oracle/solver.py"):
+    for rel in ("instruction.md", "environment/setup/payload/practice_grader/grade.py",
+                "solution/solver.py"):
         assert '"probe"' not in _text(rel), rel
     for path in KIT.glob("*.py"):
         src = path.read_text()
@@ -67,18 +69,18 @@ def test_instruction_quotes_the_kits_real_deadlines():
                                                   submodule_search_locations=[])
     factor = int(re.search(r"^READY_TIMEOUT_FACTOR = (\d+)", (KIT / "solver.py").read_text(),
                            re.MULTILINE).group(1))
-    step = json.loads(_text("verify/grader_config.json"))["step_timeout_s"]
+    step = json.loads(_text("tests/grader_config.json"))["step_timeout_s"]
     text = _text("instruction.md")
     assert f"within {step * factor} s" in text, (step, factor)
     assert f"within {step} s" in text
-    grade = _text("setup/payload/practice_grader/grade.py")
+    grade = _text("environment/setup/payload/practice_grader/grade.py")
     assert f"STEP_TIMEOUT_S = {float(step)}" in grade
     assert f"READY_TIMEOUT_S = {factor} * STEP_TIMEOUT_S" in grade
     assert spec is not None
 
 
 def test_verify_loop_owns_t_and_probes_through_the_lock():
-    src = _text("verify/verify.py")
+    src = _text("tests/verify.py")
     assert "for t in range(env.max_steps)" in src
     assert "lock.probe(solver, t, obs)" in src
     assert "solver.act(t, obs)" in src
@@ -86,11 +88,11 @@ def test_verify_loop_owns_t_and_probes_through_the_lock():
 
 
 def test_practice_grader_speaks_the_same_wire_with_repeated_t():
-    src = _text("setup/payload/practice_grader/grade.py")
+    src = _text("environment/setup/payload/practice_grader/grade.py")
     assert '{"type": "act", "t": t, "obs": obs}' in src
     assert "REPEAT_STEPS" in src and "perturbed" in src
     assert "queue.Queue" in src and "threading.Thread" in src   # real deadlines, not readline()
-    for leak in ("anchor", "robotics_grader", "verify/"):
+    for leak in ("anchor", "robotics_grader", "tests/", "verify/"):
         assert leak not in src, leak
 
 
@@ -99,12 +101,12 @@ def test_practice_grader_speaks_the_same_wire_with_repeated_t():
 # --------------------------------------------------------------------------- #
 def test_grader_env_and_agent_dev_env_are_byte_identical():
     """The agent develops against exactly the dynamics it is scored on. Edit one, copy."""
-    assert (TEMPLATE / "verify" / "env.py").read_bytes() == \
-        (TEMPLATE / "setup" / "payload" / "template_env.py").read_bytes()
+    assert (TEMPLATE / "tests" / "env.py").read_bytes() == \
+        (TEMPLATE / "environment" / "setup" / "payload" / "template_env.py").read_bytes()
 
 
 def test_setup_stages_payload_without_naming_its_files():
-    src = _text("setup/run.sh")
+    src = _text("environment/setup/setup.sh")
     assert "cp -r payload/." in src
     assert 'for entry in payload/*' in src and "chown -R" in src
     for hardcoded in ("template_env.py", "practice_grader"):
@@ -112,17 +114,33 @@ def test_setup_stages_payload_without_naming_its_files():
 
 
 # --------------------------------------------------------------------------- #
-# the manifest's hints and the maintainers' tooling
+# the manifest, the verify entry and the maintainers' tooling
 # --------------------------------------------------------------------------- #
-def test_task_yaml_platform_hint_lists_the_platform_keys():
-    text = _text("task.yaml")
+def test_task_toml_platform_hint_lists_the_platform_keys():
+    text = _text("task.toml")
     listed = [k for k in PLATFORM_KEYS if re.search(rf"\b{k}\b", text)]
     assert listed == PLATFORM_KEYS, set(PLATFORM_KEYS) - set(listed)
     assert "drone" not in text
     assert "tasks/platforms.json" in text
     assert "needs a maintainer" in text
-    manifest = yaml.safe_load(text)
+    manifest = tomllib.loads(text)
     assert manifest["metadata"] == {"platform": "TODO"}   # direction and metric are retired
+
+
+def test_task_toml_names_the_benchmark_org_and_the_scaffold_org_to_replace():
+    """The identity is `grounded-intelligence-initiative/<slug>`; `ale new-task` writes the
+    engine's own org, and the manifest's comment says to change it."""
+    text = _text("task.toml")
+    assert tomllib.loads(text)["task"]["name"] == "grounded-intelligence-initiative/template_reach"
+    assert "ale new-task" in text and "agentslastexam" in text
+
+
+def test_verify_entry_runs_the_interpreter_the_engine_staged():
+    """`tests/test.sh` execs `$ALE_VERIFY_PYTHON`, the interpreter `ale_verify` was staged
+    into; a bare `python3` may be another interpreter, without it."""
+    lines = [line.strip() for line in _text("tests/test.sh").splitlines()
+             if line.strip() and not line.lstrip().startswith("#")]
+    assert lines == ["set -euo pipefail", 'exec "$ALE_VERIFY_PYTHON" verify.py']
 
 
 def test_no_contributor_facing_file_points_at_the_maintainers_harness():
@@ -133,13 +151,13 @@ def test_no_contributor_facing_file_points_at_the_maintainers_harness():
 
 
 def test_requirements_txt_is_the_single_dependency_list():
-    """image/requirements.txt is the ONE list of Python deps; the Dockerfile installs from
-    it and nothing is pip-installed inline."""
-    requirements = (TEMPLATE / "image" / "requirements.txt").read_text()
+    """environment/requirements.txt is the ONE list of Python deps; the Dockerfile installs
+    from it and nothing is pip-installed inline."""
+    requirements = (TEMPLATE / "environment" / "requirements.txt").read_text()
     packages = [line.split("#")[0].strip() for line in requirements.splitlines()]
     packages = [line for line in packages if line]
     assert packages == ["numpy>=1.26,<3"]
-    dockerfile = _text("image/Dockerfile")
+    dockerfile = _text("environment/Dockerfile")
     assert "COPY requirements.txt /tmp/requirements.txt" in dockerfile
     assert "uv pip install --python /opt/venv -r /tmp/requirements.txt" in dockerfile
     # no package literal installed inline — that would be a second list
@@ -149,7 +167,7 @@ def test_requirements_txt_is_the_single_dependency_list():
 
 
 def test_vendored_kit_is_byte_identical_to_the_canonical():
-    vendored = TEMPLATE / "verify" / "robotics_grader"
+    vendored = TEMPLATE / "tests" / "robotics_grader"
     canonical = {p.name: p.read_bytes() for p in KIT.glob("*.py")}
     shipped = {p.name: p.read_bytes() for p in vendored.glob("*.py")}
     assert shipped == canonical

@@ -1,0 +1,27 @@
+schema_version = "1.4+ale.1"
+artifacts = ["/home/user/submission"]
+
+[task]
+name = "grounded-intelligence-initiative/robocasa_object_dynamics_from_video"
+
+[metadata]
+platform = "arm"
+
+[environment]
+cpus = 4
+memory_mb = 8192
+
+[agent]
+timeout_sec = 28800
+network_mode = "no-network"
+
+# Fixed hidden instances: the grader reads its ground truth from tests/ref (staged only at verify) in a fresh
+# verifier sandbox; it never trusts anything the agent left besides params.json.
+[verifier]
+timeout_sec = 2400
+environment_mode = "separate"
+
+[verifier.environment]
+cpus = 4
+memory_mb = 8192
+gpus = 0

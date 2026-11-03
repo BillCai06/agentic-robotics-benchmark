@@ -12,16 +12,17 @@ runs/
 results/
 *.log
 
-# --- ALE task-folder contract: the four platform-synced asset roots + engine cache ---
-# (`ale assets pull|push`; canonical bytes live on the platform, never in git)
-tasks/**/image/assets/
-tasks/**/setup/assets/
-tasks/**/verify/assets/
-tasks/**/oracle/assets/
-templates/**/image/assets/
-templates/**/setup/assets/
-templates/**/verify/assets/
-templates/**/oracle/assets/
+# --- ALE task-folder contract: the engine's asset roots, the setup folder's, and the engine cache ---
+# (upstream ASSET_ROOTS in vendor/ale/packages/ale-run/src/ale/run/assets.py; files there never go into git.
+# This repository's large files come from its Hugging Face dataset at image build: docs/task-assets.md)
+tasks/**/environment/assets/
+tasks/**/environment/setup/assets/
+tasks/**/tests/assets/
+tasks/**/solution/assets/
+templates/**/environment/assets/
+templates/**/environment/setup/assets/
+templates/**/tests/assets/
+templates/**/solution/assets/
 .ale-cache/
 
 # --- Large data / model artifacts (provisioned, not committed) ---

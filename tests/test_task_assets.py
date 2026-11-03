@@ -1,4 +1,8 @@
-"""scripts/task_assets.py and shared/task_assets/fetch_assets.py: one configuration file redirects every task."""
+"""scripts/task_assets.py and shared/task_assets/fetch_assets.py: one configuration file redirects every task.
+
+Since the Harbor layout (2026-11-03) a task's asset list and its copy of the fetcher sit in environment/, the image's
+build context.
+"""
 import functools
 import hashlib
 import http.server
@@ -26,7 +30,7 @@ def make_repo(tmp: Path, dataset="org-a/assets", endpoint="https://huggingface.c
 
 def add_task(root: Path, files: dict[str, bytes], name="demo_task") -> tuple[Path, Path]:
     task = root / "tasks" / "arm" / name
-    (task / "image").mkdir(parents=True)
+    (task / "environment").mkdir(parents=True)
     payload = root / "upload" / name
     for rel, data in files.items():
         (payload / rel).parent.mkdir(parents=True, exist_ok=True)
@@ -36,18 +40,21 @@ def add_task(root: Path, files: dict[str, bytes], name="demo_task") -> tuple[Pat
 
 
 def test_repository_config_and_lists_agree():
+    lists = TA.asset_lists(ROOT)
+    assert lists, "no environment/assets.sha256 under tasks/: the check would pass on nothing"
+    assert all(lst.parent.name == "environment" for lst in lists), lists
     assert TA.check(ROOT) == []
 
 
 def test_list_writes_header_from_config(tmp_path):
     root = make_repo(tmp_path)
     task, _ = add_task(root, {"photos/a.jpg": b"A", "servo/s.step": b"S"})
-    head, files, problems = TA.parse(task / "image" / TA.LIST_NAME)
+    head, files, problems = TA.parse(task / "environment" / TA.LIST_NAME)
     assert problems == []
     assert head == {"endpoint": "https://huggingface.co", "repo": "org-a/assets", "revision": REV,
                     "prefix": "tasks/arm/demo_task/payload"}
     assert files == [(hashlib.sha256(b"A").hexdigest(), "photos/a.jpg"), (hashlib.sha256(b"S").hexdigest(), "servo/s.step")]
-    assert (task / "image" / TA.FETCHER_NAME).read_bytes() == (ROOT / TA.CANONICAL_FETCHER).read_bytes()
+    assert (task / "environment" / TA.FETCHER_NAME).read_bytes() == (ROOT / TA.CANONICAL_FETCHER).read_bytes()
     assert TA.check(root) == []
 
 
@@ -59,10 +66,11 @@ def test_renaming_the_dataset_is_one_config_edit_and_a_sync(tmp_path):
     problems = TA.check(root)
     assert len(problems) == 4 and all("differs from task-assets.toml" in p for p in problems)
     changed = TA.sync(root)
-    assert sorted(changed) == ["tasks/arm/task_one/image/assets.sha256", "tasks/arm/task_two/image/assets.sha256"]
+    assert sorted(changed) == ["tasks/arm/task_one/environment/assets.sha256",
+                               "tasks/arm/task_two/environment/assets.sha256"]
     assert TA.check(root) == []
     for t in (t1, t2):
-        head, files, _ = TA.parse(t / "image" / TA.LIST_NAME)
+        head, files, _ = TA.parse(t / "environment" / TA.LIST_NAME)
         assert head["repo"] == "org-b/renamed" and head["endpoint"] == "https://hf-mirror.example"
         assert head["revision"] == REV and len(files) == 1      # pins and digests are untouched
     assert TA.sync(root) == []                                   # idempotent
@@ -71,12 +79,31 @@ def test_renaming_the_dataset_is_one_config_edit_and_a_sync(tmp_path):
 def test_check_catches_a_modified_fetcher_and_a_wrong_prefix(tmp_path):
     root = make_repo(tmp_path)
     task, _ = add_task(root, {"a.bin": b"1"})
-    (task / "image" / TA.FETCHER_NAME).write_text("# edited\n")
-    lst = task / "image" / TA.LIST_NAME
+    (task / "environment" / TA.FETCHER_NAME).write_text("# edited\n")
+    lst = task / "environment" / TA.LIST_NAME
     lst.write_text(lst.read_text().replace("tasks/arm/demo_task/payload", "tasks/arm/other/payload"))
     problems = TA.check(root)
     assert any("differs from shared/task_assets/fetch_assets.py" in p for p in problems)
     assert any("should be 'tasks/arm/demo_task/payload'" in p for p in problems)
+
+
+def test_check_catches_a_missing_fetcher(tmp_path):
+    root = make_repo(tmp_path)
+    task, _ = add_task(root, {"a.bin": b"1"})
+    (task / "environment" / TA.FETCHER_NAME).unlink()
+    assert TA.check(root) == [f"tasks/arm/demo_task/environment: no {TA.FETCHER_NAME} next to {TA.LIST_NAME}"]
+    assert TA.sync(root) == ["tasks/arm/demo_task/environment/fetch_assets.py"]
+    assert TA.check(root) == []
+
+
+def test_the_cli_reads_the_list_in_environment(tmp_path, capsys):
+    root = make_repo(tmp_path)
+    task, _ = add_task(root, {"a.bin": b"1", "b/c.bin": b"2"})
+    assert TA.main(["--root", str(root), "check"]) == 0
+    assert "1 asset list(s) checked" in capsys.readouterr().out
+    assert TA.main(["--root", str(root), "url", str(task)]) == 0
+    assert capsys.readouterr().out.strip() == (
+        f"https://huggingface.co/datasets/org-a/assets/tree/{REV}/tasks/arm/demo_task/payload  (2 files)")
 
 
 def test_bad_config_is_refused(tmp_path):
@@ -100,13 +127,14 @@ def test_fetcher_downloads_from_the_configured_endpoint(tmp_path):
         (root / TA.CONFIG).write_text(f'[huggingface]\ndataset = "org-b/renamed"\nendpoint = "{endpoint}"\n')
         TA.sync(root)
         dest = tmp_path / "out"
-        res = subprocess.run([sys.executable, str(task / "image" / TA.FETCHER_NAME), str(task / "image" / TA.LIST_NAME),
-                              str(dest)], capture_output=True, text=True, timeout=60)
+        fetcher, listing = task / "environment" / TA.FETCHER_NAME, task / "environment" / TA.LIST_NAME
+        res = subprocess.run([sys.executable, str(fetcher), str(listing), str(dest)],
+                             capture_output=True, text=True, timeout=60)
         assert res.returncode == 0, res.stderr
         assert (dest / "photos" / "p 1.jpg").read_bytes() == b"photo" and (dest / "doc.png").read_bytes() == b"doc"
         (base / "doc.png").write_bytes(b"tampered")
-        res = subprocess.run([sys.executable, str(task / "image" / TA.FETCHER_NAME), str(task / "image" / TA.LIST_NAME),
-                              str(tmp_path / "out2")], capture_output=True, text=True, timeout=60)
+        res = subprocess.run([sys.executable, str(fetcher), str(listing), str(tmp_path / "out2")],
+                             capture_output=True, text=True, timeout=60)
         assert res.returncode != 0 and "sha256 mismatch" in res.stderr
     finally:
         server.shutdown()

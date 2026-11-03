@@ -3,8 +3,10 @@
 This page states what the benchmark defends against, how, and — just as carefully — what
 it does not prove: the **grading trust boundary**, which keeps the grader's number
 authoritative against a hostile agent inside the sandbox. The mechanics are the engine's
-(`vendor/ale/docs/specs/standard-environment.md`) plus the verify-stage kit
-(`shared/robotics_grader/`).
+(`vendor/ale/docs/specs/episode-protocol.md`, `sandbox-image.md`, `security.md`) plus the
+verify-stage kit (`shared/robotics_grader/`). The engine claims below were checked against
+the engine code at `vendor/ale` `1cdbc02` on 2026-11-03; code references are relative to
+`vendor/ale/packages/ale-run/src/ale/run/`.
 
 Results are the engine's own episode records. The website is a display-only front end: it
 takes no uploads and no run or score submissions (2026-10-15), so the submission trust
@@ -33,17 +35,21 @@ stage protocol; the task only has to respect it.
 
 | barrier | what it does | who enforces it |
 |---|---|---|
-| **Timing** | `verify/` (grader, `env.py`, `anchor.json`, `grader_config.json`) and `oracle/` are uploaded to the sandbox only when their stage runs. During the agent phase they do not exist anywhere in the sandbox. | engine (`standard-environment.md`: "`verify/` is also absent throughout this phase") |
-| **Root-only staging root** | `/opt/ale` is `drwx------ root:root`; even paths that do exist there are untraversable for the agent account. | engine |
-| **UID boundary** | `verify/run.sh` runs as root; the agent's solver is spawned **at the agent's UID** (`robotics_grader.Solver`, `deprivileged`, via `runuser`). The solver cannot read the grader's memory or environment, and Yama's `ptrace_scope` blocks tracing across UIDs. Artifacts the agent produced (checkpoints, pickles) are deserialized deprivileged too. | kit |
-| **Verdict path** | The reward map is written to `ALE_VERDICT_PATH`, inside the root-only tree, through `ale_verify`'s atomic write; the agent can neither pre-create nor overwrite it. The engine cross-checks the reward file against `verification.json`. | engine + kit |
+| **Timing** | `tests/` (grader, `env.py`, `anchor.json`, `grader_config.json`) is uploaded to `/opt/ale/tests` only when the verify stage runs (`protocol/episode_protocol.py:757-783`), and `solution/` to `~/.ale-solution` only in an oracle episode (`:500-501`, `:1290-1297`). During the agent phase neither exists anywhere in the sandbox. | engine (`episode-protocol.md`: "`tests/` is also absent throughout this phase") |
+| **Root-only staging root** | `/opt/ale` is `drwx------ root:root`: the layer the engine adds to every task image runs `chown -R 0:0 /opt/ale` and `chmod -R go-rwx /opt/ale` (`framework.py:122-123`), and stage uploads land below it owned by root. Even paths that do exist there are untraversable for the agent account. | engine |
+| **UID boundary** | `tests/test.sh` runs as root; the agent's solver is spawned **at the agent's UID** (`robotics_grader.Solver`, `deprivileged`, via `runuser`). The solver cannot read the grader's memory or environment, and Yama's `ptrace_scope` blocks tracing across UIDs. Artifacts the agent produced (checkpoints, pickles) are deserialized deprivileged too. | kit |
+| **Result path** | The result goes to `/logs/verifier/reward.json` and `verification.json` through `ale_verify`'s atomic write. Before every verification attempt the engine removes whatever is at `/logs/verifier`, makes `/logs` root's and unwritable for others, and recreates `/logs/verifier` empty with mode 0700 (`protocol/episode_protocol.py:144-156`, run at `:777`). The agent can neither pre-create nor overwrite the result, and nothing it left running can write one. The engine rejects a `verification.json` whose `reward` differs from `reward.json`'s (`:886`). | engine + kit |
 | **Seeds in memory** | The grader draws hidden seeds from OS entropy inside its own process (`seed_rng`); they never touch disk. The practice grader the agent gets uses different, visible seeds and prints the raw metric only. | kit + `scripts/lint_domain.py` |
 | **No self-reported numbers** | The metric is computed from the grader's own simulator state. Nothing the solver prints is parsed as a score; the wire carries observations and actions only. | kit |
-| **Network** | `network.mode: block` during the agent phase; the agent cannot fetch anything, including this repository. | engine |
-| **Image hygiene** | The task image may not `COPY` `verify/`, `oracle/`, the anchor or the manifest — an image layer is readable by anyone who can run the image. | `scripts/lint_domain.py` |
+| **Network** | `[agent].network_mode = "no-network"` (`block` in the RunLock) seals the sandbox before the agent starts (`protocol/episode_protocol.py:530`, `:674-700`). It then reaches only the model gateway, so the agent cannot fetch anything, including this repository. The oracle runs sealed the same way. | engine |
+| **Image hygiene** | The image is built from `environment/` without `setup/`; `tests/`, `solution/` and `task.toml` lie outside that context, so no `COPY` can reach them (`sandbox-image.md`, "Task image"). The domain lint also refuses a `COPY` or `ADD` of hidden material: an image layer is readable by anyone who can run the image. | engine + `scripts/lint_domain.py` |
 
-Real-run evidence for the first four rows: [`evidence/isolation-audit.md`](evidence/isolation-audit.md)
-(`/opt/ale` unreadable, `verify/` absent, a fake verdict refused, the kit untouchable).
+Real-run evidence for the first four rows, made on the engine before the Harbor migration:
+[`evidence/isolation-audit.md`](evidence/isolation-audit.md) (`/opt/ale` unreadable, the
+grader's stage absent, a fake verdict refused, the kit untouchable). Its 2026-11-03 note
+maps each check to the 1cdbc02 code. The result path at `/logs/verifier` came with the
+Harbor format; it was checked in the code and is covered by upstream's
+`test_an_agent_cannot_plant_or_redirect_a_result`, not by a run of ours.
 
 On top of isolation sit the **match locks**, which are detection for canned output:
 closed_loop graders fire hidden perturbation probes (`ProbeLock`) and require the action to
@@ -55,9 +61,10 @@ and reject one that does not start where it claims; artifact_rollout is structur
 **What "hidden" means, precisely.** The anchor and the oracle are hidden from the *tested
 agent during its run*, by stage isolation. They are **not** secrets from maintainers or from
 the public: this repository is public and every task folder is in it
-whole, `verify/anchor.json` included (the engine's loader refuses a folder without
-`oracle/run.sh`, and a stub would change the task's identity). A human can read the anchor;
-the agent in the sandbox cannot, and the agent is what is being measured.
+whole, `tests/anchor.json` included (the engine's loader refuses a folder without
+`solution/solve.sh`, `tasksets/manifest.py:401-412`, and a stub would change the task's
+identity). A human can read the anchor; the agent in the sandbox cannot, and the agent is
+what is being measured.
 
 ## 3. What a verdict proves
 
@@ -76,18 +83,20 @@ result can be matched to the exact committed tree it ran against.
 
 - **The host.** An episode record is a recording made on whoever's machine ran it, not proof
   that it happened under controlled conditions. Trust the runs whose operator you trust.
-- **Network during verify (an engine issue, not yet fixed upstream).** The engine opens egress
-  before the verify stage, and a closed_loop task runs the agent's solver during that stage.
-  The solver can therefore reach the internet while it is being scored, and download anything
-  public, this repository's `oracle/` included. The hidden seeds never leave the grader's
-  memory, but a solver that fetches the reference controller can play it. Until the engine
-  keeps the verify stage offline for the solver, check formal runs' submissions and traces
-  for network use.
+- **Network during verify (an engine issue, still open at 1cdbc02).** The engine opens egress
+  before the verify stage (`protocol/episode_protocol.py:795`), and a closed_loop task runs
+  the agent's solver during that stage. The solver can therefore reach the internet while it
+  is being scored, and download anything public, this repository's `solution/` included; so
+  can a process the agent left running, which keeps running through shared verification.
+  Separate verification does not close it: the verifier sandbox is provisioned with an open
+  network (`:443`). The hidden seeds never leave the grader's memory, but a solver that
+  fetches the reference controller can play it. Until the engine keeps the verify stage
+  offline for the solver, check formal runs' submissions and traces for network use.
 - **The probe lock is not a proof of honesty.** It catches a policy that ignores its input;
   a solver that notices a repeated `t` can vary its answer on purpose. Isolation, not the
   lock, keeps a score honest.
 - **Public anchors.** Because the repository is public and complete, the target value is
-  public knowledge outside the sandbox. The agent phase runs in a blocked-network sandbox that
+  public knowledge outside the sandbox. The agent phase runs in a no-network sandbox that
   does not contain it; the benchmark does not measure what a human who read the repository
   could type into an instruction.
 - **A simulator the agent holds.** When a task gives the agent a copy of its simulator, the
@@ -97,9 +106,9 @@ result can be matched to the exact committed tree it ran against.
 
 ## 5. Constraints the tooling must preserve
 
-- The task image never contains `verify/`, `oracle/`, the anchor, or the manifest.
-- `setup/payload/` never reads the anchor or the grader; the practice grader prints the raw
-  metric only, never a ratio or score.
+- The task image never contains `tests/`, `solution/`, the anchor, or `task.toml`.
+- `environment/setup/payload/` never reads the anchor or the grader; the practice grader
+  prints the raw metric only, never a ratio or score.
 - `rewards` in the verdict carries only the gated `reward`; raw values ride in `metrics`.
 - Credentials live in the engine's `.env` on the host, never in a task folder.
 - Run outputs (`runs/`) are git-ignored.
