@@ -7,8 +7,9 @@ robots active; three plant ropes, each a chain hooked to the scene's own hook bo
 active joint with an end outside its robot; one physics scene; no OmniGraph prim; no collision group of the scene's
 that takes in a collider of the real bay. With --synthetic it also builds edited copies of the first scene and checks
 that the builder copes: a hook joint outside `Rope`, a physics material outside the fleet bound to the vehicle's wheels,
-a joint from the vehicle to the scene's floor, and two collision groups that take in the whole stage (`includeRoot` on
-the group, or on a collection the group includes) with the vehicle's arm filtered against them.
+a joint from the vehicle to the scene's floor, two collision groups that take in the whole stage (`includeRoot` on
+the group, or on a collection the group includes) with the vehicle's arm filtered against them, and a collision group
+inside an instanceable reference (the builder must edit it without failing).
 Nothing here is part of the grade; the task's grader never runs it.
 """
 
@@ -172,6 +173,22 @@ def synthetic(scene, out_dir):
                 probs.append("the confined group lost the scene's own robots")
             return probs
         cases.append((p, [confined]))
+    # (f) a collision group inside an instanceable reference
+    lib = os.path.join(out_dir, "syn_groups_lib.usda")
+    lst = Usd.Stage.CreateNew(lib)
+    lst.SetDefaultPrim(lst.DefinePrim("/Groups", "Scope"))
+    UsdPhysics.CollisionGroup.Define(lst, "/Groups/G").GetCollidersCollectionAPI().CreateIncludesRel().AddTarget("/Groups")
+    lst.GetRootLayer().Save()
+    p = os.path.join(out_dir, "syn_group_instanced.usda")
+    lay = Sdf.Layer.CreateNew(p)
+    lay.subLayerPaths.append(scene)
+    lay.defaultPrim = "World"
+    st = Usd.Stage.Open(lay)
+    holder = st.DefinePrim("/World/Fleet/Groups", "Scope")
+    holder.GetReferences().AddReference(lib)
+    holder.SetInstanceable(True)
+    lay.Save()
+    cases.append((p, []))
     return cases
 
 

@@ -98,6 +98,9 @@ def survey(stage):
             if p.HasAPI(UsdPhysics.RigidBodyAPI):
                 (links if rope and _under(p.GetPath().pathString, rope) else bodies).append(p.GetPath().pathString)
         info = dict(root=root, bodies=bodies, links=links, hook=None)
+        if not any(p.HasAPI(UsdPhysics.ArticulationRootAPI) and not (rope and _under(p.GetPath().pathString, rope))
+                   for p in Usd.PrimRange(stage.GetPrimAtPath(root), Usd.TraverseInstanceProxies())):
+            raise MissionStageError(f"{root} has no articulation root outside its rope")
         if r in UAVS:
             linkset = set(links)
             for j in joints:  # the hook: the one joint with one end in the links and one in the robot (the scan's rule)
@@ -360,6 +363,7 @@ def build(agent_scene, bay_layer, facts, out_path):
     for g in sv["groups"]:
         q = st.GetPrimAtPath(mounted(g))
         if q and q.IsValid() and q.IsActive():
+            q = _editable(st, mounted(g))  # (a group inside an instance cannot take an opinion as it is)
             ex = Usd.CollectionAPI(q, "colliders").CreateExcludesRel()
             for rr in rope_roots:
                 ex.AddTarget(rr)
