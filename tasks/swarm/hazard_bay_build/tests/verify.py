@@ -6,16 +6,31 @@ shared Kit folders are emptied, and the measurements run as a separate unprivile
 (`python3 -I -s`), each probe group in its own Isaac Sim process (one stage per process: a clean clock), with Kit's
 cache in the grader's own folder. The static scan (`scan.py`, pxr only) decides whether the scene is measurable at
 all; `probes.py` then measures it (layout, settle, the valve and the plume, the bucket on its ropes, the fleet's
-design) and runs the bay mission twice (two seeds): the agent's controller drives the whole fleet in the agent's scene
-while the grader keeps the bay's rules and measures the outcomes. The controller runs as the agent's account behind
-the kit's solver wire; this process relays it to the control probe through two pipes and applies the match lock. A
-canary scene goes through the same launcher first: when that fails, the grading environment is broken and the run
-ends as a task error, not as a zero.
+design) and runs the bay mission twice (two seeds): the agent's controller drives the agent's four robots in the
+grader's own stage of the real bay (`mission_stage.py` on `hidden/bay_true.usda`), on the day's random draws, while the
+grader keeps the bay's rules and measures the outcomes. The controller runs as the agent's account behind the kit's
+solver wire; this process relays it to the control probe through two pipes and applies the match lock. A canary scene
+goes through the same launcher first: when that fails, the grading environment is broken and the run ends as a task
+error, not as a zero.
 
-Scores: each check is 0..1 (most by closeness, some yes/no, the behaviour checks gated on what they need),
-`acceptance_score` = the weighted mean of the sections.
+What the probes read (their code, `grader_config.json` with the real bay's facts, the real bay's layer) sits in a
+folder only the probe account can read (`work/probe`, 0700), and each probe's seed (63 bits) travels in its own
+environment, never on a command line: the agent's controller runs in the same sandbox during the mission.
+
+A submission that carries the reference's token (`.oracle_token`, sha256 in `hidden/oracle_token.sha256`) gets the
+true state in each observation (`privileged`): the reference program's channel; nothing else changes.
+
+Scores: each check is 0..1 (most by closeness, some yes/no, the behaviour checks gated on what they need).
+`acceptance_score` combines the sections as `grader_config.json` says (`combine`): "weighted", the weighted mean of the
+sections (`sections`); "mission_gate", the weighted mean of the five scene sections times the mission section; or the
+name of another weights block (`sections_<name>`, e.g. "mission_0.8"). With `progress_gate` the mission's five safety
+checks (parts not dropped, no losses, no collisions, separation, consistency) count in proportion to the run's
+progress, (steam released + fire out + station cleared) / 3. The metrics record the acceptance under every combination,
+with and without the gate.
 """
 
+import hashlib
+import hmac
 import json
 import math
 import os
@@ -30,6 +45,8 @@ import time
 import traceback
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+HIDDEN = os.path.join(HERE, "hidden")
+PROBE_FILES = ("probes.py", "scan.py", "control_sim.py", "mission_stage.py", "bay_rig.py")
 sys.path.insert(0, HERE)
 from robotics_grader import agent_user, fail, ratio_rewards, read_anchor, seed_rng, stage_config, write_verdict, zero_verdict  # noqa: E402
 from robotics_grader.solver import ProbeLock, Solver, SolverAborted, SolverMissing  # noqa: E402
@@ -173,19 +190,27 @@ def probe_account(work):
         subprocess.run(["/usr/sbin/useradd", "--system", "--no-create-home", "--home-dir", home, "--shell", "/usr/sbin/nologin",
                         PROBE_USER], check=True)
     pw = pwd.getpwnam(PROBE_USER)
-    for d in (home, os.path.join(work, "kit"), os.path.join(work, "out")):
+    for d in (home, os.path.join(work, "kit"), os.path.join(work, "out"), probe_dir(work), os.path.join(probe_dir(work), "hidden")):
         os.makedirs(d, exist_ok=True)
         os.chown(d, pw.pw_uid, pw.pw_gid)
         os.chmod(d, 0o700)
     return home
 
 
-def probe_env(work):
+def probe_dir(work):
+    """The probe account's own folder: the probes' code, the grader's config and the real bay (0700; the agent's
+    controller runs as another account in this sandbox while the mission runs)."""
+    return os.path.join(work, "probe")
+
+
+def probe_env(work, seed=None):
     home = os.path.join(work, "probe_home")
     env = {"HOME": home, "PATH": "/opt/venv/bin:/usr/local/bin:/usr/bin:/bin", "LANG": "C.UTF-8",
            "OMNI_KIT_ACCEPT_EULA": "YES", "ACCEPT_EULA": "Y", "PRIVACY_CONSENT": "Y", "ARB_KIT_DIR": os.path.join(work, "kit"),
-           "ARB_GRADER_CFG": os.path.join(work, "grader_config.json"),
+           "ARB_GRADER_CFG": os.path.join(probe_dir(work), "grader_config.json"),
            "NVIDIA_DRIVER_CAPABILITIES": os.environ.get("NVIDIA_DRIVER_CAPABILITIES", "")}
+    if seed is not None:  # (a process's environment is readable by its own account and root only; its command line by all)
+        env["ARB_SEED"] = str(int(seed))
     return env
 
 
@@ -193,16 +218,64 @@ def probe_cmd(args):
     return ["/usr/sbin/runuser", "-u", PROBE_USER, "--", "/opt/venv/bin/python3", "-I", "-s"] + list(args)
 
 
-def as_probe(args, work, timeout):
-    return subprocess.run(probe_cmd(args), env=probe_env(work), cwd=os.path.join(work, "probe_home"), capture_output=True, text=True, timeout=timeout)
+def as_probe(args, work, timeout, seed=None):
+    return subprocess.run(probe_cmd(args), env=probe_env(work, seed), cwd=os.path.join(work, "probe_home"), capture_output=True, text=True,
+                          timeout=timeout)
 
 
-def stage_file(work, name, mode=0o644):
-    """A copy of one of this folder's files where the probe account can read it."""
-    dst = os.path.join(work, name)
-    shutil.copy(os.path.join(HERE, name), dst)
-    os.chmod(dst, mode)
+def stage_file(work, name, src=None):
+    """A copy of one of this folder's files in the probe account's own folder, readable by that account only."""
+    dst = os.path.join(probe_dir(work), name)
+    shutil.copy(src or os.path.join(HERE, name), dst)
+    pw = pwd.getpwnam(PROBE_USER)
+    os.chown(dst, pw.pw_uid, pw.pw_gid)
+    os.chmod(dst, 0o600)
     return dst
+
+
+def write_probe_config(work, cfg):
+    path = os.path.join(probe_dir(work), "grader_config.json")
+    with open(path, "w") as f:
+        json.dump(cfg, f)
+    pw = pwd.getpwnam(PROBE_USER)
+    os.chown(path, pw.pw_uid, pw.pw_gid)
+    os.chmod(path, 0o600)
+    return path
+
+
+def token_state(snap):
+    """(privileged, mismatch): the snapshot's .oracle_token against hidden/oracle_token.sha256."""
+    p, want = os.path.join(snap, ".oracle_token"), os.path.join(HIDDEN, "oracle_token.sha256")
+    if not os.path.isfile(p) or os.path.islink(p) or not os.path.isfile(want):
+        return False, False
+    try:
+        with open(p, "rb") as f:
+            got = hashlib.sha256(f.read().strip()).hexdigest()
+        with open(want) as f:
+            ok = hmac.compare_digest(got, f.read().strip())
+    except OSError:
+        return False, False
+    return ok, not ok
+
+
+def match_items(got_items, truth_items, tol):
+    """The agent's parts matched to the real bay's by shape (the library model's size, within `item_size_zero`), then
+    by position, one to one: {real name: (agent name, size error)}."""
+    used, out = set(), {}
+    for tname, tv in truth_items.items():
+        cands = []
+        for n, gv in (got_items or {}).items():
+            if n in used or not gv.get("size") or not gv.get("center"):
+                continue
+            dsize = max(abs(float(x) - float(y)) for x, y in zip(gv["size"], tv["size"]))
+            if dsize <= tol["item_size_zero"]:
+                d = dist(gv["center"], tv["center"])
+                cands.append((9.0 if d is None else d, dsize, n))
+        if cands:
+            _, dsize, best = min(cands)
+            used.add(best)
+            out[tname] = (best, dsize)
+    return out
 
 
 def canary(work, timeout):
@@ -236,7 +309,7 @@ def canary(work, timeout):
     out = os.path.join(work, "out", "canary.json")
     t0 = time.time()
     try:
-        r = as_probe([os.path.join(work, "probes.py"), path, out, "canary", "0"], work, timeout)
+        r = as_probe([os.path.join(probe_dir(work), "probes.py"), path, out, "canary"], work, timeout, seed=0)
     except subprocess.TimeoutExpired:
         fail(f"the canary scene did not finish in {timeout} s: the grading environment is not usable")
     data = {}
@@ -288,15 +361,24 @@ def probe_pair(lock, solver, t, obs):
 
 
 def perturbed_obs(obs, lock):
-    """The match lock's perturbed copy of a structured observation: every robot's odometry shifted."""
+    """The match lock's perturbed copy of a structured observation: every robot's odometry shifted (and, in a
+    privileged run, its true position by the same amount, so the probe asks the same question of every program)."""
     o = json.loads(json.dumps(obs))
-    for u in (o.get("uav") or {}).values():
+    priv = o.get("privileged") or {}
+    for n, u in (o.get("uav") or {}).items():
         if isinstance(u.get("pos"), list):
-            u["pos"] = [float(v) + lock.rng.uniform(-lock.magnitude, lock.magnitude) for v in u["pos"]]
+            d = [lock.rng.uniform(-lock.magnitude, lock.magnitude) for _ in u["pos"]]
+            u["pos"] = [float(v) + dv for v, dv in zip(u["pos"], d)]
+            pu = (priv.get("uav") or {}).get(n) or {}
+            if isinstance(pu.get("pos"), list):
+                pu["pos"] = [float(v) + dv for v, dv in zip(pu["pos"], d)]
     g = o.get("ugv") or {}
     if isinstance(g.get("pose"), list) and len(g["pose"]) == 3:
-        g["pose"] = [float(g["pose"][0]) + lock.rng.uniform(-lock.magnitude, lock.magnitude),
-                     float(g["pose"][1]) + lock.rng.uniform(-lock.magnitude, lock.magnitude), float(g["pose"][2])]
+        d = [lock.rng.uniform(-lock.magnitude, lock.magnitude) for _ in range(2)]
+        g["pose"] = [float(g["pose"][0]) + d[0], float(g["pose"][1]) + d[1], float(g["pose"][2])]
+        pg = priv.get("ugv") or {}
+        if isinstance(pg.get("pos"), list) and len(pg["pos"]) == 3:
+            pg["pos"] = [float(pg["pos"][0]) + d[0], float(pg["pos"][1]) + d[1], float(pg["pos"][2])]
     return o
 
 
@@ -329,9 +411,9 @@ def run_control(scene, work, cfg, seed, lock_rng, snap, timeout, episode=0):
         return dict(abort=f"the controller did not come up: {exc}", end="aborted")
     lock = ProbeLock(lock_rng, rate=float(ctl.get("lock_rate", 0.05)), magnitude=float(ctl.get("lock_magnitude", 0.4)))
     path = os.path.join(work, "out", f"control_{episode}.json")
-    env = probe_env(work)
+    env = probe_env(work, seed)
     env["ARB_WIRE_DIR"] = wire
-    proc = subprocess.Popen(probe_cmd([os.path.join(work, "probes.py"), scene, path, "control", str(seed)]), env=env,
+    proc = subprocess.Popen(probe_cmd([os.path.join(probe_dir(work), "probes.py"), scene, path, "control"]), env=env,
                             cwd=os.path.join(work, "probe_home"), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     sink = {"out": [], "err": []}
 
@@ -405,24 +487,38 @@ def run_control(scene, work, cfg, seed, lock_rng, snap, timeout, episode=0):
         data["abort"] = state["abort"]
     data["lock"] = lock.rewards()
     data["relay_steps"] = state["steps"]
+    data["probe_out"] = "".join(sink["out"])[-3000:]  # (the probe's progress lines, for the record)
     log(f"control probe: {round(time.time() - t0)} s, {state['steps']} steps relayed, abort={state['abort']}, lock={lock.rewards()}")
     return data
 
 
-def run_probes(scene, work, timeout, retries, seeds, cfg, lock_rng, snap):
+def run_probes(scene, work, timeout, retries, seeds, cfg, lock_rng, snap, cfg_probe=None, truth=None):
     groups = {}
     for g in GROUPS:
-        if g == "control":  # the bay mission, twice (two seeds): the outcomes and how consistent they are
+        if g == "control":  # the bay mission, twice (two fresh seeds): the outcomes and how consistent they are
+            if cfg_probe is not None:  # the real bay's parts by the agent's names (matched by shape after the settle probe)
+                alias = match_items(((groups.get("settle") or {}).get("items")) or {}, truth["groups"]["settle"]["items"], cfg["tol"])
+                cfg_probe["item_alias"] = {t: a for t, (a, _) in alias.items()}
+                write_probe_config(work, cfg_probe)
+                log("control: parts by the agent's names:", json.dumps(cfg_probe["item_alias"]))
             ctl_timeout = int(cfg.get("control", {}).get("episode_timeout_s", timeout))
-            groups[g] = [run_control(scene, work, cfg, seeds[g] + e, lock_rng, snap, ctl_timeout, episode=e)
-                         for e in range(int(cfg.get("control", {}).get("episodes", 2)))]
+            runs = []
+            for e in range(int(cfg.get("control", {}).get("episodes", 2))):
+                seed = seeds["control"][e]
+                data = run_control(scene, work, cfg, seed, lock_rng, snap, ctl_timeout, episode=e)
+                if "error" in data and not data.get("relay_steps"):  # (a fault before the first step: once more, same seed)
+                    log(f"control run {e} failed before its first step:", str(data["error"])[-600:])
+                    data = run_control(scene, work, cfg, seed, lock_rng, snap, ctl_timeout, episode=e)
+                    data["retried"] = True
+                runs.append(data)
+            groups[g] = runs
             continue
         data, tail, rc = {}, "", None
         for attempt in range(1 + retries):
             path = os.path.join(work, "out", f"{g}_{attempt}.json")
             t0 = time.time()
             try:
-                r = as_probe([os.path.join(work, "probes.py"), scene, path, g, str(seeds[g])], work, timeout)
+                r = as_probe([os.path.join(probe_dir(work), "probes.py"), scene, path, g], work, timeout, seed=seeds[g])
                 rc, tail = r.returncode, (r.stderr or "")[-1500:]
             except subprocess.TimeoutExpired:
                 rc, tail = "timeout", ""
@@ -485,22 +581,13 @@ def score(scan, got, truth, cfg):
     # items: matched by shape (the library model's size), then by position; an extra body costs an item's credit
     set_items = (got.get("settle", {}) or {}).get("items", {}) or {}
     t_items = truth["groups"]["settle"]["items"]
-    used = set()
+    matched = match_items(set_items, t_items, tol)
     for tname, tv in t_items.items():
-        cands = []
-        for n, gv in set_items.items():
-            if n in used or not gv.get("size") or not gv.get("center"):
-                continue
-            dsize = max(abs(float(x) - float(y)) for x, y in zip(gv["size"], tv["size"]))
-            if dsize <= tol["item_size_zero"]:
-                d = dist(gv["center"], tv["center"])
-                cands.append((9.0 if d is None else d, dsize, n))
-        if not cands:
+        if tname not in matched:
             add("layout", f"item.{tname}", 0.5, 0.0, "not found")
             add("physics", f"mass.{tname}", 0.5, 0.0, "not found")
             continue
-        _, dsize, best = min(cands)
-        used.add(best)
+        best, dsize = matched[tname]
         gv = set_items[best]
         add("layout", f"item.{tname}", 0.5, (lin(dist(gv["center"], tv["center"]), tol["pos_full"], tol["pos_zero"])
                                              + lin(dsize, tol["item_size_full"], tol["item_size_zero"])) / 2, dict(as_=best, center=gv["center"]))
@@ -598,10 +685,13 @@ def score(scan, got, truth, cfg):
     add("hoist", "set_down", 0.6, (lin(sdb.get("bottom_z"), 0.02, 0.15) + lin(sdb.get("tilt_deg"), 5.0, 20.0)
                                    + yes(all(c is not None and c <= spec["rope_length_m"] - 0.1 for c in slack))) / 3 if sdb else 0.0, dict(bucket=sdb, chords=slack))
 
-    # ---- the bay mission, driven by the agent's controller, twice: outcomes only
+    # ---- the bay mission in the real bay, driven by the agent's controller, twice: outcomes only
     eps = got.get("control") or []
     eps = eps if isinstance(eps, list) else [eps]
     cs = cfg["control"]["score"]
+    # a robot that does not keep its library models' colliders (the scan's check) scores 0 on no collisions
+    honest = {n: ((scan["facts"].get("robots") or {}).get(n) or {}).get("colliders") or {} for n in ("UAV_1", "UAV_2", "UAV_3", "UGV")}
+    dishonest = sorted(n for n, c in honest.items() if c and not c.get("ok", True))
 
     def episode_checks(co):
         """One episode's checks: (name, weight, score, detail)."""
@@ -624,25 +714,48 @@ def score(scan, got, truth, cfg):
             ("water_kept", 1.0, ok * lin(co.get("spilt_l"), cs["spill_full_l"], cs["spill_zero_l"]) if lifted else 0.0,
              dict(spilt=co.get("spilt_l"), poured=co.get("poured_l"), water0=co.get("water0_l"))),
             ("parts_not_dropped", 0.4, ok * lin(nz(co.get("parts_dropped"), n_parts), 0.0, 2.0), co.get("parts_dropped")),
-            ("no_losses", 1.0, ok * yes(not lost and not co.get("crash") and not co.get("flags_disabled") and not co.get("dropped")),
-             dict(lost=lost, crash=co.get("crash"), flags=co.get("flags_disabled"), dropped=co.get("dropped"))),
-            ("no_collisions", 1.0, ok * lin(nz(co.get("n_collisions"), 99), 0.0, cs["collisions_zero"]), (co.get("collisions") or [])[:4]),
+            ("no_losses", 1.0, ok * yes(not lost and not co.get("crash") and not co.get("dropped")),
+             dict(lost=lost, crash=co.get("crash"), dropped=co.get("dropped"))),
+            ("no_collisions", 1.0, ok * yes(not dishonest) * lin(nz(co.get("n_collisions"), 99), 0.0, cs["collisions_zero"]),
+             dict(contacts=(co.get("collisions") or [])[:4], colliders_not_kept=dishonest) if dishonest else (co.get("collisions") or [])[:4]),
             ("separation", 0.6, ok * lin(cs["sep_full_m"] - nz(co.get("min_sep"), 0.0), 0.0, cs["sep_full_m"] - cs["sep_zero_m"]), co.get("min_sep")),
             ("steady_end", 0.4, ok * yes(co.get("end") == "done"), dict(end=co.get("end"), t=co.get("t_end"))),
         ]
         return out
 
     per_ep = [episode_checks(co) for co in eps] or [episode_checks({})]
-    totals = []
-    for lst in per_ep:
-        w = sum(c[1] for c in lst)
-        totals.append(sum(c[1] * c[2] for c in lst) / w if w else 0.0)
-    for i, (name, w, _, _) in enumerate(per_ep[0]):
-        vals = [lst[i][2] for lst in per_ep]
-        add("control", name, w, sum(vals) / len(vals), [lst[i][3] for lst in per_ep])
-    spread = (max(totals) - min(totals)) if len(totals) > 1 else 1.0
-    add("control", "consistency", 1.0, lin(spread, cs["consistency_full"], cs["consistency_zero"]) * yes(len(totals) > 1),
-        dict(episodes=[round(t, 4) for t in totals]))
+
+    def mission_section(gated):
+        """The mission's checks over the two runs: (checks as (name, weight, score, detail), section score, progress).
+        With the progress gate each run's safety checks count in proportion to what the run got done."""
+        progress = []
+        runs = []
+        for lst in per_ep:
+            v = {c[0]: c[2] for c in lst}
+            prog = (v["steam_released"] + v["fire_out"] + v["station_cleared"]) / 3.0
+            progress.append(prog)
+            runs.append([(c[0], c[1], c[2] * prog if (gated and c[0] in SAFETY_CHECKS) else c[2], c[3]) for c in lst])
+        totals = []
+        for lst in runs:
+            w = sum(c[1] for c in lst)
+            totals.append(sum(c[1] * c[2] for c in lst) / w if w else 0.0)
+        checks_ = []
+        for i, (name, w, _, _) in enumerate(runs[0]):
+            vals = [lst[i][2] for lst in runs]
+            checks_.append((name, w, sum(vals) / len(vals), [lst[i][3] for lst in runs]))
+        spread = (max(totals) - min(totals)) if len(totals) > 1 else 1.0
+        mean_prog = sum(progress) / len(progress)
+        checks_.append(("consistency", 1.0, lin(spread, cs["consistency_full"], cs["consistency_zero"]) * yes(len(totals) > 1)
+                        * (mean_prog if gated else 1.0), dict(episodes=[round(t, 4) for t in totals], progress=[round(p, 4) for p in progress])))
+        wsum = sum(c[1] for c in checks_)
+        return checks_, (sum(c[1] * max(0.0, min(1.0, c[2])) for c in checks_) / wsum if wsum else 0.0), mean_prog
+
+    gate = bool(cfg.get("progress_gate", False))
+    ctl_checks, _, _ = mission_section(gate)
+    for name, w, v, detail in ctl_checks:
+        add("control", name, w, v, detail)
+    control_alt = {g: mission_section(g)[1] for g in (False, True)}
+    progress_mean = mission_section(False)[2]
 
     # ---- the fleet's design against the catalog and the requirements
     fl = (got.get("fleet", {}) or {}).get("robots", {}) or {}
@@ -724,15 +837,44 @@ def score(scan, got, truth, cfg):
     add("fleet", "UGV.reads_gauge", 1.0, best * yes(bad == 0), dict(ok=len(cams), bad=bad))
     add("fleet", "UGV.reaches_valve", 0.8, lin(reach.get("min_dist_to_grip"), spec["reach_tol_m"], 3 * spec["reach_tol_m"]), reach.get("min_dist_to_grip"))
 
-    checks, total, section_scores = [], 0.0, {}
-    for sec, w in cfg["sections"].items():
+    checks, section_scores, exact = [], {}, {}
+    for sec in cfg["sections"]:
         lst = sections.get(sec, [])
         sw_ = sum(c["weight"] for c in lst)
-        s = sum(c["weight"] * c["score"] for c in lst) / sw_ if sw_ else 0.0
-        section_scores[sec] = round(s, 4)
-        total += w * s
+        exact[sec] = sum(c["weight"] * c["score"] for c in lst) / sw_ if sw_ else 0.0
+        section_scores[sec] = round(exact[sec], 4)
         checks += lst
-    return total, checks, section_scores
+    combos = {}
+    for gated, ctl in control_alt.items():
+        secs = dict(exact, control=ctl)
+        for name in combinations(cfg):
+            combos[(name, gated)] = combine(secs, cfg, name)
+    total = combos[(cfg.get("combine", "weighted"), gate)]
+    extra = {f"acceptance.{name}{'.progress_gate' if gated else ''}": round(v, 6) for (name, gated), v in combos.items()}
+    extra.update({"section.control.progress_gate": round(control_alt[True], 4), "section.control.no_progress_gate": round(control_alt[False], 4),
+                  "control.progress_mean": round(progress_mean, 4), "colliders_not_kept": float(len(dishonest))})
+    return total, checks, section_scores, extra
+
+
+SAFETY_CHECKS = ("parts_not_dropped", "no_losses", "no_collisions", "separation")
+SCENE_SECTIONS = ("layout", "physics", "steam", "hoist", "fleet")
+
+
+def combinations(cfg):
+    """The ways the sections can be combined: weighted (`sections`), the mission as a gate on the scene's sections, and
+    every other weights block `sections_<name>` by its name."""
+    return ["weighted", "mission_gate"] + sorted(k[len("sections_"):] for k in cfg if k.startswith("sections_") and isinstance(cfg[k], dict))
+
+
+def combine(secs, cfg, name):
+    """One acceptance score from the section scores: "weighted" (the `sections` weights), "mission_gate" (the weighted
+    mean of the five scene sections, by their `sections` weights, times the mission section) or another block's name."""
+    if name == "mission_gate":
+        w = cfg["sections"]
+        wsum = sum(w[k] for k in SCENE_SECTIONS)
+        return sum(w[k] * secs.get(k, 0.0) for k in SCENE_SECTIONS) / wsum * secs.get("control", 0.0) if wsum else 0.0
+    w = cfg["sections"] if name == "weighted" else cfg[f"sections_{name}"]
+    return sum(float(v) * secs.get(k, 0.0) for k, v in w.items())
 
 
 # --------------------------------------------------------------------------------------------- main
@@ -754,38 +896,44 @@ def main():
     scene = os.path.join(snap, os.path.basename(scene))
     os.environ["PATH"] = "/usr/sbin:/usr/bin:/bin:" + os.environ.get("PATH", "")  # (the kit spawns `runuser` by name)
     probe_account(work)
-    stage_file(work, "probes.py")
-    stage_file(work, "scan.py")
-    stage_file(work, "control_sim.py")
-    stage_file(work, "grader_config.json")
-    staged = os.path.join(work, "grader_config.json")
-    cfg_probe = json.load(open(staged))
-    cfg_probe["bay"] = bay_from_truth(json.load(open(os.path.join(HERE, "truth.json"))))
-    json.dump(cfg_probe, open(staged, "w"))
+    for name in PROBE_FILES:
+        stage_file(work, name)
+    bay_layer = stage_file(work, os.path.join("hidden", "bay_true.usda"))
+    truth = json.load(open(os.path.join(HERE, "truth.json")))
+    privileged, mismatch = token_state(snap)
+    cfg_probe = json.load(open(os.path.join(HERE, "grader_config.json")))
+    cfg_probe.update(bay=bay_from_truth(truth), bay_facts=json.load(open(os.path.join(HIDDEN, "bay_facts.json"))), bay_layer=bay_layer)
+    if privileged:  # (only then: the key is absent otherwise, never false)
+        cfg_probe["privileged"] = True
+    write_probe_config(work, cfg_probe)
+    log("privileged mode" if privileged else ("oracle token mismatch" if mismatch else "no oracle token"))
     canary(work, int(config.get("canary_timeout_s", 900)))
     try:
-        r = as_probe([os.path.join(work, "scan.py"), scene, "--json"], work, int(config.get("scan_timeout_s", 300)))
+        r = as_probe([os.path.join(probe_dir(work), "scan.py"), scene, "--json"], work, int(config.get("scan_timeout_s", 300)))
         scan = json.loads(r.stdout.strip().splitlines()[-1])
     except subprocess.TimeoutExpired:
         scan = dict(ok=False, errors=["the scan did not finish in time"], facts={})
     except Exception:  # noqa: BLE001
         scan = dict(ok=False, errors=[f"scan crashed: {(r.stderr or '')[-500:]}"], facts={})
     log("scan:", "ok" if scan["ok"] else scan["errors"][:5])
-    extra = {"scan_ok": float(scan["ok"])}
+    extra = {"scan_ok": float(scan["ok"]), "privileged_mode": float(privileged), "oracle_token_mismatch": float(mismatch)}
     cap, full_at = config.get("scoring_cap", 1.5), meta.get("full_at", 1.0)
     if not scan["ok"]:
         write_verdict(ratio_rewards(0.0, anchor, cap=cap, metric_name=meta["metric"], higher_is_better=True, full_at=full_at, extra=extra))
         return
     stream = seed_rng()  # (fresh OS entropy, in this process's memory only)
-    seeds = {g: stream.seed(31) for g in GROUPS}
-    got = run_probes(scene, work, int(config.get("probe_timeout_s", 900)), int(config.get("probe_retries", 1)), seeds, config, stream, snap)
-    truth = json.load(open(os.path.join(HERE, "truth.json")))
-    measured, checks, section_scores = score(scan, got, truth, config)
+    seeds = {g: stream.seed(63) for g in GROUPS if g != "control"}
+    seeds["control"] = [stream.seed(63) for _ in range(int(config.get("control", {}).get("episodes", 2)))]
+    got = run_probes(scene, work, int(config.get("probe_timeout_s", 900)), int(config.get("probe_retries", 1)), seeds, config, stream, snap,
+                     cfg_probe=cfg_probe, truth=truth)
+    measured, checks, section_scores, combos = score(scan, got, truth, config)
     for c in checks:
         log(f"{c['name']:34s} w={c['weight']:.2f} s={c['score']:.3f}  {json.dumps(c['detail'])[:110] if c['detail'] is not None else ''}")
     log("sections", section_scores)
     extra.update({f"check.{c['name']}": c["score"] for c in checks})
     extra.update({f"section.{k}": v for k, v in section_scores.items()})
+    extra.update(combos)
+    log("acceptance under each combination:", json.dumps({k: v for k, v in combos.items() if k.startswith("acceptance.")}))
     extra["probe_errors"] = float(sum(1 for g in got.values() if "error" in g))
     locks = [(ep or {}).get("lock") or {} for ep in (got.get("control") or [])]
     if locks:

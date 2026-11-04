@@ -97,6 +97,66 @@ def _joint_ends(j):
     return b0, b1
 
 
+def _asset_arcs(prim, asset_roots):
+    """The references and payloads on `prim` into the asset library, authored in a layer outside it (the robot's
+    own arcs to a library model, not the library's arcs among its own files): (absolute asset path, target prim
+    path or None for the asset's default prim)."""
+    out = []
+    for spec in prim.GetPrimStack():
+        layer = spec.layer
+        if layer.realPath and _inside(layer.realPath, asset_roots):
+            continue
+        for lst in (spec.referenceList, spec.payloadList):
+            for item in list(lst.prependedItems) + list(lst.appendedItems) + list(lst.explicitItems) + list(lst.addedItems):
+                if not item.assetPath:
+                    continue
+                path = layer.ComputeAbsolutePath(item.assetPath) if not os.path.isabs(item.assetPath) else item.assetPath
+                if _inside(path, asset_roots):
+                    out.append((path, item.primPath.pathString if item.primPath and not item.primPath.isEmpty else None))
+    return out
+
+
+_ASSET_COLLIDERS = {}
+
+
+def _asset_colliders(path, prim_path):
+    """The colliders a library model defines below the prim a reference takes (paths relative to it)."""
+    key = (path, prim_path)
+    if key not in _ASSET_COLLIDERS:
+        rel = []
+        try:
+            st = Usd.Stage.Open(path, Usd.Stage.LoadAll)
+            top = st.GetPrimAtPath(prim_path) if prim_path else st.GetDefaultPrim()
+            if top and top.IsValid():
+                for p in Usd.PrimRange(top, Usd.TraverseInstanceProxies()):
+                    if p.HasAPI(UsdPhysics.CollisionAPI) and p.GetAttribute("physics:collisionEnabled").Get() is not False:
+                        rel.append(p.GetPath().MakeRelativePath(top.GetPath()).pathString)
+        except Exception:  # noqa: BLE001 - an asset that does not open has nothing to compare against
+            rel = []
+        _ASSET_COLLIDERS[key] = rel
+    return _ASSET_COLLIDERS[key]
+
+
+def colliders_kept(stage, root, asset_roots):
+    """Does the robot keep every collider of the library models it is built from? A collider of a referenced model
+    that is gone from the composed stage (its prim removed or deactivated, its CollisionAPI deleted) or switched off
+    (`physics:collisionEnabled` false) counts against it; colliders added beside them are the robot's own business."""
+    checked, missing, disabled = 0, [], []
+    rp = stage.GetPrimAtPath(root)
+    for p in Usd.PrimRange(rp, Usd.TraverseInstanceProxies()):
+        for path, prim_path in _asset_arcs(p, asset_roots):
+            for rel in _asset_colliders(path, prim_path):
+                checked += 1
+                tgt = p.GetPath() if rel in ("", ".") else p.GetPath().AppendPath(Sdf.Path(rel))
+                q = stage.GetPrimAtPath(tgt)
+                if not q or not q.IsValid() or not q.IsActive() or not q.HasAPI(UsdPhysics.CollisionAPI):
+                    missing.append(tgt.pathString)
+                elif q.GetAttribute("physics:collisionEnabled").Get() is False:
+                    disabled.append(tgt.pathString)
+    return dict(ok=not missing and not disabled, checked=checked, missing=missing[:8], n_missing=len(missing),
+                disabled=disabled[:8], n_disabled=len(disabled))
+
+
 def scan(scene):
     errors, notes, facts = [], [], {}
     sub = os.path.realpath(os.path.dirname(scene))
@@ -181,6 +241,9 @@ def scan(scene):
             ends = b0 + b1
             if (not b0 or not b1) and any(e.startswith(root + "/") or e == root for e in ends):
                 errors.append(f"{j.GetPath()} fixes {root} to the world")
+            elif (any(e.startswith(root + "/") for e in ends) and any(not e.startswith(root + "/") for e in ends)
+                  and not any(e.startswith(root + "/Rope/") for e in ends)):
+                notes.append(f"{j.GetPath()} joins {root} to {[e for e in ends if not e.startswith(root + '/')]}: the bay mission drops it")
         refs = sorted({a for p in Usd.PrimRange(rp) for a in _referenced_assets(p)})
         decl = {}
         for key in ("airframe_model", "arm_model", "base_model"):
@@ -198,10 +261,14 @@ def scan(scene):
         cams = [p.GetPath().pathString for p in Usd.PrimRange(rp) if p.IsA(UsdGeom.Camera) and p.IsActive()]
         tagged = [c for c in cams if stage.GetPrimAtPath(c).GetAttribute("arb:sensor_model")
                   and stage.GetPrimAtPath(c).GetAttribute("arb:sensor_model").Get()]
+        kept = colliders_kept(stage, root, asset_roots)
         facts["robots"][name] = dict(articulation_root=str(art[0].GetPath()) if art else None, assets=refs, cameras=cams,
-                                     tagged_cameras=tagged, declared=decl)
+                                     tagged_cameras=tagged, declared=decl, colliders=kept)
         if not tagged:
             notes.append(f"{root} carries no camera with arb:sensor_model")
+        if not kept["ok"]:
+            notes.append(f"{root}: {kept['n_missing']} collider(s) of its library models removed and {kept['n_disabled']} switched off "
+                         f"(e.g. {(kept['missing'] + kept['disabled'])[:2]}): in the bay mission it scores 0 on no collisions")
     # the ropes: under each flying robot a chain of rigid-body links joined by joints, hooked to a body of the robot by a
     # joint outside the articulation, joined to the bucket at its ring; the bucket joined to nothing else; no distance
     # joints in the rigging

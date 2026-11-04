@@ -5,6 +5,9 @@
   "scan_timeout_s": 300,
   "max_submission_bytes": 2147483648,
   "scoring_cap": 1.5,
+  "combine": "mission_gate",
+  "progress_gate": true,
+  "scoring_note": "combine: how acceptance_score is made from the sections. 'weighted' = the weighted mean by `sections`; 'mission_gate' = the weighted mean of the five scene sections (their `sections` weights) times the control section; any other name selects the block sections_<name> (e.g. 'mission_0.8': the mission at 0.8, the five scene sections at 0.2 in their proportions). progress_gate: the mission's safety checks (parts not dropped, no losses, no collisions, separation; consistency by the mean) count in proportion to each run's progress, (steam released + fire out + station cleared) / 3. The verdict's metrics record the acceptance under every combination, with and without the gate (acceptance.<combine>[.progress_gate]).",
   "sections": {
     "layout": 0.08,
     "physics": 0.04,
@@ -12,6 +15,14 @@
     "hoist": 0.2,
     "control": 0.54,
     "fleet": 0.1
+  },
+  "sections_mission_0.8": {
+    "layout": 0.034783,
+    "physics": 0.017391,
+    "steam": 0.017391,
+    "hoist": 0.086957,
+    "control": 0.8,
+    "fleet": 0.043478
   },
   "tol": {
     "pos_full": 0.02,

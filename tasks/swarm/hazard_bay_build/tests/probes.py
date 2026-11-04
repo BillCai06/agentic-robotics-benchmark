@@ -1,8 +1,11 @@
 """Measure a hazard-bay scene in Isaac Sim: what is where, what it weighs, how the valve and the hazards behave, how the
 bucket hangs and swings on its ropes, how the agent's controller flies the hoist, and what the fleet is built from.
 
-    python3 probes.py <scene> <out.json> <group> <seed>
+    python3 probes.py <scene> <out.json> <group> [<seed>]
     groups: layout settle steam hoist control fleet
+
+The grader passes the seed in the environment (`ARB_SEED`; the command line is readable by every account), a maintainer
+may pass it as the fourth argument.
 
 Everything is read from PhysX or from the stage as authored, never from anything the scene reports about itself except
 the state attributes the interface declares (`arb:steam_active`, `arb:fire_active`, `arb:disabled`), and everything is
@@ -23,8 +26,9 @@ import traceback
 import numpy as np
 from isaacsim import SimulationApp
 
+os.umask(0o077)  # (whatever this process writes, here or in /tmp, is the probe account's alone)
 SCENE, OUT, GROUP = sys.argv[1], sys.argv[2], sys.argv[3]
-SEED = int(sys.argv[4]) if len(sys.argv) > 4 else 0
+SEED = int(os.environ.get("ARB_SEED") or (sys.argv[4] if len(sys.argv) > 4 else 0))
 DT = 1.0 / 120.0
 _cfg = {"headless": True}
 if os.environ.get("ARB_KIT_DIR"):  # the grader's own Kit folders (cache, data, logs), not the shared ones
@@ -101,9 +105,9 @@ def pq_tf(p, q):
 
 # --------------------------------------------------------------------------------------------- stage
 class Scene:
-    def __init__(self):
+    def __init__(self, path=None):
         ctx = omni.usd.get_context()
-        ctx.open_stage(SCENE)
+        ctx.open_stage(path or SCENE)
         for _ in range(3):
             app.update()
         self.ctx, self.stage = ctx, ctx.get_stage()
@@ -825,25 +829,88 @@ def hoist(out):
     out["stats"] = dict(max_speed=round(stats["max_speed"], 3), max_chord=round(stats["max_chord"], 4), stretch=round(stats["max_chord"] - L_ROPE, 4), nan=stats["nan"])
 
 
-# --------------------------------------------------------------------------------------------- the hoist mission (the agent's controller)
+# --------------------------------------------------------------------------------------------- the bay mission (the agent's controller)
+def privileged_state(sim):
+    """The true state at the instant of the observation (the token-privileged reference's channel; read only, no
+    random draw: a privileged run is the same simulation as any other)."""
+    tfs = sim.iv.get_transforms() if sim.iv is not None else []
+    bp, bq, bv, _, tilt = sim.bucket_state()
+    parts = {}
+    for i, n in enumerate(sim.item_names):
+        c, lo, hi = sim.item_box_world(n, tfs)
+        pp, qq = control_sim.tf_pq(tfs[i])
+        b = sim.items[n]["box"]
+        parts[sim.wire[n]] = dict(center=r3(c), lo=r3(lo), hi=r3(hi), pos=r3(pp), quat=[round(float(x), 5) for x in qq],
+                                  own_lo=r3(b[0]) if b is not None else None, own_hi=r3(b[1]) if b is not None else None,
+                                  held=bool(sim.ugv is not None and sim.ugv["held"] == n))
+    uav = {}
+    for n in UAVS:
+        p, q, v = sim.uav_state(n)
+        uav[n] = dict(pos=r3(p), vel=r3(v), lost=n in sim.lost)
+    out = dict(uav=uav, hooks={n: r3(h) for n, h in sim.hooks().items()},
+               bucket=dict(pos=r3(bp), quat=[round(float(x), 5) for x in bq], vel=r3(bv), tilt_deg=round(float(tilt), 3), water_l=round(float(sim.water), 3)),
+               parts=parts, pan=r3(sim.pan), fire=bool(sim.fire), steam=bool(sim.steam), pressure=round(float(sim.pressure()), 3),
+               bay=dict(crate=sim.bay.get("crate"), plume=sim.bay.get("plume"), tables=sim.cfg.get("table_tops")))
+    if sim.ugv is not None:
+        p, q, yaw = sim.ugv_pose()
+        v6 = sim.ugv["gv"].get_root_velocities()[0]
+        out["ugv"] = dict(pos=r3(p), quat=[round(float(x), 5) for x in q], heading_deg=round(math.degrees(control_sim.wrap(yaw)), 3),
+                          vel=r3(v6[:3]), yaw_rate=round(math.degrees(float(v6[5])), 3), lost="UGV" in sim.lost)
+    lever = dict(deg=round(float(sim.lever.angle()), 3))
+    g = sim.handle_grip()
+    if g is not None:
+        lever["grip"] = r3(g)
+    if sim.lever.art is not None:
+        names = list(sim.lever.art.shared_metatype.link_names)
+        if "Handle" in names:
+            hp, hq = control_sim.tf_pq(sim.lever.art.get_link_transforms()[0][names.index("Handle")])
+            lever.update(hub=r3(hp), hub_quat=[round(float(x), 5) for x in hq])
+    out["lever"] = lever
+    return out
+
+
 @group("control")
 def control(out):
     """The agent's controller drives the fleet (the flying robots dynamic under its thrust commands, the vehicle under
-    its joint targets and grip) through the bay mission; the grader relays the wire through two pipes (`ARB_WIRE_DIR`):
-    this process never runs the agent's code. It keeps the bay's rules itself and measures the outcomes against the
-    real bay's facts (`bay` in the grader's config)."""
+    its joint targets and grip) through the bay mission in the real bay: the grader's own stage of the bay as it really
+    is (`bay_layer`), with the agent's four robots mounted in it (`mission_stage`), on the day's draws (`draw_hidden`).
+    The grader relays the wire through two pipes (`ARB_WIRE_DIR`): this process never runs the agent's code. It keeps
+    the bay's rules itself and measures the outcomes against the real bay's facts (`bay` in the grader's config)."""
+    import mission_stage
     wire = os.environ.get("ARB_WIRE_DIR")
     if not wire:
         out["error"] = "no wire to a controller"
         return
-    s = Scene()
-    control_sim.prepare(s.stage)
+    facts = CFG["bay_facts"]
+    stage_path = os.path.splitext(OUT)[0] + "_mission.usda"
+    t0 = time.time()
+    try:
+        info = mission_stage.build(SCENE, CFG["bay_layer"], facts, stage_path)
+    except mission_stage.MissionStageError as exc:
+        out["abort"] = f"the fleet does not fit the real bay: {exc}"[:400]
+        out["end"] = "aborted"
+        return
+    out["real_bay"] = info
+    timing = dict(build_s=round(time.time() - t0, 2))
+    hidden = control_sim.draw_hidden(SEED, CFG.get("control_sim"))
+    t0 = time.time()
+    s = Scene(stage_path)
+    control_sim.prepare(s.stage, hidden=hidden, fleet_root=info["fleet_root"], rope_root=info["rope_root"])
     s.start()
-    sim = control_sim.ControlSim(s, CFG["catalog"], CFG.get("control_sim"), seed=SEED, log=lambda *a: print("[control]", *a, flush=True),
-                                 bay=CFG.get("bay"))
+    timing["open_s"] = round(time.time() - t0, 2)
+    t0 = time.time()
+    cfg = dict(CFG.get("control_sim") or {}, fleet_root=info["fleet_root"], rope_root=info["rope_root"],
+               item_alias=CFG.get("item_alias") or None, table_tops=facts["table_tops"], pan_nominal=facts["pan"]["center"])
+    sim = control_sim.ControlSim(s, CFG["catalog"], cfg, seed=SEED, log=lambda *a: print("[control]", *a, flush=True),
+                                 bay=CFG.get("bay"), hidden=hidden)
     out["mission"] = sim.mission()
+    timing["init_s"] = round(time.time() - t0, 2)
+    t0 = time.time()
+    privileged = bool(CFG.get("privileged"))
     with open(os.path.join(wire, "obs.fifo"), "w") as fo, open(os.path.join(wire, "act.fifo")) as fi:
         def policy(t, obs):
+            if privileged:
+                obs["privileged"] = privileged_state(sim)
             fo.write(json.dumps({"t": t, "obs": obs}) + "\n")
             fo.flush()
             line = fi.readline()
@@ -863,6 +930,10 @@ def control(out):
         except (OSError, ValueError):
             pass
     out.update(m)
+    out["hidden"] = sim.hidden_record()
+    timing["run_s"] = round(time.time() - t0, 2)
+    timing["ms_per_step"] = round(1000.0 * timing["run_s"] / max(1, m.get("steps") or 1), 2)
+    out["timing"] = timing
 
 
 # --------------------------------------------------------------------------------------------- the fleet's design
