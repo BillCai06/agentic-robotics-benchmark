@@ -9,10 +9,13 @@ Two programs:
   true hub (ending as soon as the lever reads shut, backing off along the arc), then every part off the tables and
   into the crate (a stand at a table's edge per part, chosen so the arm reaches it from there, the vehicle stays
   outside the burning pan's ring and has room to turn at its approach; a path on a grid of the bay, driven backward
-  when the way lies behind; a pick from above with the suction tool, checked from where the vehicle really stands; a
-  drop into a free slot of the crate, let go only once the part is over the crate), then it parks clear of everything
-  with its arm folded. It turns on the spot only where there is room: the skid-steer turns about a point some way off
-  its root body, so a spin walks the vehicle.
+  when the way lies behind, the last stretch to a stand driven along the stand's line; a pick from above with the
+  suction tool, planned from where the vehicle really stands and solved again on the way down whenever the base has
+  moved (the arm's reaction pushes a skid-steer's base, and its wheels slip); a drop into a free slot of the crate,
+  the slot moved in to fit the part, let go only once the part is over the crate), then it stops where it stands
+  with its arm folded.
+  It turns on the spot only where there is room: the skid-steer turns about a point some way off its root body, so a
+  spin walks the vehicle.
 - `Baseline`, for practice runs without that block: it closes the valve on its odometry and parks (the part routine
   is kept but switched off: on raw wheel odometry the vehicle drifts by tens of centimetres over the minutes the parts
   take and runs into the tables; doing the station without the true state needs localisation against what the
@@ -560,12 +563,16 @@ GRID = (-4.0, 4.0, -0.70, 3.10, 0.05)  # the planner's grid: x0, x1, y0, y1, cel
 TUCK = (0.05, 0.0, 0.78)  # [m] the tool's point, the arm tucked above the deck (root frame); holding a part: CARRY
 CARRY = (0.10, 0.0, 0.86)
 V_DRIVE, V_SLOW, W_TURN = 0.7, 0.3, 0.8  # [m/s] cruise, the last straight stretch; [rad/s] turn rate (a skid-steer's spin walks)
+LINE_LOOK, LINE_STEER = 0.5, math.radians(8.0)  # the straight stretch's pursuit: look-ahead [m], the largest steer off its line
+                                                # (gentle: a skid-steer that steers hard at a crawl only turns on the spot)
+WHEEL_SLEW = 0.12  # [rad/s per control step] the wheels' speed targets change gently (7.2 rad/s^2: about 0.7 m/s^2 at the rim)
 ARM_FAST, ARM_SLOW = 1.0, 0.5  # [rad/s] joint target rates: free moves, moves near the parts and the lever
 LEVER_R, LEVER_STEP = 0.24, math.radians(4.0)  # the push's radius round the hub; its arc step
 SLOTS = [(sx, sy) for sy in (-0.09, 0.09) for sx in (-0.18, 0.0, 0.18)]  # the crate's 3 x 2 drop slots (crate frame)
+SLOT_MARGIN = 0.045  # [m] a dropped part's box stays this far inside the crate's outer box (the check after the drop wants 0.035)
 SPIN_ROOM = 0.58  # [m] the vehicle spins on the spot only this far from everything (its half-diagonal and the spin's walk)
-PARK = (-0.50, 2.05)  # where the vehicle stands still at the end: clear of the tables, the crate, the line and the pan
 PRE_ABOVE, TOUCH = 0.16, 0.005  # [m] above a part's top: where the arm comes in; where the tool touches (the suction holds at 4 cm)
+REPLAN_M, REPLAN_RAD = 0.006, math.radians(0.4)  # the base's motion that makes a pick's or a drop's way down solved again
 
 
 def rect_dist(px, py, c, size, yaw):
@@ -843,7 +850,20 @@ class Privileged:
             log(f"t={obs['time']:.1f} {st['kind']} {st.get('why', '')} done in {obs['time'] - st['t0']:.1f} s")
             s["steps"].pop(0)
             wheels = self.wheels(0.0, 0.0)
-        return dict(vel=wheels, pos=dict(s["q_tgt"]), grip=bool(s["grip"]))
+        return dict(vel=self.slew(s, wheels), pos=dict(s["q_tgt"]), grip=bool(s["grip"]))
+
+    @staticmethod
+    def slew(s, wheels):
+        """The wheels' speed targets, changed by at most WHEEL_SLEW per control step. The base's wheel drives hold
+        their targets almost rigidly (damping 1e7): a target that jumps (a spin straightened out, a stop) jerks the
+        chassis on its wheels, and the arm's aim with it."""
+        last = s.get("wheel_cmd") or {}
+        out = {}
+        for n, v in wheels.items():
+            v0 = float(last.get(n, 0.0))
+            out[n] = v0 + float(np.clip(float(v) - v0, -WHEEL_SLEW, WHEEL_SLEW))
+        s["wheel_cmd"] = out
+        return dict(out)
 
     def plan_next(self, s, pv, obs, hoist):
         if s["phase"] == "start":
@@ -864,9 +884,8 @@ class Privileged:
             if steps:
                 s["steps"] = steps
                 return
-            s["phase"] = "park"  # (well clear of everything, the arm tucked)
-            s["steps"] = [dict(kind="arm_line", to="tuck", speed=ARM_FAST, timeout=15.0),
-                          dict(kind="drive", goal=list(PARK), heading=None, timeout=40.0, why="park"), dict(kind="stop", timeout=1e9)]
+            s["phase"] = "park"  # (where it stands, backed out of the crate, the arm tucked: any drive now only delays the end)
+            s["steps"] = [dict(kind="arm_line", to="tuck", speed=ARM_FAST, timeout=15.0), dict(kind="stop", timeout=1e9)]
             return
         if s["phase"] == "park":
             s["phase"] = "done"
@@ -1085,10 +1104,11 @@ class Privileged:
             a, w1 = self.line_path(s, pv, obs, top + [0, 0, PRE_ABOVE], down, step=0.04)
             b, w2 = self.line_path(dict(s, q_tgt=a[-1]), pv, obs, top + [0, 0, 0.10], down, p0=top + [0, 0, PRE_ABOVE], step=0.03)
             c, w3 = self.line_path(dict(s, q_tgt=b[-1]), pv, obs, top + [0, 0, TOUCH], down, p0=top + [0, 0, 0.10], step=0.015)
-            st.update(phase="down", path=a + b + c, k=0, n_grip=len(a + b), n_fast=len(a), top=top.tolist())
+            st.update(phase="down", path=a + b + c, k=0, n_grip=len(a + b), n_fast=len(a), top=top.tolist(), plan_pose=self.pose_key(pv))
             if max(w1, w2, w3) > 0.015:
                 log(f"t={obs['time']:.1f} {name}: IK residual {max(w1, w2, w3):.3f} m on the way down")
         if st["phase"] == "down":
+            self.track_pick(st, s, pv, obs)
             if st["k"] >= st["n_grip"] - 2:
                 s["grip"] = True
             done = self.follow(st, s, obs, ARM_FAST if st["k"] < st.get("n_fast", 0) else ARM_SLOW, tol=0.006)
@@ -1129,6 +1149,50 @@ class Privileged:
         if st["phase"] == "carry":
             return self.follow(st, s, obs, ARM_FAST, tol=0.05)
         return False
+
+    @staticmethod
+    def pose_key(pv):
+        u = pv["ugv"]
+        return [float(u["pos"][0]), float(u["pos"][1]), math.radians(u["heading_deg"])]
+
+    def moved(self, st, pv, obs):
+        """Has the vehicle's base moved since the arm's path was planned (st['plan_pose'])? The arm's reaction pushes
+        the skid-steer's base and its wheels slip; a path planned from where it stood then misses by as much as it
+        moved. (At most every 0.2 s.)"""
+        x0, y0, a0 = st["plan_pose"]
+        u = pv["ugv"]
+        if math.hypot(u["pos"][0] - x0, u["pos"][1] - y0) < REPLAN_M and abs(wrap_a(math.radians(u["heading_deg"]) - a0)) < REPLAN_RAD:
+            return False
+        return obs["time"] - st.get("t_replan", -9.0) >= 0.2
+
+    def track_pick(self, st, s, pv, obs):
+        """The rest of the way down to the part, solved again from where the arm's targets are on the vehicle's true
+        pose now, when the base has moved (closed loop on the true pose, not on the pose at the start of the pick)."""
+        if not self.moved(st, pv, obs):
+            return
+        top, down, k = np.array(st["top"]), np.array(st["wrist"]), st["k"]
+        targets = [(top + [0, 0, PRE_ABOVE], 0.04), (top + [0, 0, 0.10], 0.03), (top + [0, 0, TOUCH], 0.015)]
+        seg = 0 if k < st["n_fast"] else (1 if k < st["n_grip"] else 2)
+        path, ends = [], {}
+        for i in range(seg, 3):
+            p1, step = targets[i]
+            if not path:
+                pts, _ = self.line_path(s, pv, obs, p1, down, step=step)
+            else:
+                pts, _ = self.line_path(dict(s, q_tgt=path[-1]), pv, obs, p1, down, p0=targets[i - 1][0], step=step)
+            path += pts
+            ends[i] = len(path)
+        st.update(path=path, k=0, n_fast=ends.get(0, 0), n_grip=ends.get(1, 0), plan_pose=self.pose_key(pv), t_replan=obs["time"])
+        st.pop("t_last", None)
+        st["replans"] = st.get("replans", 0) + 1
+
+    def track_lower(self, st, s, pv, obs):
+        """The crate's way down, solved again on the true pose when the base has moved (as `track_pick`)."""
+        if not self.moved(st, pv, obs):
+            return
+        st["path"], _ = self.line_path(s, pv, obs, np.array(st["p1"]), np.array([0.0, 0.0, 1.0]), step=0.03)
+        st.update(k=0, plan_pose=self.pose_key(pv), t_replan=obs["time"])
+        st["replans"] = st.get("replans", 0) + 1
 
     def carry_point(self, pv, which=CARRY):
         _, _, p, R = self.pose(pv)
@@ -1193,11 +1257,18 @@ class Privileged:
                 if self.reach_ok(s, pv, obs, xy, psi, [slot + [0, 0, below]], [np.array([0.0, 0.0, 1.0])]) is not None:
                     st["slot_k"] = k
                     break
+            # the slot moved in until the part's box (as it hangs from the tool now) lies inside the crate's walls with
+            # room to spare: a big part over an outer slot would hang over the wall and need aiming again
+            d_lo, d_hi = np.array(part["lo"][:2]) - tool[:2], np.array(part["hi"][:2]) - tool[:2]
+            a, b = lo[:2] + SLOT_MARGIN - d_lo, hi[:2] - SLOT_MARGIN - d_hi
+            slot[:2] = np.where(a <= b, np.clip(slot[:2], a, b), (a + b) / 2)
             p1 = np.array([slot[0], slot[1], slot[2] + below])
             st["path"], w = self.line_path(s, pv, obs, p1, np.array([0.0, 0.0, 1.0]), step=0.03)
-            st.update(k=0, phase="lower", part=held)
+            st.update(k=0, phase="lower", part=held, p1=p1.tolist(), plan_pose=self.pose_key(pv))
             return False
         if st["phase"] == "lower":
+            if not st.get("aims"):  # (the aim-again moves below re-plan from where the part is: only the first way down)
+                self.track_lower(st, s, pv, obs)
             if self.follow(st, s, obs, ARM_SLOW, tol=0.03):
                 part = pv["parts"].get(st["part"]) if st.get("part") else None
                 lo, hi = np.array(pv["bay"]["crate"][0]), np.array(pv["bay"]["crate"][1])
@@ -1328,8 +1399,10 @@ class Privileged:
         if dg < st.get("tol", 0.10):  # (close enough: a straight drive in, or the arm's IK on the true pose, takes up the rest)
             st["arrived"] = True
             return self.wheels(0.0, 0.0), st.get("heading") is None
-        if dg < 0.30:  # near: straight on along the heading until level with it (a spin on the spot would move the root:
-            along = float((goal - xy) @ fwd)  # the skid-steer's turning centre is not the root body's origin)
+        along = float((goal - xy) @ fwd)
+        if dg < 0.30 and abs(float((goal - xy) @ np.array([-fwd[1], fwd[0]]))) < 0.08:
+            # near and nearly in line: straight on along the heading until level with it (a spin on the spot would move
+            # the root: the skid-steer's turning centre is not the root body's origin); further off, the pursuit below
             if abs(along) < 0.02:
                 st["arrived"] = True
                 return self.wheels(0.0, 0.0), st.get("heading") is None
@@ -1375,16 +1448,21 @@ class Privileged:
         return self.spin(pv, err, st), False
 
     def straight(self, st, pv):
-        """Straight to the goal, forward or back, the heading held."""
+        """Straight to the goal, forward or back, along the line through the goal at the step's heading: the vehicle
+        steers gently back toward that line as it goes (pure pursuit LINE_LOOK ahead, at most LINE_STEER off the
+        heading), taking up part of what the drive's arrival left beside it (a skid-steer cannot step sideways)."""
         xy, psi, _, _ = self.pose(pv)
         goal = np.array(st["goal"], dtype=float)
-        d = goal - xy
-        fwd = np.array([-math.sin(psi), math.cos(psi)])
-        along = float(d @ fwd)
+        hd = st["heading"]
+        f = np.array([-math.sin(hd), math.cos(hd)])  # (the line's direction: the heading's forward)
+        n = np.array([-f[1], f[0]])
+        along = float((goal - xy) @ f)
         if abs(along) < 0.012:
             return self.wheels(0.0, 0.0), abs(pv["ugv"]["vel"][0]) + abs(pv["ugv"]["vel"][1]) < 0.03
-        err = wrap_a(st["heading"] - psi)
+        lat = float((xy - goal) @ n)  # (> 0: left of the line)
         v = math.copysign(min(V_SLOW, 1.2 * abs(along) + 0.02), along)
+        steer = -math.copysign(1.0, v) * float(np.clip(math.atan2(lat, LINE_LOOK), -LINE_STEER, LINE_STEER))
+        err = wrap_a(hd + steer - psi)
         return self.wheels(v, float(np.clip(2.0 * err, -0.5, 0.5))), False
 
 
