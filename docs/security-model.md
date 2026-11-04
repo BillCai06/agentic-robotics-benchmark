@@ -37,7 +37,7 @@ stage protocol; the task only has to respect it.
 |---|---|---|
 | **Timing** | `tests/` (grader, `env.py`, `anchor.json`, `grader_config.json`) is uploaded to `/opt/ale/tests` only when the verify stage runs (`protocol/episode_protocol.py:757-783`), and `solution/` to `~/.ale-solution` only in an oracle episode (`:500-501`, `:1290-1297`). During the agent phase neither exists anywhere in the sandbox. | engine (`episode-protocol.md`: "`tests/` is also absent throughout this phase") |
 | **Root-only staging root** | `/opt/ale` is `drwx------ root:root`: the layer the engine adds to every task image runs `chown -R 0:0 /opt/ale` and `chmod -R go-rwx /opt/ale` (`framework.py:122-123`), and stage uploads land below it owned by root. Even paths that do exist there are untraversable for the agent account. | engine |
-| **UID boundary** | `tests/test.sh` runs as root; the agent's solver is spawned **at the agent's UID** (`robotics_grader.Solver`, `deprivileged`, via `runuser`). The solver cannot read the grader's memory: the kernel refuses to let one UID trace another's process. It does start with a copy of the verify stage's environment (`runuser -u` keeps the caller's environment and sets only `HOME`, `SHELL`, `USER` and `LOGNAME`), which holds the `ALE_*` stage variables and, when a run configures a Judge, its Gateway session token; so a grader keeps no secret in `os.environ`, and today's tasks configure no Judge. Artifacts the agent produced (checkpoints, pickles) are deserialized deprivileged too. | kit |
+| **UID boundary** | `tests/test.sh` runs as root; the agent's solver is spawned **at the agent's UID** (`robotics_grader.Solver`, `deprivileged`, via `runuser`). The solver cannot read the grader's memory: the kernel refuses to let one UID trace another's process. It does start with a copy of the verify stage's environment (`runuser -u` keeps the caller's environment and sets only `HOME`, `SHELL`, `USER` and `LOGNAME`), which holds the `ALE_*` stage variables and, when a run configures a Judge, its Gateway session token; so a grader keeps no secret in `os.environ`, and today's tasks configure no Judge. Artifacts the agent produced (checkpoints, pickles) are deserialized deprivileged too. Before it runs any agent code, `deprivileged` resolves `runuser` to an absolute path against a fixed system PATH (`/usr/sbin:/usr/bin:/sbin:/bin`) and reclaims every directory on root's PATH that is not root-owned 0755 (`secure_exec_path`), so a program the agent plants on root's PATH cannot shadow `runuser` — or any other name root resolves — on a later exec. | kit |
 | **Result path** | The result goes to `/logs/verifier/reward.json` and `verification.json` through `ale_verify`'s atomic write. Before every verification attempt the engine removes whatever is at `/logs/verifier`, makes `/logs` root's and unwritable for others, and recreates `/logs/verifier` empty with mode 0700 (`protocol/episode_protocol.py:144-156`, run at `:777`). The agent can neither pre-create nor overwrite the result, and nothing it left running can write one. The engine rejects a `verification.json` whose `reward` differs from `reward.json`'s (`:886`). | engine + kit |
 | **Seeds in memory** | The grader draws hidden seeds from OS entropy inside its own process (`seed_rng`); they never touch disk. The practice grader the agent gets uses different, visible seeds and prints the raw metric only. | kit + `scripts/lint_domain.py` |
 | **No self-reported numbers** | The metric is computed from the grader's own simulator state. Nothing the solver prints is parsed as a score; the wire carries observations and actions only. | kit |
@@ -57,6 +57,20 @@ respond, so a constant, replayed or observation-blind policy scores zero
 (`match_lock_ok = 0`); open_loop graders re-simulate every answer under their own dynamics
 and reject one that does not start where it claims; artifact_rollout is structurally immune
 (the grader is the only thing that ever runs the artifact).
+
+**Separate verification (the recommended mode for every task).** With
+`[verifier] environment_mode = "separate"` the engine scores in a fresh sandbox the agent
+never touched, restoring only the declared `artifacts`; the agent's own sandbox is released
+first (`protocol/episode_protocol.py:315-345`). This closes a root-escalation class the
+shared mode leaves open: the ALE base image leaves `/usr/local/bin` owned by the agent
+account and ahead of `/usr/bin` on root's PATH, so under shared verification a program the
+agent writes there (`bash`, `sh`, `rm`) runs as root the moment the engine starts
+`bash test.sh` — before the grader — and can write any reward. A fresh verifier resolves
+those names to the pristine `/usr/bin`. Defense in depth inside the kit covers the residual
+case where the agent's own `run.sh` runs (deprivileged) during a separate verify and could
+still plant for a later root exec: `deprivileged` resolves `runuser` absolutely and calls
+`secure_exec_path` to take every root-PATH directory back to `root:root 0755` before the
+solver starts. Two engine root execs sit outside the kit's reach and are noted in §4.
 
 **What "hidden" means, precisely.** The anchor and the oracle are hidden from the *tested
 agent during its run*, by stage isolation. They are **not** secrets from maintainers or from
@@ -95,6 +109,19 @@ result can be matched to the exact committed tree it ran against.
 - **The probe lock is not a proof of honesty.** It catches a policy that ignores its input;
   a solver that notices a repeated `t` can vary its answer on purpose. Isolation, not the
   lock, keeps a score honest.
+- **Two engine root execs the kit cannot guard.** The kit reclaims root's PATH before it
+  runs agent code, but the engine itself runs programs by bare name as root around verify.
+  (1) In a *separate* verify every such name the engine resolves before the grader starts
+  (`chmod` on restore, `rm`/`sh` to clear stages and reset `/logs/verifier`, then
+  `bash test.sh`) runs in the **fresh** verifier before any agent code, so there is no plant
+  to shadow it; the kit's reclaim then protects the names run after `run.sh` starts (the
+  kit's own `runuser`, and the engine's post-verify `rm`/`sh`). (2) In a *shared* verify the
+  agent's sandbox already holds whatever it planted, so the engine's first `bash test.sh`
+  can run an agent file as root before the grader loads — which the kit cannot prevent (it
+  has not run yet). That is the case separate verification exists to remove, which is why
+  every task should use it. The engine also runs `_sanitize_for_retention` (bare `rm`/`sh`)
+  on the released solver sandbox, but that is after its reward is read and never feeds a
+  score. None of this is fixable here without modifying the pinned `vendor/ale`.
 - **Public anchors.** Because the repository is public and complete, the target value is
   public knowledge outside the sandbox. The agent phase runs in a no-network sandbox that
   does not contain it; the benchmark does not measure what a human who read the repository

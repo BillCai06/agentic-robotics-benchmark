@@ -29,9 +29,12 @@ with the working directory set to `/home/user/submission`, under your own user a
 Keep stdout clean — it is the wire. Send diagnostics to stderr.
 
 Deadlines: print `READY` within 120 s of launch (load whatever you need first, then print
-it), and answer every request within 30 s. A missed deadline, a reply that is not one JSON
-object with an `action` of two numbers, or a crash aborts the episode, which is then charged
-as if you had not moved at all. After an aborted episode the grader stops your process and
+it), and answer every request within 30 s. That 30 s is a single budget per request, timed
+from when the request is sent: blank or partial lines count against the same 30 s and do not
+buy more time, so emit nothing but your one JSON reply. A missed deadline, a reply that is
+not one JSON object with an `action` of two numbers, or a crash aborts the episode, which is
+then charged as if you had not moved at all. After an aborted episode the grader stops your
+process and
 launches `bash run.sh` again for the next one (it must print `READY` again); after three
 such restarts every remaining episode aborts. So `run.sh` has to work when started a second
 time: no fixed ports, PID files or locks that the first run leaves behind.

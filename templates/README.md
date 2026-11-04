@@ -65,10 +65,19 @@ them; the authoring spec says how.
 
 ## What the engine provides at verify time
 
-Verification is shared: once the agent is done, the engine uploads `tests/` into the same
-sandbox at `/opt/ale/tests` (root-only, like all of `/opt/ale`) and runs `bash test.sh`
-there as root, with that folder as cwd and the network open. Before the script starts, the
-engine
+Verification runs in a **separate** sandbox, the recommended default this template ships
+(`[verifier] environment_mode = "separate"`): once the agent is done, the engine releases
+the agent's sandbox, provisions a fresh verifier from the task image that the agent never
+touched, restores only the declared `artifacts` into it, uploads `tests/` to
+`/opt/ale/tests` (root-only, like all of `/opt/ale`) and runs `bash test.sh` there as root,
+with that folder as cwd and the network open. Shared verification (omit the key) instead
+runs `test.sh` in the agent's own sandbox, where a program the agent planted on root's PATH
+(the base image leaves `/usr/local/bin` agent-writable and ahead of `/usr/bin`) would run
+as root before the grader and bypass it; separate verification closes that, so prefer it for
+every task. Two consequences of the fresh sandbox: `environment/setup/setup.sh` does **not**
+run in the verifier, and nothing the agent left outside the declared `artifacts` is there —
+so anything verify reads must be staged by the task (in `tests/`, or a declared artifact),
+not assumed from setup. Before the script starts, the engine
 
 - stages its own `ale_verify` package into the first interpreter that is Python 3.12 or
   newer, `python3`, else `python3.12`, and names that interpreter in `ALE_VERIFY_PYTHON`.
@@ -111,7 +120,12 @@ instead, for a run outside the engine (a host-side dry run, the kit's selftest);
 `Solver` speaks one JSON object per line to the agent's `run.sh`, launched as `bash run.sh`
 with cwd `/home/user/submission` at the agent's UID. `READY` must arrive within
 `READY_TIMEOUT_FACTOR` (4) step deadlines of launch, 120 s with the template's
-`step_timeout_s: 30` (`tests/grader_config.json`), and every reply within one step deadline:
+`step_timeout_s: 30` (`tests/grader_config.json`), and every reply within one step deadline.
+That deadline is a **single per-request budget**, fixed the moment the request is written
+(and the `READY` wait likewise): blank lines, a partial line or a trickle of output are all
+charged against the same `step_timeout` and cannot extend it — and a flood of blank lines is
+capped — so a solver can never stall verification by dribbling output. Missing the deadline
+aborts the episode exactly as a slow reply does.
 
 ```
 {"type": "reset"}                        -> {"ok": true}
