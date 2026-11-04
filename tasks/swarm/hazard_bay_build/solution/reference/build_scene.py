@@ -16,7 +16,8 @@ The grader's real bay comes from the same code (author use only, once; the outpu
 
 --bay-only leaves out the backdrop and the lights, the fleet and its ropes, the hazard logic and the two Flow
 volumes: what is left is the bay itself (its physics scene, floor, markings, tables and parts, crate, steam line and
-valve, gauge, plume box, pan, tank and the bucket with its rings), the layer the bay mission's stage is built on.
+valve, gauge, plume box, pan, tank and the bucket with its rings), the layer the bay mission's stage is built on; its
+floor collider is a 0.5 m slab instead of the twin's 2 cm box (the floor's top, z = 0, is the same: see below).
 --bay-facts writes the numbers that stage is built from (pads, parking bay, table tops, pan, valve, rings, rope).
 """
 
@@ -239,8 +240,12 @@ if not BAY_ONLY:  # (the warehouse has no collider inside the bay below 3.5 m bu
     sun.CreateAngleAttr(4.0)
     UsdGeom.Xformable(sun).AddOrientOp().Set(Gf.Quatf((Gf.Rotation(Gf.Vec3d(0, 0, 1), 35.0) * Gf.Rotation(Gf.Vec3d(1, 0, 0), -50.0)).GetQuat()))
 
-floor = box(f"{FAC}/Floor", (0, 0, -0.01), (14.0, 14.0, 0.02), M["floor"])
-UsdGeom.Imageable(floor).MakeInvisible()  # a collider under the warehouse's own floor
+# the floor: a collider under the warehouse's own floor, its top at z = 0. In the real bay a 0.5 m slab: on the 2 cm
+# box of the twin (the truth was measured with it) a loaded wheel of a heavy vehicle can sink 8 mm into it, near the
+# box's middle, where the contact cannot tell which face it is under; the vehicle then shakes for the rest of the run.
+FLOOR_T = 0.5 if BAY_ONLY else 0.02
+floor = box(f"{FAC}/Floor", (0, 0, -FLOOR_T / 2), (14.0, 14.0, FLOOR_T), M["floor"])
+UsdGeom.Imageable(floor).MakeInvisible()
 # the floor's surface for the simulation (facts.md): sealed concrete, friction 0.5 static and dynamic, no restitution
 floor_mat = UsdShade.Material.Define(st, "/World/Looks/FloorSurface")
 fm = UsdPhysics.MaterialAPI.Apply(floor_mat.GetPrim())
