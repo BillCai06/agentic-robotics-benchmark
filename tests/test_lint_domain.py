@@ -562,3 +562,24 @@ def test_the_payload_may_not_name_the_grader_s_files(tmp_path):
     (task / "environment" / "setup" / "payload" / "peek.py").write_text('open("tests/grader.py")\n')
     problems = lint_domain.lint_paths([task])
     assert any("the grader (tests/)" in p for p in problems), problems
+
+
+def test_the_graders_copy_of_the_givens_must_match_the_payload(tmp_path):
+    """A separate verifier never runs setup.sh, so a grader may keep its own copy of the givens in
+    tests/setup_payload/; the lint holds it byte-identical to environment/setup/payload/."""
+    task = _task(tmp_path)
+    payload = task / "environment" / "setup" / "payload"
+    (payload / "given").mkdir()
+    (payload / "given" / "spec.json").write_text('{"a": 1}\n')
+    mirror = task / "tests" / "setup_payload"
+    (mirror / "given").mkdir(parents=True)
+    (mirror / "given" / "spec.json").write_text('{"a": 1}\n')
+    (mirror / "practice_grader").mkdir()
+    (mirror / "practice_grader" / "grade.py").write_text((task / _GRADE_PY).read_text())
+    assert lint_domain.lint_task(task) == []
+
+    (mirror / "given" / "spec.json").write_text('{"a": 2}\n')
+    (mirror / "given" / "extra.txt").write_text("x\n")
+    problems = lint_domain.lint_task(task)
+    assert any("given/spec.json differs" in p for p in problems), problems
+    assert any("given/extra.txt is not in environment/setup/payload/" in p for p in problems), problems
