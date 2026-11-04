@@ -1,7 +1,10 @@
-"""Practice runner for the bay mission: your scene and your controller through the same simulation and the same
-measurements the grader uses (`control_sim.py` is the grader's copy), in your own session, one episode, raw numbers.
-The grader measures the outcomes against the real bay (where the plume, the crate, the gauge and the tables really
-are); this runner, which does not know the real bay, measures them against your scene.
+"""Practice runner for the bay mission: your scene and your controller through the same simulation, the same random
+draws and the same measurements the grader uses (`control_sim.py` is the grader's copy), in your own session, one
+episode, raw numbers. The day's bay comes from `--seed` as the grader's does from its own seeds: your parts placed at
+random on your tables, your vehicle moved off its authored pose (its odometry starting from the authored one), your
+lever partly turned, your pan moved. It knows only your scene: it runs in your bay, with your ropes, and measures
+against your scene's plume, crate, gauge and tables. The grader runs the mission in the real bay instead
+(`control.md`, The real bay).
 
     /opt/venv/bin/python3 ~/given/practice_control.py [--scene /home/user/submission/scene.usda] [--submission /home/user/submission] [--seed 0]
 
@@ -40,13 +43,13 @@ DT = 1.0 / 120.0
 
 
 class Scene:
-    def __init__(self, path):
+    def __init__(self, path, hidden):
         self.ctx = omni.usd.get_context()
         self.ctx.open_stage(path)
         for _ in range(3):
             app.update()
         self.stage = self.ctx.get_stage()
-        control_sim.prepare(self.stage)  # (contact reports on the robots' bodies, before the simulation starts)
+        control_sim.prepare(self.stage, hidden)  # (contact reports on the robots' bodies, the day's pan and vehicle, before the start)
         self.sim = SimulationContext(physics_dt=DT, rendering_dt=DT, stage_units_in_meters=1.0)
         self.sim.reset()
         self.view = pt.create_simulation_view("numpy", self.ctx.get_stage_id())
@@ -62,14 +65,18 @@ class Scene:
 
 def main():
     catalog = json.load(open(args.catalog))
-    scene = Scene(args.scene)
-    sim = control_sim.ControlSim(scene, catalog, {"time_limit_s": args.time_limit} if args.time_limit else None, seed=args.seed, log=lambda *a: print("[practice]", *a, flush=True))
+    hidden = control_sim.draw_hidden(args.seed)
+    scene = Scene(args.scene, hidden)
+    sim = control_sim.ControlSim(scene, catalog, {"time_limit_s": args.time_limit} if args.time_limit else None, seed=args.seed,
+                                 log=lambda *a: print("[practice]", *a, flush=True), hidden=hidden)
+    print("[practice] the day's bay:", json.dumps(sim.hidden_record()), flush=True)
     print("[practice] mission:", json.dumps(sim.mission()), flush=True)
     solver = control_sim.LocalSolver(args.submission)
     try:
         m = sim.run(lambda t, obs: solver.act(t, obs))
     finally:
         solver.close()
+    m["hidden"] = sim.hidden_record()
     print("[practice] result:", json.dumps(m, indent=1), flush=True)
     os._exit(0)
 

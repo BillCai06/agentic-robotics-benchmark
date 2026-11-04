@@ -1,9 +1,15 @@
-"""The bay mission: the agent's controller drives the whole fleet through the plant's job in the agent's own scene: the
-ground vehicle closes the leaking line's valve and clears the assembly station into the crate, the three flying robots
-lift the bucket on its ropes, carry it to the burning pan and pour. The grader's `control` probe and the agent's
-practice runner (`~/given/practice_control.py`) run this same simulation and take the same measurements; only the
-controller process, the seeds, the account and the bay's reference facts differ (the grader measures the outcomes
-against the real bay; the practice runner, which has no such facts, against the agent's own scene).
+"""The bay mission: the agent's controller drives the whole fleet through the plant's job: the ground vehicle closes the
+leaking line's valve and clears the assembly station into the crate, the three flying robots lift the bucket on its
+ropes, carry it to the burning pan and pour. The grader's `control` probe runs it in its own stage of the real bay with
+the agent's four robots in it (`control.md`, The real bay); the agent's practice runner (`~/given/practice_control.py`)
+runs this same simulation, with the same random draws, on the agent's own scene. Only the stage, the controller
+process, the seeds and the account differ (the grader measures the outcomes in the real bay; the practice runner, which
+knows only the agent's scene, against that scene).
+
+What varies per run (`draw_hidden`, from the run's seed): the water and the gust (as always), and the bay of the day:
+the six parts placed at random on the two tables (2 to 4 on each, upright, turned to any heading), the vehicle up to
+0.15 m and 8 degrees off its parking bay's nominal pose (its odometry starting from the nominal pose), the valve's lever
+left partly turned toward closed, and the pan moved up to 0.30 m from its nominal place.
 
 What the controller does is its own business. The grader only steps the physics, applies what the controller commands
 (thrust vectors for the flying robots; joint velocity and position targets and a suction grip for the vehicle), keeps
@@ -20,7 +26,7 @@ import math
 import random
 
 import numpy as np
-from pxr import PhysxSchema, Usd, UsdGeom, UsdPhysics
+from pxr import Gf, PhysxSchema, Usd, UsdGeom, UsdPhysics
 
 UAVS = ("UAV_1", "UAV_2", "UAV_3")
 ROBOTS = UAVS + ("UGV",)
@@ -40,6 +46,11 @@ DEFAULT = dict(
     separation=dict(full_m=1.2, collide_m=0.9), crash_z=0.30, done_hold_s=3.0,
     ugv=dict(vel_max_rad_s=40.0, grip_reach_m=0.04, see_range_m=8.0, still_mps=0.1),
     rules=dict(steam_stop_s=3.0, pressure_bar=8.0, lever_closed_deg=85.0, plume_s=1.0, fire_r=2.0, fire_s=1.0, fire_out_l=1.0),
+    # where the robots are (the real bay: the agent's fleet mounted elsewhere, the plant's ropes; practice: the scene's)
+    fleet_root=FLEET, rope_root=None, item_alias=None, table_tops=None, pan_nominal=None,
+    # the bay of the day: what draw_hidden draws (control.md, What varies per run)
+    hidden=dict(per_table=[2, 4], edge_m=0.06, gap_m=0.05, tries=400, ugv_xy_m=0.15, ugv_yaw_deg=8.0, lever_deg=[0.0, 30.0],
+                pan_m=0.30, preroll_s=1.0),
 )
 # what a robot may touch without it counting as a collision: the floor and the hall, the parts (the vehicle handles
 # them), the valve's lever (the vehicle works it), the markings
@@ -47,16 +58,77 @@ FREE = ("/World/Facility/Floor", "/World/Facility/Items", "/World/Facility/Steam
         "/World/Facility/CalibMat")
 
 
-def prepare(stage):
-    """Before the simulation starts: contact reports on every body of the four robots (not their ropes)."""
+def draw_hidden(seed, cfg=None):
+    """The bay of the day for one run, from its own stream of the run's seed (the noise stream, random.Random(seed), is
+    another): the vehicle's offset from its nominal pose (dx, dy [m], dpsi [deg]), the lever's opening [deg], the pan's
+    offset (dx, dy [m]) and the seed the parts' places are drawn from."""
+    h = dict(DEFAULT["hidden"], **(((cfg or {}).get("hidden")) or {}))
+    rng = random.Random(f"bay-hidden:{int(seed)}")
+    return dict(spec=h, ugv=[rng.uniform(-h["ugv_xy_m"], h["ugv_xy_m"]), rng.uniform(-h["ugv_xy_m"], h["ugv_xy_m"]),
+                             rng.uniform(-h["ugv_yaw_deg"], h["ugv_yaw_deg"])],
+                lever_deg=rng.uniform(*h["lever_deg"]), pan=[rng.uniform(-h["pan_m"], h["pan_m"]) for _ in range(2)],
+                parts_seed=rng.getrandbits(63))
+
+
+def rope_roots(stage, fleet_root=FLEET, rope_root=None):
+    """Each flying robot's rope: the prim its links live under."""
+    return {n: (rope_root or {}).get(n) or f"{fleet_root}/{n}/Rope" for n in UAVS}
+
+
+def _under(path, root):
+    return path == root or path.startswith(root + "/")
+
+
+def move_in_world(stage, path, world_row, tag):
+    """Move a prim and everything below it by a world-space transform (a Gf row-vector matrix): one op at the head of
+    its op order, the move turned into its parent's frame (a reset of the transform stack is kept)."""
+    prim = stage.GetPrimAtPath(path)
+    if not prim.IsA(UsdGeom.Xformable):
+        prim.SetTypeName("Xform")
+    xf = UsdGeom.Xformable(prim)
+    reset = xf.GetResetXformStack()
+    parent = Gf.Matrix4d(1.0) if reset else UsdGeom.XformCache().GetParentToWorldTransform(prim)
+    head = parent * world_row * parent.GetInverse()
+    old = xf.GetOrderedXformOps()
+    names = {o.GetOpName() for o in old}
+    suffix = tag
+    while f"xformOp:transform:{suffix}" in names:
+        suffix += "_"
+    op = xf.AddTransformOp(UsdGeom.XformOp.PrecisionDouble, suffix)
+    op.Set(head)
+    xf.SetXformOpOrder([op] + old, reset)
+
+
+def prepare(stage, hidden=None, fleet_root=FLEET, rope_root=None):
+    """Before the simulation starts: contact reports on every body of the four robots (not their ropes); with the bay
+    of the day, the pan moved off its nominal place and the vehicle off its nominal pose (both in USD, so that
+    everything they carry moves with them)."""
+    ropes = rope_roots(stage, fleet_root, rope_root)
     for name in ROBOTS:
-        root = stage.GetPrimAtPath(f"{FLEET}/{name}")
+        root = stage.GetPrimAtPath(f"{fleet_root}/{name}")
         if not root.IsValid():
             continue
         for p in Usd.PrimRange(root):
-            if p.HasAPI(UsdPhysics.RigidBodyAPI) and "/Rope/" not in p.GetPath().pathString + "/":
+            if p.HasAPI(UsdPhysics.RigidBodyAPI) and not any(_under(p.GetPath().pathString, r) for r in ropes.values()):
                 cr = PhysxSchema.PhysxContactReportAPI.Apply(p)
                 cr.CreateThresholdAttr(0.0)
+    if not hidden:
+        return
+    pan = stage.GetPrimAtPath(f"{FAC}/FirePan")
+    if pan.IsValid():
+        move_in_world(stage, pan.GetPath().pathString, Gf.Matrix4d(1.0).SetTranslate(Gf.Vec3d(hidden["pan"][0], hidden["pan"][1], 0.0)), "arb_day")
+    else:
+        hidden["pan"] = [0.0, 0.0]
+    root = f"{fleet_root}/UGV"
+    aroot = art_root(stage, root)
+    if aroot:
+        p0 = usd_pose(stage, aroot)[0]
+        dx, dy, dpsi = hidden["ugv"]
+        w = (Gf.Matrix4d(1.0).SetTranslate(Gf.Vec3d(*(-p0))) * Gf.Matrix4d(1.0).SetRotate(Gf.Rotation(Gf.Vec3d(0, 0, 1), dpsi))
+             * Gf.Matrix4d(1.0).SetTranslate(Gf.Vec3d(p0[0] + dx, p0[1] + dy, p0[2])))
+        move_in_world(stage, root, w, "arb_day")
+    else:
+        hidden["ugv"] = [0.0, 0.0, 0.0]
 
 
 # --------------------------------------------------------------------------------------------- math
@@ -81,6 +153,47 @@ def rot(q, v):
 
 def gfq(qd):
     return np.array([qd.GetReal(), *qd.GetImaginary()])
+
+
+def quat_z(a):
+    return np.array([math.cos(a / 2), 0.0, 0.0, math.sin(a / 2)])
+
+
+def convex_hull(pts):
+    """The convex hull of 2D points, counter-clockwise (monotone chain)."""
+    p = sorted({(round(float(x), 9), round(float(y), 9)) for x, y in pts})
+    if len(p) < 3:
+        return np.array(p, dtype=float)
+
+    def cross(o, a, b):
+        return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+    lower, upper = [], []
+    for q in p:
+        while len(lower) >= 2 and cross(lower[-2], lower[-1], q) <= 0:
+            lower.pop()
+        lower.append(q)
+    for q in reversed(p):
+        while len(upper) >= 2 and cross(upper[-2], upper[-1], q) <= 0:
+            upper.pop()
+        upper.append(q)
+    return np.array(lower[:-1] + upper[:-1], dtype=float)
+
+
+def sat_gap(a, b):
+    """How far apart two convex polygons are at least: the largest gap between their projections on any edge normal
+    (negative: they overlap)."""
+    best = -1e9
+    for poly in (a, b):
+        for k in range(len(poly)):
+            e = poly[(k + 1) % len(poly)] - poly[k]
+            nrm = np.array([-e[1], e[0]])
+            ln = float(np.linalg.norm(nrm))
+            if ln < 1e-12:
+                continue
+            nrm = nrm / ln
+            pa, pb = a @ nrm, b @ nrm
+            best = max(best, float(pb.min() - pa.max()), float(pa.min() - pb.max()))
+    return best
 
 
 def tf_pq(tf):
@@ -216,6 +329,29 @@ def wrap(a):
     return (a + math.pi) % (2 * math.pi) - math.pi
 
 
+def table_tops(stage):
+    """The two tables' tops from a scene as authored (the practice runner's stand-in for the real bay's): each Table_X
+    prim's own box carried by its pose, the box's axis nearest the vertical taken as its up; the top is the face at the
+    world box's top."""
+    out = []
+    for name in ("Table_A", "Table_B"):
+        path = f"{FAC}/Tables/{name}"
+        prim = stage.GetPrimAtPath(path)
+        b, wb = own_box(stage, path) if prim.IsValid() else None, world_box(stage, path) if prim.IsValid() else None
+        if b is None or wb is None:
+            continue
+        m = UsdGeom.Xformable(prim).ComputeLocalToWorldTransform(Usd.TimeCode.Default())
+        axes = [np.array(m.TransformDir(Gf.Vec3d(*e))) for e in ((1, 0, 0), (0, 1, 0), (0, 0, 1))]
+        up = int(np.argmax([abs(a[2]) for a in axes]))
+        a1, a2 = [k for k in range(3) if k != up]
+        lo, hi = b
+        c = np.array(m.Transform(Gf.Vec3d(*((lo + hi) / 2))))
+        e1, e2 = axes[a1] * (hi[a1] - lo[a1]), axes[a2] * (hi[a2] - lo[a2])
+        out.append(dict(name=name, center=[float(c[0]), float(c[1])], size=[float(np.linalg.norm(e1[:2])), float(np.linalg.norm(e2[:2]))],
+                        yaw_deg=math.degrees(math.atan2(e1[1], e1[0])), height=float(wb[1][2])))
+    return out
+
+
 def bay_facts(stage):
     """The bay's facts from a scene as authored (the practice runner's stand-in for the real bay's)."""
     out = {}
@@ -227,7 +363,10 @@ def bay_facts(stage):
 
 
 class Lever:
-    """The valve's handle on its revolute joint, as the grader reads it: the angle turned since the start (unwrapped)."""
+    """The valve's handle on its revolute joint, as the grader reads it: the angle turned from its open stop (where it
+    rests as authored; unwrapped). The valve's packing holds the lever wherever it is left (the nameplate's breakaway
+    torque, 4 N m, is far more than the lever's own weight): while no robot touches it, it stays where it is; while one
+    pushes it, it turns, its own weight cancelled about the joint's axis."""
 
     def __init__(self, stage, view):
         handle = f"{FAC}/SteamLine/Handle"
@@ -235,6 +374,8 @@ class Lever:
         self.art = view.create_articulation_view(self.root) if self.root else None
         self.dof = None
         self.grip_local = None
+        self.link, self.mass = None, 0.0
+        self.latched = None
         if self.art is None:
             return
         dof_names = list(self.art.shared_metatype.dof_names)
@@ -245,9 +386,64 @@ class Lever:
             ends = [t.pathString for t in jj.GetBody0Rel().GetTargets()] + [t.pathString for t in jj.GetBody1Rel().GetTargets()]
             if handle in ends and j.GetName() in dof_names:
                 self.dof = dof_names.index(j.GetName())
+                self._axis_of(stage, j, handle)
                 break
         self.last = float(self.art.get_dof_positions()[0][self.dof]) if self.dof is not None else 0.0
         self.acc = 0.0
+        names = list(self.art.shared_metatype.link_names)
+        self.link = names.index(handle.split("/")[-1]) if handle.split("/")[-1] in names else None
+        self.mass, self.com_local = 0.0, np.zeros(3)
+        if self.link is not None and self.dof is not None:
+            self.mass = float(self.art.get_masses()[0][self.link])
+            try:
+                self.com_local = np.array(self.art.get_coms()[0][self.link][:3], dtype=float)
+            except Exception:  # noqa: BLE001 - (no centre-of-mass query: the link's origin)
+                self.com_local = np.zeros(3)
+
+    def _axis_of(self, stage, j, handle):
+        """The joint's pivot and axis in the world, from the side that does not turn (the valve's body)."""
+        jj = UsdPhysics.Joint(j)
+        b0 = [t.pathString for t in jj.GetBody0Rel().GetTargets()]
+        b1 = [t.pathString for t in jj.GetBody1Rel().GetTargets()]
+        side, other = ("0", b0) if handle in b1 else ("1", b1)
+        if not other:  # (joined to the world: the handle's own side, at rest)
+            side, other = ("1", b1) if side == "0" else ("0", b0)
+        lp = np.array(j.GetAttribute(f"physics:localPos{side}").Get() or (0, 0, 0), dtype=float)
+        lr = j.GetAttribute(f"physics:localRot{side}").Get()
+        lr = gfq(lr) if lr is not None else np.array([1.0, 0, 0, 0])
+        ax = {"X": (1, 0, 0), "Y": (0, 1, 0), "Z": (0, 0, 1)}[str(j.GetAttribute("physics:axis").Get() or "X")]
+        bp, bq = usd_pose(stage, other[0]) if other else (np.zeros(3), np.array([1.0, 0, 0, 0]))
+        self.pivot = bp + rot(bq, lp)
+        self.axis = rot(bq, rot(lr, ax))
+
+    def hold(self, touched=False):
+        """The packing's hold for this step: untouched, the lever stays where it was; touched, a torque about the joint's
+        axis cancels its weight's."""
+        if self.dof is None:
+            return
+        if not touched:
+            q = np.array(self.art.get_dof_positions(), dtype=np.float32)
+            if self.latched is None:
+                self.latched = float(q[0, self.dof])
+            elif abs(float(q[0, self.dof]) - self.latched) > 1e-6:
+                q[0, self.dof] = self.latched
+                v = np.array(self.art.get_dof_velocities(), dtype=np.float32)
+                v[0, self.dof] = 0.0
+                idx = np.array([0], dtype=np.int32)
+                self.art.set_dof_positions(q, idx)
+                self.art.set_dof_velocities(v, idx)
+        else:
+            self.latched = None
+        if self.link is None or self.mass <= 0.0:
+            return
+        p, q = tf_pq(self.art.get_link_transforms()[0][self.link])
+        r = p + rot(q, self.com_local) - self.pivot
+        tau = np.cross(r, np.array([0.0, 0.0, -self.mass * G]))
+        n = self.art.max_links
+        t = np.zeros((1, n, 3), dtype=np.float32)
+        t[0, self.link] = -float(np.dot(tau, self.axis)) * self.axis
+        self.art.apply_forces_and_torques_at_position(np.zeros((1, n, 3), dtype=np.float32), t, np.zeros((1, n, 3), dtype=np.float32),
+                                                      np.array([0], dtype=np.int32), True)
 
     def angle(self):
         if self.dof is None:
@@ -257,17 +453,35 @@ class Lever:
         self.last = q
         return math.degrees(self.acc)
 
+    def open_by(self, deg):
+        """Leave the lever turned `deg` from its open stop toward its closed one (the side with more travel)."""
+        if self.dof is None or not deg:
+            return 0.0
+        lo, hi = [float(v) for v in self.art.get_dof_limits()[0][self.dof]]
+        lo, hi = (lo if math.isfinite(lo) else -1e3), (hi if math.isfinite(hi) else 1e3)
+        sign = 1.0 if hi - self.last >= self.last - lo else -1.0
+        q = np.array(self.art.get_dof_positions(), dtype=np.float32)
+        q[0, self.dof] = self.last + sign * math.radians(deg)
+        idx = np.array([0], dtype=np.int32)
+        self.art.set_dof_positions(q, idx)
+        self.art.set_dof_velocities(np.zeros_like(q), idx)
+        self.last = float(q[0, self.dof])
+        self.acc = sign * math.radians(deg)
+        self.latched = self.last
+        return sign
+
 
 # --------------------------------------------------------------------------------------------- the mission
 class ControlSim:
-    """One episode of the bay mission on an open scene (`prepare(stage)` applied before the simulation started).
-    `scene` offers: stage, view (a numpy simulation view, started), step() (one physics step), flag(path, attr).
-    `catalog` is the grader's catalog; `bay` the real bay's facts (None: the scene's own, for practice)."""
+    """One episode of the bay mission on an open scene (`prepare(stage, hidden, ...)` applied before the simulation
+    started). `scene` offers: stage, view (a numpy simulation view, started), step() (one physics step).
+    `catalog` is the grader's catalog; `bay` the real bay's facts (None: the scene's own, for practice); `hidden` the
+    run's bay of the day (`draw_hidden`; None: the scene as authored)."""
 
-    def __init__(self, scene, catalog, cfg=None, seed=0, log=None, bay=None):
+    def __init__(self, scene, catalog, cfg=None, seed=0, log=None, bay=None, hidden=None):
         self.s = scene
         self.cfg = dict(DEFAULT, **(cfg or {}))
-        for k in ("bucket", "wind", "noise", "ugv", "rules", "separation"):
+        for k in ("bucket", "wind", "noise", "ugv", "rules", "separation", "hidden"):
             self.cfg[k] = dict(DEFAULT[k], **((cfg or {}).get(k) or {}))
         self.cat = catalog
         self.rng = random.Random(seed)
@@ -275,14 +489,17 @@ class ControlSim:
         st = scene.stage
         self.st = st
         self.bay = bay or bay_facts(st)
+        self.fleet = self.cfg["fleet_root"] or FLEET
+        self.rope_roots = rope_roots(st, self.fleet, self.cfg["rope_root"])
+        self.hidden = hidden
         self.dt = self.cfg["dt_physics"] * self.cfg["substeps"]
         self.robots = {}
         for name in UAVS:
-            root = f"{FLEET}/{name}"
+            root = f"{self.fleet}/{name}"
             aroot = art_root(st, root)
             if not aroot:
                 raise RuntimeError(f"{root}: no articulation")
-            links = [b for b in rigid_bodies(st, f"{root}/Rope")]
+            links = [b for b in rigid_bodies(st, self.rope_roots[name])]
             hook = hook_of(st, root, links)
             if not links or hook is None:
                 raise RuntimeError(f"{root}: no rope chain hooked to the robot")
@@ -294,7 +511,14 @@ class ControlSim:
             air = self.cat["airframes"].get(airframe or "") or {}
             self.robots[name] = dict(root=root, aroot=aroot, links=links, hook=hook, sensors=sensors_of(st, root, self.cat["sensors"]),
                                      thrust_max=float(air.get("thrust_max", 0.0)))
-        self.pan = np.array(self.cfg["pan_center"], dtype=float)
+        # the pan: its nominal place (the real bay's, or the scene's own) and where it stands today
+        off = np.array((hidden or {}).get("pan") or [0.0, 0.0], dtype=float)
+        if self.cfg["pan_nominal"] is not None:
+            self.pan_nominal = np.array(self.cfg["pan_nominal"][:2], dtype=float)
+        else:
+            pb = world_box(st, f"{FAC}/FirePan")
+            self.pan_nominal = ((pb[0][:2] + pb[1][:2]) / 2 - off) if pb is not None else np.array(self.cfg["pan_center"], dtype=float)
+        self.pan = self.pan_nominal + off
         self.bucket_path = f"{FAC}/Bucket/Body"
         self.view = scene.view
         self.av = {n: self.view.create_articulation_view(r["aroot"]) for n, r in self.robots.items()}
@@ -340,23 +564,184 @@ class ControlSim:
         self.lost = {}
         self.exposure = {n: 0.0 for n in ROBOTS}
         self.contacts_seen = {}
+        self.lever_touch_t = -1e9  # (when a robot last touched the valve's lever)
         self.metrics = dict(liftoff_t=None, liftoff_tilt_max=None, swing_max=0.0, min_sep=99.0, crash=[], lost={}, collisions=[],
                             dropped=False, fire_out_t=None, steam_off_t=None, lever_closed_t=None, pour_start_t=None, done_t=None,
-                            end=None, steps=0, abort=None, flags_disabled=[])
-        self.bucket_start = tf_pq(self.bv.get_transforms()[0])[0].copy()
+                            end=None, steps=0, abort=None)
         from omni.physx import get_physx_simulation_interface
         self.phx = get_physx_simulation_interface()
+        self.hidden_rec = None
+        if hidden:
+            self._apply_hidden()
+        self.bucket_start = tf_pq(self.bv.get_transforms()[0])[0].copy()
+
+    # -- the bay of the day ---------------------------------------------------------------------------------------
+    def _apply_hidden(self):
+        """The run's bay of the day on the started simulation: the lever left partly turned, the parts placed at random
+        on the tables; then a pre-roll with nothing commanded (the parts and the ropes settle), after which the clock,
+        the contacts and the robots' starts are taken anew: at t = 0 everything is at rest. (The pan and the vehicle
+        were moved in USD by `prepare`.)"""
+        h = self.hidden
+        spec = dict(DEFAULT["hidden"], **(h.get("spec") or {}))
+        rec = dict(ugv=[round(float(v), 4) for v in h["ugv"]], lever_deg=round(float(h["lever_deg"]), 3),
+                   pan=[round(float(v), 4) for v in h["pan"]], pan_center=r3(self.pan), parts={})
+        rec["lever_sign"] = self.lever.open_by(float(h["lever_deg"]))
+        self.physics_step()  # (the scene queries see the stage after one step)
+        rec["parts"] = self._place_parts(random.Random(int(h["parts_seed"])), spec)
+        starts = {n: self.uav_state(n)[0].copy() for n in UAVS}
+        u0 = self.ugv_pose()[0].copy() if self.ugv else None
+        for _ in range(max(0, int(round(spec["preroll_s"] / self.cfg["dt_physics"])))):
+            self.physics_step()
+        moved = {n: float(np.linalg.norm(self.uav_state(n)[0] - starts[n])) for n in UAVS}
+        if self.ugv:
+            moved["UGV"] = float(np.linalg.norm(self.ugv_pose()[0] - u0))
+        rec["start_moved"] = {n: round(v, 4) for n, v in moved.items()}
+        self.metrics["collisions"].clear()
+        self.contacts_seen.clear()
+        self.t = 0.0
+        for n in UAVS:
+            p, q, v = self.uav_state(n)
+            self.robots[n]["p0"] = p
+            self.prev_vel_uav[n] = v.copy()
+        self.prev_vel_bucket = self.bucket_state()[2].copy()
+        if self.ugv:  # the odometry reads the nominal pose at t = 0, wherever the vehicle really stands
+            p, q, yaw = self.ugv_pose()
+            self.drift["UGV"] = np.array([self.ugv["p0"][0] - p[0], self.ugv["p0"][1] - p[1], 0.0])
+            self.yaw_drift = -yaw
+            self._odo_last = None
+            rec["ugv_true"] = [round(float(p[0]), 4), round(float(p[1]), 4), round(math.degrees(wrap(yaw)), 3)]
+        rec["lever_start_deg"] = round(abs(self.lever.angle()), 3)
+        self.hidden_rec = rec
+
+    def _tops(self):
+        tops = self.cfg["table_tops"] or table_tops(self.st)
+        return [dict(t, path=f"{FAC}/Tables/{t['name']}") for t in tops]
+
+    def _place_parts(self, rng, spec):
+        """Each part on Table A or B (2 to 4 on each), upright as authored, turned to any heading, anywhere on its top at
+        least `edge_m` inside the edges and `gap_m` from any other part; checked by raycasts that the table's top is
+        what lies under it. A part with no valid place keeps its authored pose (recorded as `fallback`)."""
+        if self.iv is None or not self.item_names:
+            return {}
+        tops = self._tops()
+        if not tops:
+            return {}
+        from omni.physx import get_physx_scene_query_interface
+        sq = get_physx_scene_query_interface()
+        tfs = np.array(self.iv.get_transforms(), dtype=np.float32)
+        parts = []
+        for i, name in enumerate(self.item_names):
+            pq = usd_pose(self.st, self.items[name]["path"])
+            b = self.items[name]["box"]
+            if b is None:
+                continue
+            lo, hi = b
+            corners = np.array([(x, y, z) for x in (lo[0], hi[0]) for y in (lo[1], hi[1]) for z in (lo[2], hi[2])])
+            fp = [rot(pq[1], c) for c in corners]
+            area = (max(c[0] for c in fp) - min(c[0] for c in fp)) * (max(c[1] for c in fp) - min(c[1] for c in fp))
+            parts.append(dict(i=i, name=name, q=pq[1], corners=corners, area=area))
+        parts.sort(key=lambda d: -d["area"])
+        n = len(parts)
+        lo_n, hi_n = spec["per_table"]
+        ok_counts = [k for k in range(n + 1) if lo_n <= k <= hi_n and lo_n <= n - k <= hi_n] or list(range(n + 1))
+        out = {}
+        for attempt in range(20):
+            for _ in range(1000):
+                on_a = [rng.random() < 0.5 for _ in parts]
+                if sum(on_a) in ok_counts:
+                    break
+            placed, poses, failed = [], {}, None
+            for d, a_side in zip(parts, on_a):
+                top = tops[0] if a_side or len(tops) == 1 else tops[1]
+                got = self._place_one(rng, d, top, placed, spec, sq)
+                if got is None:
+                    failed = d["name"]
+                    break
+                poses[d["name"]] = got
+                placed.append(got["hull"])
+            if failed is None:
+                break
+        for d in parts:
+            name = d["name"]
+            if name not in poses:
+                out[self.wire[name]] = dict(fallback=True)
+                continue
+            g = poses[name]
+            tfs[d["i"]] = pq_tf(g["pos"], g["quat"])
+            out[self.wire[name]] = dict(table=g["table"], xy=r3(g["xy"]), heading_deg=round(g["heading"], 2))
+        self.iv.set_transforms(tfs, np.arange(len(self.item_names), dtype=np.int32))
+        self.iv.set_velocities(np.zeros((len(self.item_names), 6), dtype=np.float32), np.arange(len(self.item_names), dtype=np.int32))
+        return out
+
+    def _place_one(self, rng, d, top, placed, spec, sq):
+        c0, (w, dep), yaw = np.array(top["center"], dtype=float), top["size"], math.radians(top["yaw_deg"])
+        ca, sa = math.cos(yaw), math.sin(yaw)
+        ax, ay = np.array([ca, sa]), np.array([-sa, ca])
+        hw, hd = w / 2 - spec["edge_m"], dep / 2 - spec["edge_m"]
+        if hw <= 0 or hd <= 0:
+            return None
+        for _ in range(int(spec["tries"])):
+            heading = rng.uniform(0.0, 360.0)
+            q = qmul(quat_z(math.radians(heading)), d["q"])
+            cw = np.array([rot(q, c) for c in d["corners"]])
+            hull = convex_hull(cw[:, :2])
+            cen = hull.mean(axis=0)
+            u, v = rng.uniform(-hw, hw), rng.uniform(-hd, hd)
+            pt = c0 + u * ax + v * ay
+            hull = hull - cen + pt
+            rel = hull - c0
+            if np.any(np.abs(rel @ ax) > hw) or np.any(np.abs(rel @ ay) > hd):
+                continue
+            if any(sat_gap(hull, other) < spec["gap_m"] for other in placed):
+                continue
+            zs = []
+            for xy in [pt] + list(hull):
+                hz = self._top_under(sq, xy, top)
+                if hz is None:
+                    break
+                zs.append(hz)
+            if len(zs) < 1 + len(hull):
+                continue
+            z_top = max(zs)
+            origin = np.array([pt[0] - (cen[0] - 0.0), pt[1] - (cen[1] - 0.0), z_top - float(cw[:, 2].min()) + 0.001])
+            return dict(pos=origin, quat=q, hull=hull, table=top["name"], xy=pt, heading=heading)
+        return None
+
+    def _top_under(self, sq, xy, top):
+        """The height of the table's top under (x, y): the first hit of a downward ray that is not a part must be the
+        table, within 1 cm of its top."""
+        hits = []
+
+        def report(hit):
+            hits.append((float(hit.distance), str(hit.collision), str(hit.rigid_body)))
+            return True
+        z0 = float(top["height"]) + 0.3
+        sq.raycast_all((float(xy[0]), float(xy[1]), z0), (0.0, 0.0, -1.0), 0.6, report)
+        for dist_, col, body in sorted(hits):
+            if _under(col, f"{FAC}/Items") or _under(body, f"{FAC}/Items"):
+                continue
+            z = z0 - dist_
+            return z if _under(col, top["path"]) and abs(z - float(top["height"])) <= 0.01 else None
+        return None
+
+    def hidden_record(self):
+        """The run's draws, for the record (written after the run)."""
+        return self.hidden_rec
 
     # -- the vehicle ----------------------------------------------------------------------------------------------
     def _init_ugv(self):
         st = self.st
-        root = f"{FLEET}/UGV"
+        root = f"{self.fleet}/UGV"
         aroot = art_root(st, root)
         self.ugv = None
         if not aroot:
             return
         gv = self.view.create_articulation_view(aroot)
         p0, q0 = tf_pq(gv.get_root_transforms()[0])
+        if self.hidden:  # (prepare moved it off its nominal pose: p0, q0 are that pose, the odometry's origin)
+            dx, dy, dpsi = self.hidden["ugv"]
+            p0 = p0 - np.array([dx, dy, 0.0])
+            q0 = qmul(quat_z(-math.radians(dpsi)), q0)
         meta = gv.shared_metatype
         dof_names = list(meta.dof_names)
         link_names = list(meta.link_names)
@@ -383,6 +768,18 @@ class ControlSim:
                 b = own_box(st, c.GetPath().pathString)
                 self.items[c.GetName()] = dict(path=c.GetPath().pathString, box=b)
         self.item_names = list(self.items)
+        # the names the wire uses: in the real bay, the agent's own names for its parts (matched by shape)
+        alias, self.wire = self.cfg["item_alias"] or {}, {}
+        used = {str(alias[n]) for n in self.item_names if n in alias}
+        for n in self.item_names:
+            if n in alias:
+                self.wire[n] = str(alias[n])
+                continue
+            w = n
+            while w in used:
+                w += "_2"
+            used.add(w)
+            self.wire[n] = w
         self.iv = self.view.create_rigid_body_view([self.items[n]["path"] for n in self.item_names]) if self.item_names else None
 
     def item_box_world(self, name, tfs=None):
@@ -412,7 +809,7 @@ class ControlSim:
         u = self.ugv
         if u is None:
             return
-        if "UGV" in self.lost or self.disabled("UGV"):
+        if "UGV" in self.lost:
             cmd = {"vel": {n: 0.0 for n in u["dofs"]}}
         vmax = self.cfg["ugv"]["vel_max_rad_s"]
         for name, v in ((cmd or {}).get("vel") or {}).items():
@@ -469,12 +866,12 @@ class ControlSim:
     def mission(self):
         b = self.cfg["bucket"]
         m = dict(dt=self.dt, time_limit=self.cfg["time_limit_s"], cruise_z=self.cfg["cruise_z"],
-                 pan=[float(self.pan[0]), float(self.pan[1])], pour_r=self.cfg["pour_r"], pour_zmax=self.cfg["pour_zmax"],
+                 pan=[float(self.pan_nominal[0]), float(self.pan_nominal[1])], pour_r=self.cfg["pour_r"], pour_zmax=self.cfg["pour_zmax"],
                  rope_length=self.cfg["rope_length"], tilt_max_deg=self.cfg["tilt_max_deg"],
                  bucket=dict(mass_full=b["mass_empty"] + b["water_max_l"], radius=b["radius"], height=b["height"]),
                  uav={n: dict(mass=round(r["mass"], 4), rope_mass=round(r["rope_mass"], 4), thrust_max=r["thrust_max"],
                               hook=r3(r["hook"]["in_root"]), start=r3(r["p0"])) for n, r in self.robots.items()},
-                 items=list(self.item_names))
+                 items=[self.wire[n] for n in self.item_names])
         if self.ugv:
             u = self.ugv
             m["ugv"] = dict(start=r3(u["p0"]), joints=u["dofs"], grip_link=u["grip_link_name"],
@@ -497,7 +894,8 @@ class ControlSim:
         return {n: self.uav_state(n)[0] + rot(self.robots[n]["q0"], self.robots[n]["hook"]["in_root"]) for n in UAVS}
 
     def disabled(self, n):
-        return bool(self.s.flag(f"{FLEET}/{n}", "arb:disabled"))
+        """Lost by the bay's rules (the scene's own logic does not come into the mission)."""
+        return n in self.lost
 
     def pressure(self):
         r = self.cfg["rules"]
@@ -546,7 +944,7 @@ class ControlSim:
             if name == u["held"]:
                 continue
             c, lo, hi = self.item_box_world(name, tfs)
-            targets.append((f"item:{name}", c, 0.0))
+            targets.append((f"item:{self.wire[name]}", c, 0.0))
         h = self.handle_grip()
         if h is not None:
             targets.append(("lever", h, 0.0))
@@ -575,7 +973,7 @@ class ControlSim:
                 break
         return dict(pose=[round(float(pos[0]), 4), round(float(pos[1]), 4), round(math.degrees(wrap(yaw + self.yaw_drift)), 2)],
                     vel=r3(v6[:3]), yaw_rate=round(math.degrees(float(v6[5])), 2), joints=joints, grip_point=r3(grip_rel),
-                    holding=u["held"], sees=sees, gauge=gauge, disabled=bool("UGV" in self.lost or self.disabled("UGV")))
+                    holding=self.wire[u["held"]] if u["held"] is not None else None, sees=sees, gauge=gauge, disabled=bool("UGV" in self.lost))
 
     def handle_grip(self):
         """The lever's grip: the far end of the handle from its joint (as the fleet probe takes it)."""
@@ -643,7 +1041,7 @@ class ControlSim:
                     pan_rel = r3(d + np.array([self.rng.gauss(0, sig) for _ in range(3)]))
                     fire = bool(self.fire)
             obs["uav"][n] = dict(pos=r3(pos), vel=r3(vel), load=r3(load), neighbors=neighbors, bucket=bucket_rel, bucket_tilt=tilt_est,
-                                 pan=pan_rel, fire=fire, disabled=bool(n in self.lost or self.disabled(n)))
+                                 pan=pan_rel, fire=fire, disabled=bool(n in self.lost))
         if self.ugv:
             obs["ugv"] = self.observe_ugv(nz)
         return obs
@@ -677,12 +1075,13 @@ class ControlSim:
         for n in UAVS:
             av = self.av[n]
             f = np.zeros((1, av.max_links, 3), dtype=np.float32)
-            off = n in self.lost or self.disabled(n)
+            off = n in self.lost
             f[0, self.robots[n]["root_link"]] = (np.zeros(3) if off else self.thrust[n]) + self.wind_force(self.cfg["wind"]["area_uav"])
             av.apply_forces_and_torques_at_position(f, None, None, self.idx, True)
         wb = self.wind_force(self.cfg["wind"]["area_bucket"])
         if np.any(wb):
             self.bv.apply_forces_and_torques_at_position(wb.reshape(1, 3).astype(np.float32), None, None, self.idx, True)
+        self.lever.hold(touched=self.t - self.lever_touch_t < 0.5)
         self.hold_item()
         self.s.step()
         self.t += self.cfg["dt_physics"]
@@ -703,18 +1102,24 @@ class ControlSim:
             hdrs, _ = self.phx.get_contact_report()
         except Exception:  # noqa: BLE001
             return
+        fleet = self.fleet
         for h in hdrs:
             a = [str(PhysicsSchemaTools.intToSdfPath(h.actor0)), str(PhysicsSchemaTools.intToSdfPath(h.actor1))]
             c = [str(PhysicsSchemaTools.intToSdfPath(h.collider0)), str(PhysicsSchemaTools.intToSdfPath(h.collider1))]
             for side in (0, 1):
-                me = next((r for r in ROBOTS if a[side].startswith(f"{FLEET}/{r}/")), None)
-                if me is None or "/Rope/" in a[side]:
+                me = next((r for r in ROBOTS if a[side].startswith(f"{fleet}/{r}/")), None)
+                if me is None or any(_under(a[side], rr) for rr in self.rope_roots.values()):
                     continue
                 other = c[1 - side] or a[1 - side]
-                if other.startswith(f"{FLEET}/{me}/"):
+                if _under(other, f"{FAC}/SteamLine/Handle") or _under(a[1 - side], f"{FAC}/SteamLine/Handle"):
+                    self.lever_touch_t = self.t
+                if other.startswith(f"{fleet}/{me}/") or _under(other, self.rope_roots.get(me, "//")):
                     continue
-                if other.startswith(FLEET + "/"):
-                    what = other.split("/")[3]
+                owner = next((r for r, rr in self.rope_roots.items() if _under(other, rr)), None)
+                if owner is not None:  # (another robot's rope)
+                    what = owner
+                elif other.startswith(fleet + "/"):
+                    what = other[len(fleet) + 1:].split("/")[0]
                 elif other.startswith(FAC + "/") and not any(other == f or other.startswith(f + "/") for f in FREE):
                     what = other.split("/")[3] if len(other.split("/")) > 3 else other
                     if what in ("Tables", "Pads") and len(other.split("/")) > 4:
@@ -790,9 +1195,6 @@ class ControlSim:
             self.exposure["UGV"] = self.exposure["UGV"] + self.dt if (near and self.fire) else 0.0
             if self.exposure["UGV"] >= r["fire_s"] and "UGV" not in self.lost:
                 self.lost["UGV"] = dict(t=round(self.t, 2), why="near the burning pan")
-        for n in ROBOTS:
-            if n not in m["flags_disabled"] and self.disabled(n):
-                m["flags_disabled"].append(n)
 
     def parts(self):
         """Where the parts are: in the crate, on a table, or elsewhere (dropped)."""
@@ -802,20 +1204,21 @@ class ControlSim:
         tfs = self.iv.get_transforms() if self.iv is not None else None
         for name in self.item_names:
             c = self.item_box_world(name, tfs)[0]
+            w = self.wire[name]
             if not np.all(np.isfinite(c)):
-                out[name] = "lost"
+                out[w] = "lost"
                 n_drop += 1
                 continue
             if self.ugv and self.ugv["held"] == name:
-                out[name] = "held"
+                out[w] = "held"
                 continue
             if crate and crate[0][0] <= c[0] <= crate[1][0] and crate[0][1] <= c[1] <= crate[1][1] and c[2] <= crate[1][2] + 0.10:
-                out[name] = "crate"
+                out[w] = "crate"
                 n_in += 1
             elif any(t[0][0] <= c[0] <= t[1][0] and t[0][1] <= c[1] <= t[1][1] and c[2] >= t[1][2] - 0.02 for t in tables):
-                out[name] = "table"
+                out[w] = "table"
             else:
-                out[name] = "dropped"
+                out[w] = "dropped"
                 n_drop += 1
         return out, n_in, n_drop
 
