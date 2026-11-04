@@ -62,7 +62,7 @@ def main():
         import pwd
         import shutil
         pw = pwd.getpwnam(verify.PROBE_USER)
-        os.makedirs(a.kit_dir, exist_ok=True)
+        os.makedirs(os.path.join(a.kit_dir, "optix"), exist_ok=True)  # (the probe's OptiX cache, as verify.probe_account makes it)
         for d, _, files in os.walk(a.kit_dir):
             os.chown(d, pw.pw_uid, pw.pw_gid)
             for f in files:

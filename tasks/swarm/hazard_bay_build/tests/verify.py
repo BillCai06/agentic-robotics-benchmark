@@ -153,6 +153,7 @@ def snapshot(sub, snap):
 
 def lockdown(sub, work, max_bytes):
     kill_agent()
+    clean_shm()
     for d in ("cache", "logs", "data"):  # nothing the agent's runs left there reaches the grader's Isaac Sim
         path = os.path.join(KIT_SHARED, d)
         shutil.rmtree(path, ignore_errors=True)
@@ -162,6 +163,43 @@ def lockdown(sub, work, max_bytes):
     snap = os.path.join(work, "submission")
     snapshot(sub, snap)
     return snap
+
+
+def clean_shm():
+    """Remove what the agent's account left in /dev/shm. Kit's processes open shared memory there under predictable
+    names (`carb-RStringInternals-<pid>` and its semaphore): one planted in advance would be opened by, or refuse,
+    the grader's probe."""
+    try:
+        uid = pwd.getpwnam(agent_user()).pw_uid
+    except KeyError:
+        return
+    for e in os.scandir("/dev/shm") if os.path.isdir("/dev/shm") else []:
+        try:
+            if e.stat(follow_symlinks=False).st_uid != uid:
+                continue
+            if e.is_dir(follow_symlinks=False):
+                shutil.rmtree(e.path, ignore_errors=True)
+            else:
+                os.remove(e.path)
+        except OSError:
+            pass
+
+
+def seal_probe_shm():
+    """Close the probe's shared memory in /dev/shm to every account but its own. Kit creates it readable and writable
+    by all (`carb-RStringInternals-<pid>` and its semaphore); done after the set-up and before the agent's program
+    starts, so the program never reaches the probe's memory (the probe keeps the objects it has open)."""
+    try:
+        uid = pwd.getpwnam(PROBE_USER).pw_uid
+    except KeyError:
+        return
+    for e in os.scandir("/dev/shm") if os.path.isdir("/dev/shm") else []:
+        try:
+            st = e.stat(follow_symlinks=False)
+            if st.st_uid == uid and not stat.S_ISLNK(st.st_mode) and stat.S_IMODE(st.st_mode) & 0o077:
+                os.chmod(e.path, stat.S_IMODE(st.st_mode) & 0o700)
+        except OSError:
+            pass
 
 
 def bay_from_truth(truth):
@@ -190,7 +228,8 @@ def probe_account(work):
         subprocess.run(["/usr/sbin/useradd", "--system", "--no-create-home", "--home-dir", home, "--shell", "/usr/sbin/nologin",
                         PROBE_USER], check=True)
     pw = pwd.getpwnam(PROBE_USER)
-    for d in (home, os.path.join(work, "kit"), os.path.join(work, "out"), probe_dir(work), os.path.join(probe_dir(work), "hidden")):
+    for d in (home, os.path.join(home, "tmp"), os.path.join(work, "kit"), os.path.join(work, "kit", "optix"), os.path.join(work, "out"),
+              probe_dir(work), os.path.join(probe_dir(work), "hidden")):
         os.makedirs(d, exist_ok=True)
         os.chown(d, pw.pw_uid, pw.pw_gid)
         os.chmod(d, 0o700)
@@ -208,7 +247,10 @@ def probe_env(work, seed=None):
     env = {"HOME": home, "PATH": "/opt/venv/bin:/usr/local/bin:/usr/bin:/bin", "LANG": "C.UTF-8",
            "OMNI_KIT_ACCEPT_EULA": "YES", "ACCEPT_EULA": "Y", "PRIVACY_CONSENT": "Y", "ARB_KIT_DIR": os.path.join(work, "kit"),
            "ARB_GRADER_CFG": os.path.join(probe_dir(work), "grader_config.json"),
-           "NVIDIA_DRIVER_CAPABILITIES": os.environ.get("NVIDIA_DRIVER_CAPABILITIES", "")}
+           "NVIDIA_DRIVER_CAPABILITIES": os.environ.get("NVIDIA_DRIVER_CAPABILITIES", ""),
+           # the probe's temporary files and OptiX's disk cache in its own folders (OptiX's default, /var/tmp/OptixCache_<user>,
+           # is a name the agent's session could create first)
+           "TMPDIR": os.path.join(home, "tmp"), "OPTIX_CACHE_PATH": os.path.join(work, "kit", "optix")}
     if seed is not None:  # (a process's environment is readable by its own account and root only; its command line by all)
         env["ARB_SEED"] = str(int(seed))
     return env
@@ -408,6 +450,7 @@ def run_control(scene, work, cfg, seed, lock_rng, snap, timeout, episode=0):
         log("control: no controller (no run.sh in the submission)")
         return dict(abort="no controller: no run.sh in the submission", end="aborted")
     kill_agent()
+    clean_shm()
     wire = os.path.join(work, "wire")
     os.makedirs(wire, exist_ok=True)
     pw = pwd.getpwnam(PROBE_USER)
@@ -443,6 +486,7 @@ def run_control(scene, work, cfg, seed, lock_rng, snap, timeout, episode=0):
         try:
             with open(fifos["obs.fifo"]) as fi, open(fifos["act.fifo"], "w") as fo:
                 state["wire"] = time.time()  # (the probe has the mission ready: only now does the agent's program start)
+                seal_probe_shm()
                 try:
                     state["solver"] = Solver(step_timeout=float(ctl.get("step_timeout_s", 10.0)), submission=snap, entry="run.sh",
                                              max_restarts=int(ctl.get("max_restarts", 1)))
@@ -489,6 +533,8 @@ def run_control(scene, work, cfg, seed, lock_rng, snap, timeout, episode=0):
             pass
         if proc.poll() is not None:
             break
+        if state["wire"]:
+            seal_probe_shm()  # (and whatever the probe opens there later)
         if not state["wire"] and time.time() - t0 > setup_s:
             proc.kill()
             state["abort"] = state["abort"] or f"the mission was not set up within {setup_s:.0f} s"
