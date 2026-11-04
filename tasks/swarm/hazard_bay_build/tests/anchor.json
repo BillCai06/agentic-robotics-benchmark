@@ -5,5 +5,32 @@
   "full_at": 0.92,
   "source": "The privileged reference (solution/: solve.sh with build_scene.py, controller.py and vehicle.py, and the oracle token, so the bay mission's observations carry the true state) measured by three full verifies of this grader as the engine's oracle pass runs it (solve.sh as the agent, then tests/test.sh as root with the submission in the agent's home, the verdict through ROBOTICS_GRADER_VERDICT_PATH), in the task image on one RTX 4090 with 8 cores each, 2026-11-04, branch hard/pr31 at bddeddc (the later commits change no score). acceptance_score (combine mission_gate, progress_gate true): 0.9584, 0.9803, 0.9627 (scene sections 1.0 but hoist 0.952 / 0.9963 / 0.9939; mission 0.9788 / 0.9819 / 0.9653; privileged_mode 1, every mission done with 6 of 6 parts); the value is the lowest. The same verdicts under the other combinations: weighted 0.979 / 0.9895 / 0.98, mission_0.8 0.9789 / 0.9852 / 0.9717; the progress gate changes none of them (the reference completes all three jobs).",
   "reference_commit": "hard/pr31 bddeddc (solution/reference/ and tests/ as of that commit)",
-  "note": "full_at from the measured spread (design 2.5): ten mission runs of the reference on fresh 63-bit seeds (tests/review/run_mission.py, all done, 6 of 6 parts, no collision; single-run missions 0.884 to 0.988), every pair of them as a two-run mission section by the grader's own score(), times each full verify's scene sections: with the three full verifies, 138 acceptances, mean 0.944, sd 0.025. Mean - 2 sd = 0.894 allows full_at 0.93; the lowest of the 138 (0.8866, the pair with the run that spilt 1.56 L) would then earn 0.9947, under validate's 0.995, so full_at is 0.92: a run from 0.8817 up earns the full reward. The spread is in the mission (the pour's spill, 0 to 1.6 L; the time, done at 320 to 400 s) and in the hoist probe's swing-decay check, which the reference's own twin fails on some draws (decay 1.69 against the band's 1.6). Under another combination (tests/review/scoring_options.md), the same rule gives: weighted value 0.979, full_at 0.96; mission_0.8 value 0.9717, full_at 0.94."
+  "note": "full_at from the measured spread (design 2.5): ten mission runs of the reference on fresh 63-bit seeds (tests/review/run_mission.py, all done, 6 of 6 parts, no collision; single-run missions 0.884 to 0.988), every pair of them as a two-run mission section by the grader's own score(), times each full verify's scene sections: with the three full verifies, 138 acceptances, mean 0.944, sd 0.025. Mean - 2 sd = 0.894 allows full_at 0.93; the lowest of the 138 (0.8866, the pair with the run that spilt 1.56 L) would then earn 0.9947, under validate's 0.995, so full_at is 0.92: a run from 0.8817 up earns the full reward. The spread is in the mission (the pour's spill, 0 to 1.6 L; the time, done at 320 to 400 s) and in the hoist probe's swing-decay check, which the reference's own twin fails on some draws (decay 1.69 against the band's 1.6). Under another combination (tests/review/scoring_options.md), the same rule gives: weighted value 0.979, full_at 0.96; mission_0.8 value 0.9717, full_at 0.94.",
+  "by_combine": {
+    "mission_gate": {
+      "value": 0.9584,
+      "full_at": 0.92
+    },
+    "weighted": {
+      "value": 0.979,
+      "full_at": 0.96
+    },
+    "mission_0.8": {
+      "value": 0.9717,
+      "full_at": 0.94
+    },
+    "mission_gate.progress_gate": {
+      "value": 0.9584,
+      "full_at": 0.92
+    },
+    "weighted.progress_gate": {
+      "value": 0.979,
+      "full_at": 0.96
+    },
+    "mission_0.8.progress_gate": {
+      "value": 0.9717,
+      "full_at": 0.94
+    }
+  },
+  "by_combine_note": "The anchor and full_at under each combination of grader_config.json (`combine`, with `.progress_gate` when `progress_gate` is true), from the same three full verifies and the same sizing rule as the note above; the grader uses the entry of the combination in use (the top-level pair is that of the default, mission_gate.progress_gate). The progress gate changes none of the reference's numbers: it completes all three jobs in every run."
 }

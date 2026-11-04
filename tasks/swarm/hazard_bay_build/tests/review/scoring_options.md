@@ -11,13 +11,15 @@
 
 Every verdict records all six combinations in its metrics (`acceptance.<combine>` and
 `acceptance.<combine>.progress_gate`) and both mission sections (`section.control.progress_gate`,
-`section.control.no_progress_gate`), so a switch needs no new measurement of the agents' runs. It does need two
-edits besides the config line:
+`section.control.no_progress_gate`), so a switch needs no new measurement of the agents' runs.
 
-1. **`tests/anchor.json`**: the value and `full_at` are measured under one combination. Take the new value from the
-   reference's full verifies under the new choice (the anchor's source note lists their verdicts; each records all six
-   numbers) and size `full_at` again from the spread, as the note says.
-2. **The agent's text** must describe the scoring that is used. The sentences to swap:
+**The anchor follows the config by itself.** `tests/anchor.json` records the reference's value and `full_at` under all
+six combinations (`by_combine`, keyed as the metrics are), measured from the same three full verifies and sized by the
+same rule; the grader takes the entry of the combination in use (the verdict's metrics `anchor_value` and
+`anchor_full_at` say which). Re-measure only when the reference or the grader's scores change.
+
+**The agent's text does not.** It must describe the scoring that is used, so a switch also swaps the sentences
+below (the one edit besides the config line):
 
 ## `instruction.md`, "How it is graded"
 

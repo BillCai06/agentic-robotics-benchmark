@@ -910,6 +910,18 @@ def combine(secs, cfg, name):
     return sum(float(v) * secs.get(k, 0.0) for k, v in w.items())
 
 
+def anchor_for(config, anchor, meta):
+    """The anchor and full_at of the combination in use: anchor.json records the reference under each (`by_combine`,
+    keyed `<combine>[.progress_gate]` as the metrics are; the top-level pair is the default's), so that switching
+    `combine` or `progress_gate` in grader_config.json needs no new anchor."""
+    full_at = meta.get("full_at", 1.0)
+    key = f"{config.get('combine', 'weighted')}{'.progress_gate' if config.get('progress_gate') else ''}"
+    alt = (meta.get("by_combine") or {}).get(key)
+    if anchor is not None and alt:
+        return float(alt["value"]), float(alt["full_at"])
+    return anchor, full_at
+
+
 # --------------------------------------------------------------------------------------------- main
 def main():
     config, (anchor, meta) = stage_config(), read_anchor()
@@ -951,7 +963,9 @@ def main():
         scan = dict(ok=False, errors=[f"scan crashed: {(r.stderr or '')[-500:]}"], facts={})
     log("scan:", "ok" if scan["ok"] else scan["errors"][:5])
     extra = {"scan_ok": float(scan["ok"]), "privileged_mode": float(privileged), "oracle_token_mismatch": float(mismatch)}
-    cap, full_at = config.get("scoring_cap", 1.5), meta.get("full_at", 1.0)
+    cap = config.get("scoring_cap", 1.5)
+    anchor, full_at = anchor_for(config, anchor, meta)
+    extra.update({"anchor_value": float(anchor or 0.0), "anchor_full_at": float(full_at)})
     if not scan["ok"]:
         write_verdict(ratio_rewards(0.0, anchor, cap=cap, metric_name=meta["metric"], higher_is_better=True, full_at=full_at, extra=extra))
         return
