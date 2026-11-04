@@ -32,5 +32,6 @@
       "full_at": 0.94
     }
   },
-  "by_combine_note": "The anchor and full_at under each combination of grader_config.json (`combine`, with `.progress_gate` when `progress_gate` is true), from the same three full verifies and the same sizing rule as the note above; the grader uses the entry of the combination in use (the top-level pair is that of the default, mission_gate.progress_gate). The progress gate changes none of the reference's numbers: it completes all three jobs in every run."
+  "by_combine_note": "The anchor and full_at under each combination of grader_config.json (`combine`, with `.progress_gate` when `progress_gate` is true), from the same three full verifies and the same sizing rule as the note above; the grader uses the entry of the combination in use (the top-level pair is that of the default, mission_gate.progress_gate). The progress gate changes none of the reference's numbers: it completes all three jobs in every run.",
+  "recheck": "Re-measured after the review's grader changes (hard/pr31, 2026-11-04; they change how contacts, colliders and set-up failures are handled, not what the reference scores): full verifies as the oracle pass runs them, 0.9769 on 596374b and 0.9537 on 2271f1c (hoist 0.952: the twin's swing-decay check, as in the first verify above), and 0.9742 for the reference behind a spy wrapper on 596374b; all privileged, every mission done with 6 of 6 parts, reward 1.0. Not folded into the value: it stays the lowest of the three sizing verifies (0.9537 would lower it by 0.5 %)."
 }
