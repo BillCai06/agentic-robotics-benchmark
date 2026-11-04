@@ -12,7 +12,9 @@ bay), and everything but its four robots is switched off:
   collision group (their own physics prims switched off);
 - switched off: the agent's facility, physics scenes, OmniGraph prims (anywhere), lights, hall and helpers, the other
   children of `/World/Fleet`, each flying robot's `Rope`, and every joint with an end outside its own robot (the hook,
-  the ring, anything to the agent's bay or to another robot); `physics:simulationOwner` cleared, external forces off.
+  the ring, anything to the agent's bay or to another robot); `physics:simulationOwner` cleared, external forces off;
+- confined: the agent's collision filtering reaches only its own stage (a collection that takes in the whole stage,
+  `includeRoot`, takes in `/Agent` instead; a collision group that would still take in the real bay is off).
 
 Each flying robot is then put on the real pad nearest to where the agent's scene puts it (the assignment with the
 smallest total distance), the vehicle in the real parking bay, each by one translation of its root (headings and
@@ -313,6 +315,7 @@ def build(agent_scene, bay_layer, facts, out_path):
         q = st.GetPrimAtPath(mounted(g))
         if q and q.IsValid() and any(a.GetName().endswith("membershipExpression") and a.HasAuthoredValue() for a in q.GetAttributes()):
             set_active(st, mounted(g), False)
+    cut = confine_collections(st)
     # place: each flying robot on its nearest real pad, the vehicle in the real parking bay (footprint centres)
     centres = {}
     for r in ROBOTS:
@@ -367,10 +370,44 @@ def build(agent_scene, bay_layer, facts, out_path):
             tg = [t for t in rel.GetTargets() if not any(_under(t.pathString, rr) for rr in rope_roots)]
             if len(tg) != len(rel.GetTargets()):
                 rel.SetTargets(tg)
+    cut += confine_groups(st)
     layer.Save()
     return dict(fleet_root=FLEET, rope_root={r: ropes[r]["root"] for r in UAVS}, pads=pads, centres=centres, shifts=shifts,
                 ropes=ropes, kept_scopes=[mounted(s) for s in sv["keep_scopes"]], dropped=dropped,
-                hooks={r: sv["robots"][r]["hook"] for r in UAVS})
+                hooks={r: sv["robots"][r]["hook"] for r in UAVS}, collections_confined=cut)
+
+
+def confine_collections(st):
+    """A collection on the agent's prims that takes in the whole stage (`includeRoot`; a collision group's own or one
+    it includes) would take in the real bay too, and PhysX honours it: the agent's collision filtering would reach the
+    real furniture. Each such collection takes in the agent's own stage (`/Agent`) instead. Returns what was changed."""
+    out = []
+    for p in list(Usd.PrimRange(st.GetPrimAtPath(MOUNT), Usd.TraverseInstanceProxies())):
+        for col in Usd.CollectionAPI.GetAllCollections(p):
+            if col.GetIncludeRootAttr().Get():
+                path, name = p.GetPath().pathString, col.GetName()
+                q = _editable(st, path)
+                col = Usd.CollectionAPI(q, name)
+                col.CreateIncludeRootAttr().Set(False)
+                col.CreateIncludesRel().AddTarget(MOUNT)
+                out.append(f"{path}.collection:{name}")
+    return out
+
+
+def confine_groups(st):
+    """The last word on the agent's collision groups: one whose membership still takes in any collider of the real bay
+    (`/World`) is switched off. Returns the groups switched off."""
+    real = [p.GetPath().pathString for p in st.Traverse(Usd.TraverseInstanceProxies())
+            if _under(p.GetPath().pathString, SRC) and p.HasAPI(UsdPhysics.CollisionAPI)] + [SRC]
+    out = []
+    for p in list(st.Traverse(Usd.TraverseInstanceProxies())):
+        if p.GetTypeName() != "PhysicsCollisionGroup" or not _under(p.GetPath().pathString, MOUNT):
+            continue
+        q = Usd.CollectionAPI(p, "colliders").ComputeMembershipQuery()
+        if any(q.IsPathIncluded(r) for r in real):
+            set_active(st, p.GetPath().pathString, False)
+            out.append(f"{p.GetPath().pathString} (off)")
+    return out
 
 
 def check(path, info=None):
@@ -410,6 +447,11 @@ def check(path, info=None):
                     hook = b0 + b1
         out["ropes"][r] = dict(root=root, links=len(links), hook=hook, ring=ring)
     out["bodies_active"] = sum(1 for p in st.Traverse(Usd.TraverseInstanceProxies()) if p.HasAPI(UsdPhysics.RigidBodyAPI))
+    real = [p.GetPath().pathString for p in st.Traverse(Usd.TraverseInstanceProxies())
+            if _under(p.GetPath().pathString, SRC) and p.HasAPI(UsdPhysics.CollisionAPI)]
+    out["groups_reaching_real_bay"] = [p.GetPath().pathString for p in st.Traverse(Usd.TraverseInstanceProxies())
+                                       if p.GetTypeName() == "PhysicsCollisionGroup" and _under(p.GetPath().pathString, MOUNT)
+                                       and any(Usd.CollectionAPI(p, "colliders").ComputeMembershipQuery().IsPathIncluded(r) for r in real)]
     return out
 
 

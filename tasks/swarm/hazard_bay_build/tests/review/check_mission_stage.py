@@ -4,9 +4,11 @@
 
 For each scene it builds the mission stage (tests/mission_stage.py on tests/hidden/bay_true.usda) and checks: the four
 robots active; three plant ropes, each a chain hooked to the scene's own hook body and ringed to the real bucket; no
-active joint with an end outside its robot; one physics scene; no OmniGraph prim. With --synthetic it also builds
-three edited copies of the first scene and checks that the builder copes: a hook joint outside `Rope`, a physics
-material outside the fleet bound to the vehicle's wheels, a joint from the vehicle to the scene's floor.
+active joint with an end outside its robot; one physics scene; no OmniGraph prim; no collision group of the scene's
+that takes in a collider of the real bay. With --synthetic it also builds edited copies of the first scene and checks
+that the builder copes: a hook joint outside `Rope`, a physics material outside the fleet bound to the vehicle's wheels,
+a joint from the vehicle to the scene's floor, and two collision groups that take in the whole stage (`includeRoot` on
+the group, or on a collection the group includes) with the vehicle's arm filtered against them.
 Nothing here is part of the grade; the task's grader never runs it.
 """
 
@@ -39,6 +41,8 @@ def verdict(scene, out_dir, expect_pads=None, extra=None):
         problems.append(f"{chk['graphs']} OmniGraph prims active")
     if chk["foreign_joints"]:
         problems.append(f"joints with an end outside their robot: {chk['foreign_joints'][:4]}")
+    if chk["groups_reaching_real_bay"]:
+        problems.append(f"collision groups that take in the real bay: {chk['groups_reaching_real_bay'][:4]}")
     for r, rope in chk["ropes"].items():
         want_hook = info["ropes"][r]["hook_body"]
         if rope["links"] != FACTS["rig"]["rope"]["links"]:
@@ -139,6 +143,35 @@ def synthetic(scene, out_dir):
         pr = s2.GetPrimAtPath("/Agent/Fleet/UGV/Tether")
         return [] if not (pr and pr.IsValid() and pr.IsActive()) else ["the vehicle's tether to the floor is still active"]
     cases.append((p, [no_tether]))
+    # (d, e) collision groups that take in the whole stage: on the group itself, or through a collection it includes
+    for name, nested in (("syn_group_root.usda", False), ("syn_group_root_nested.usda", True)):
+        p = os.path.join(out_dir, name)
+        lay = Sdf.Layer.CreateNew(p)
+        lay.subLayerPaths.append(scene)
+        lay.defaultPrim = "World"
+        st = Usd.Stage.Open(lay)
+        everything = UsdPhysics.CollisionGroup.Define(st, "/World/Fleet/Everything")
+        if nested:
+            holder = st.OverridePrim("/World/Fleet/UGV")
+            Usd.CollectionAPI.Apply(holder, "everything").CreateIncludeRootAttr(True)
+            everything.GetCollidersCollectionAPI().CreateIncludesRel().AddTarget("/World/Fleet/UGV.collection:everything")
+        else:
+            everything.GetCollidersCollectionAPI().CreateIncludeRootAttr(True)
+        arm = UsdPhysics.CollisionGroup.Define(st, "/World/Fleet/ArmGroup")
+        arm.GetCollidersCollectionAPI().CreateIncludesRel().AddTarget("/World/Fleet/UGV")
+        arm.CreateFilteredGroupsRel().AddTarget("/World/Fleet/Everything")
+        lay.Save()
+
+        def confined(out, info):
+            s2 = Usd.Stage.Open(out)
+            g = s2.GetPrimAtPath("/Agent/Fleet/Everything")
+            probs = [] if info.get("collections_confined") else ["no collection was confined"]
+            if not (g and g.IsValid() and g.IsActive()):
+                probs.append("the group was switched off instead of confined")
+            elif not Usd.CollectionAPI(g, "colliders").ComputeMembershipQuery().IsPathIncluded("/Agent/Fleet/UGV"):
+                probs.append("the confined group lost the scene's own robots")
+            return probs
+        cases.append((p, [confined]))
     return cases
 
 
