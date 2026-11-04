@@ -934,7 +934,7 @@ def main():
     extra.update({f"section.{k}": v for k, v in section_scores.items()})
     extra.update(combos)
     log("acceptance under each combination:", json.dumps({k: v for k, v in combos.items() if k.startswith("acceptance.")}))
-    extra["probe_errors"] = float(sum(1 for g in got.values() if "error" in g))
+    extra["probe_errors"] = float(sum(1 for g in got.values() for d in (g if isinstance(g, list) else [g]) if "error" in (d or {})))
     locks = [(ep or {}).get("lock") or {} for ep in (got.get("control") or [])]
     if locks:
         extra["probes_total"] = float(sum(nz(lk.get("probes_total"), 0) for lk in locks))
