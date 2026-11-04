@@ -1,6 +1,14 @@
 """Grader of robotic_arm_cad_design_from_photos (information tier, hardware-design stage, FreeCAD MCP version). Root,
 verify stage, agent gone.
 
+Where it runs: a separate verifier sandbox (task.toml `environment_mode = "separate"`), started fresh from the task image.
+The engine restores only the declared artifact /home/user/submission into it (written by root, before this folder is
+uploaded), so nothing the agent left anywhere else is present. setup.sh does not run there and nothing it staged is read:
+the givens the grader uses are this folder's own copies (given/). The lockdown below works the same in a shared sandbox.
+In the verifier, the agent account's processes are the image's own desktop, and the restored submission is root-owned
+and older than the stage upload, so the late-write gate has nothing to flag there (the engine copied the submission
+when the agent phase ended).
+
   0. FIRST THING, stdlib only (`_early_lockdown`, as in the predecessor task): record when the engine began uploading this
      folder, freeze and kill every process of the agent account (a survivor voids the run: task error), lock the stage,
      take a root-owned 0700 snapshot of the submission that every later read uses, and zero the gate cad_valid (stat
@@ -288,26 +296,6 @@ def write_verdict(G, checks, rewards, weights, stats, details):
     return overall
 
 
-def _hashes_match(expected_path, root):
-    import hashlib
-    try:
-        with open(expected_path) as f:
-            expected = json.load(f)
-    except (OSError, ValueError):
-        return 0.0
-    for rel, digest in expected.items():
-        p = os.path.join(root, rel)
-        if not os.path.isfile(p):
-            return 0.0
-        h = hashlib.sha256()
-        with open(p, "rb") as f:
-            for chunk in iter(lambda: f.read(1 << 20), b""):
-                h.update(chunk)
-        if h.hexdigest() != digest:
-            return 0.0
-    return 1.0
-
-
 def main():
     t0 = time.time()
     freezer = verify_freeze.AgentFreezer.for_user(AGENT_USER)
@@ -347,7 +335,6 @@ def main():
         cases = G.make_cases(rng, n_fk=int(cfg.get("fk_configs", 64)), n_int=int(cfg.get("interference_configs", 64)),
                              n_decl=int(cfg.get("declared_range_configs", 16)), n_mjcf=int(cfg.get("mjcf_configs", 16)))
         stats["load_s"] = time.time() - t1
-        stats["no_collateral"] = _hashes_match(os.path.join(STAGE_DIR, "given_hashes.json"), HOME)
         stats["grader_exception"] = 0.0
         doc, note = find_document(sub_dir)
         conv = {"ok": False, "errors": [note or "no document"], "stats": {}, "details": {}}

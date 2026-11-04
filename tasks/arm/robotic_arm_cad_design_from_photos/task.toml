@@ -10,11 +10,11 @@
 # execute_code runs Python inside the session); the instruction asks for it, the harness's own tools stay available,
 # and verify records the tool use as statistics only.
 #
-# Grading (tests/verify.py; knobs in tests/grader_config.json; no agent code runs): headless FreeCAD reads the
-# document as an unprivileged account, the mechanism is inferred and aligned with the unit's base, then gates
-# cad_valid, public_model_reuse, cad_json_consistent x kinematic_fidelity 0.30, feature_fidelity 0.25,
-# shape_fidelity 0.25, mass_properties 0.10, component_fit 0.05, interference_free 0.05, with shape / tool-point
-# floors. design_score = the weighted mean; reward = design_score (tests/anchor.json).
+# Grading (tests/verify.py, in a separate verifier sandbox: [verifier] below; knobs in tests/grader_config.json; no
+# agent code runs): headless FreeCAD reads the document as an unprivileged account, the mechanism is inferred and
+# aligned with the unit's base, then gates cad_valid, public_model_reuse, cad_json_consistent x kinematic_fidelity
+# 0.30, feature_fidelity 0.25, shape_fidelity 0.25, mass_properties 0.10, component_fit 0.05, interference_free 0.05,
+# with shape / tool-point floors. design_score = the weighted mean; reward = design_score (tests/anchor.json).
 
 schema_version = "1.4+ale.1"
 artifacts = ["/home/user/submission"]
@@ -39,11 +39,26 @@ command = "/opt/freecad-mcp/bin/freecad-mcp"
 args = ["--freecadcmd", "/opt/freecad/usr/bin/freecadcmd"]
 
 # setup: stage the photo set and the servo documents (< 30 s). agent: re-model the unit in FreeCAD (6 h). verify:
-# lockdown, the FreeCAD document read by headless FreeCAD, the mechanism check and conversion, the grader (oracle
-# about 90 s on 8 CPUs).
+# the verifier sandbox's start, the lockdown, the FreeCAD document read by headless FreeCAD, the mechanism check and
+# conversion, the grader (oracle on 1cdbc02, validate-b9b7b8b0: about 5 s to start the verifier and restore the
+# document, then about 60 s of test.sh on two cores).
 [agent]
 timeout_sec = 21600
 network_mode = "no-network"
 
+# Separate verification: the engine releases the agent's sandbox and scores in a fresh one started from the task image,
+# into which it restores only the declared artifact (/home/user/submission, written back by root). Nothing else the
+# agent left behind (a program on root's PATH, its home, its processes) reaches the grader, which runs as root.
+# setup.sh does not run there, and verify needs nothing it staged: the givens the grader reads (design rules, schema,
+# servo STEP) are its own copies in tests/given/. The verifier runs the image's own desktop as the agent account;
+# verify stops it first. Starting the verifier and restoring the document take about 5 s of timeout_sec. The
+# verifier has the agent's machine: the oracle's verifier, desktop included, used about 0.9 GB and mostly one core
+# (sampled), and the rest is margin for a larger document.
 [verifier]
 timeout_sec = 1800
+environment_mode = "separate"
+
+[verifier.environment]
+cpus = 8
+memory_mb = 16384
+gpus = 0
