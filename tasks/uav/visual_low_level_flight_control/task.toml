@@ -27,5 +27,22 @@ args = ["/opt/visual_robotics/client/mcp_stdio.py"]
 timeout_sec = 3600
 network_mode = "no-network"
 
+# Separate verification: tests/test.sh runs as root in a fresh verifier sandbox started from the task image, into which
+# the engine restores only the declared artifact, /home/user/submission. Nothing else the agent left in its own sandbox
+# reaches the grader: no program it put on root's PATH (the base image leaves /usr/local/bin agent-writable and ahead of
+# /usr/bin), no other file under /home/user or /tmp, no process. setup.sh does not run there, so the exploration world
+# service, its ledger under /var/lib/visual_robotics and the public client copies are absent, and the grader reads none
+# of them: what it needs is in tests/ (the scene, the renderer, the kit) or in the image (/opt/venv, the Crazyflie model
+# under /opt/visual_robotics/assets, the render assets under /opt/task-assets/payload/render). The verifier gets the
+# agent's machine, 2 CPUs and 4 GB without a GPU: the controller's replies are timed (10 s each, 1500 s in all) on the
+# CPUs it was developed on, and the verify process peaks at about 1.3 GB. timeout_sec is unchanged: releasing the
+# agent's sandbox, starting the verifier and restoring the submission took about 6 s of it (validate-9f8d0503, whose
+# verify ran 22.8 min).
 [verifier]
 timeout_sec = 5400
+environment_mode = "separate"
+
+[verifier.environment]
+cpus = 2
+memory_mb = 4096
+gpus = 0

@@ -25,6 +25,25 @@
 > A frame takes about 0.54 s on the task's two CPUs; the verify process peaks at about 1.3 GB (textures at 256 px, the
 > heap trimmed after every scene). Measured: `ale validate` validate-aeacedc0, the oracle completed 7 of 8 fresh scenes
 > (ratio 0.875, at or above `full_at` 0.85: reward 1.0), verify 22.9 min, zero collisions and aborts; the task's own tests pass.
+>
+> **Maintainer changes, 2026-11-04 (separate verification).** Under shared verification the grader ran as root in the
+> agent's own sandbox, where the ALE base image leaves `/usr/local/bin` agent-writable and ahead of `/usr/bin` on root's
+> PATH: a program the agent planted there (`bash`, say) would run as root as soon as the engine started `bash test.sh`,
+> and could write any reward. `task.toml` now sets `[verifier] environment_mode = "separate"` with the agent's machine
+> as `[verifier.environment]` (2 CPUs, 4 GB, no GPU): the grader runs in a fresh sandbox from the task image into which
+> the engine restores only `/home/user/submission`, and everything it uses is in `tests/` or in the image. `setup.sh`
+> does not run there, so the grader no longer stops the exploration service or reads its ledger: the
+> `[authoritative-journal]` trace line and the `trusted_requests` metric are gone (the ledger stays in the released
+> agent sandbox; a model run's tool calls are in its trajectory), and so is the task error for an exploration service
+> that died during the agent phase. The engine copies only regular files and directories into the verifier (they arrive
+> root-owned), so a symlink or special file in the submission is left out instead of zeroing the run; the grader still
+> freezes what arrives and applies its entry, depth and size limits. The instruction now says that only the submission
+> reaches the verifier. The shared kit fixes each reply deadline when the request is sent (see "Interpretation
+> Limits"). Measured: `ale validate` validate-9f8d0503 (engine 1cdbc02), untouched 0.0 (missing deliverables); in the
+> separate verifier the oracle completed 8 of 8 fresh scenes (success_rate 1.0, reward_exact 1.0), zero collisions and
+> aborts, probes 136/193, controller time 222 s; verify 22.8 min, of which about 6 s went to releasing the agent's
+> sandbox, starting the verifier and restoring the submission. Before the controller started, the kit took the
+> verifier's `/usr/local/bin` (uid 1000 in the image) back to root.
 
 **Draft: v7 onboard-camera switchback course, not yet qualified for admission.**
 Version 5's external views were solved by Astra on 4/4 hidden scenes. Version 6's
@@ -78,9 +97,11 @@ scene was 11/23, below half; the aggregate lock still passed. See
   scores with clearly labelled no-probe, matched-seed diagnostic replays before
   attributing a failure to physical difficulty. V6 replay improved from 3/4 with
   probes to 4/4 without them. A no-probe replay is not an official score.
-- The verify stage has a 900-second aggregate wall-clock cap in addition to the
-  10-second per-response deadline. Slow controllers may exhaust the aggregate
-  cap. Shared Solver also restarts its read timeout on blank output; such hangs
+- The verify stage has a 5400-second cap (900 s before v8) and the controller's
+  replies share a 1500-second budget, in addition to the 10-second per-request
+  deadline. Since 2026-11-04 the shared Solver fixes that deadline when it sends a
+  request, so blank or partial output no longer extends it (it used to restart its
+  read timeout on blank output); a stalling controller aborts its scene. Such aborts
   are protocol/robustness failures, not valid completed-scene difficulty evidence.
 - Gate centers alternate heights, but their aperture ranges may overlap. The
   geometry does not prove that every seed requires altitude changes. The nominal
@@ -151,9 +172,11 @@ third-party drone-racing or rescue demonstration.
 
 The root-owned service owns simulation state and budgets; clients only receive
 images. Reconnection and unsupported reset/report commands cannot restore budget
-or claim success. The verifier stops the exploration service, freezes all agent
-files read-only, then runs the submission as the unprivileged account. The
-canonical `robotics_grader` and its observation-dependence check are unmodified.
+or claim success. The verifier runs in a fresh sandbox of its own (separate
+verification) that receives only the submission; the exploration service stays in
+the released agent sandbox. It freezes the submission read-only, then runs it as
+the unprivileged account. The canonical `robotics_grader` and its
+observation-dependence check are unmodified.
 
 Before admission: register/confirm the task in the coordination sheet, agree on
 the exact frontier model and harness, measure its scores with adequate reasoning

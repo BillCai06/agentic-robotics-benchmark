@@ -25,6 +25,13 @@
 > A frame takes about 0.54 s on the task's two CPUs; the verify process peaks at about 1.3 GB (textures at 256 px, the
 > heap trimmed after every scene). Measured: `ale validate` validate-aeacedc0, the oracle completed 7 of 8 fresh scenes
 > (ratio 0.875, at or above `full_at` 0.85: reward 1.0), verify 22.9 min, zero collisions and aborts; the task's own tests pass.
+>
+> **Maintainer changes, 2026-11-04 (separate verification).** The grader now runs in a fresh verifier sandbox of its
+> own (`[verifier] environment_mode = "separate"`, 2 CPUs, 4 GB, no GPU) that receives only `/home/user/submission`, and
+> it no longer stops or reads the exploration service (`../tests/review/REVIEW.md`). This reference keeps everything its
+> controller runs inside the submission (`run.sh`, `policy.py`), so it is unchanged. Measured: `ale validate`
+> validate-9f8d0503 (engine 1cdbc02), the oracle completed 8 of 8 fresh scenes in the separate verifier (reward_exact
+> 1.0), zero collisions and aborts, probes 136/193, controller time 222 s, verify 22.8 min.
 
 ![Actual Crazyflie simulation](preview.png)
 
