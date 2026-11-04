@@ -100,9 +100,10 @@ def move_in_world(stage, path, world_row, tag):
 
 
 def prepare(stage, hidden=None, fleet_root=FLEET, rope_root=None):
-    """Before the simulation starts: contact reports on every body of the four robots (not their ropes); with the bay
-    of the day, the pan moved off its nominal place and the vehicle off its nominal pose (both in USD, so that
-    everything they carry moves with them)."""
+    """Before the simulation starts: contact reports on every body of the four robots (not their ropes), every
+    contact at any force with anything (a threshold or a pair list the scene authored is overridden); with the bay of
+    the day, the pan moved off its nominal place and the vehicle off its nominal pose (both in USD, so that everything
+    they carry moves with them)."""
     ropes = rope_roots(stage, fleet_root, rope_root)
     for name in ROBOTS:
         root = stage.GetPrimAtPath(f"{fleet_root}/{name}")
@@ -112,6 +113,7 @@ def prepare(stage, hidden=None, fleet_root=FLEET, rope_root=None):
             if p.HasAPI(UsdPhysics.RigidBodyAPI) and not any(_under(p.GetPath().pathString, r) for r in ropes.values()):
                 cr = PhysxSchema.PhysxContactReportAPI.Apply(p)
                 cr.CreateThresholdAttr(0.0)
+                cr.CreateReportPairsRel().SetTargets([])  # (a pair list would report only the contacts with those)
     if not hidden:
         return
     pan = stage.GetPrimAtPath(f"{FAC}/FirePan")
@@ -1106,14 +1108,14 @@ class ControlSim:
         for h in hdrs:
             a = [str(PhysicsSchemaTools.intToSdfPath(h.actor0)), str(PhysicsSchemaTools.intToSdfPath(h.actor1))]
             c = [str(PhysicsSchemaTools.intToSdfPath(h.collider0)), str(PhysicsSchemaTools.intToSdfPath(h.collider1))]
-            for side in (0, 1):
-                me = next((r for r in ROBOTS if a[side].startswith(f"{fleet}/{r}/")), None)
+            for side in (0, 1):  # (a robot's root prim may be a body itself: "under" includes the root)
+                me = next((r for r in ROBOTS if _under(a[side], f"{fleet}/{r}")), None)
                 if me is None or any(_under(a[side], rr) for rr in self.rope_roots.values()):
                     continue
                 other = c[1 - side] or a[1 - side]
                 if _under(other, f"{FAC}/SteamLine/Handle") or _under(a[1 - side], f"{FAC}/SteamLine/Handle"):
                     self.lever_touch_t = self.t
-                if other.startswith(f"{fleet}/{me}/") or _under(other, self.rope_roots.get(me, "//")):
+                if _under(other, f"{fleet}/{me}") or _under(other, self.rope_roots.get(me, "//")):
                     continue
                 owner = next((r for r, rr in self.rope_roots.items() if _under(other, rr)), None)
                 if owner is not None:  # (another robot's rope)
