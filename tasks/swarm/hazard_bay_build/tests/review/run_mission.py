@@ -10,10 +10,14 @@ The token state is the submission's (`.oracle_token`), unless `--no-token`. With
 first, so that the real parts are named as the agent's scene names them (as in a full verify); without it the real
 names are used. `--kit-dir` keeps Kit's caches (the compiled shaders) between runs. Prints the mission's outcome, the
 per-check scores of this one run and the timing.
+Several of these may run at once in one container: the probe account is created under a lock (two concurrent
+`useradd` lose one account), and the grader's stop of every process of the agent's account before and after a run is
+left out here (it would stop the other runs' controllers; a full verify runs one mission at a time and does it).
 Nothing here is part of the grade; the task's grader never runs it.
 """
 
 import argparse
+import fcntl
 import json
 import os
 import random
@@ -25,6 +29,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 TESTS = os.path.dirname(HERE)
 sys.path.insert(0, TESTS)
 import verify  # noqa: E402
+
+verify.kill_agent = lambda: None  # (parallel runs in one container share the agent's account: see above)
 
 
 def main():
@@ -49,7 +55,9 @@ def main():
     verify.snapshot(sub, snap)
     scene = os.path.join(snap, os.path.basename(scene))
     os.environ["PATH"] = "/usr/sbin:/usr/bin:/bin:" + os.environ.get("PATH", "")
-    verify.probe_account(work)
+    with open("/var/tmp/arb_probe_account.lock", "w") as lk:
+        fcntl.flock(lk, fcntl.LOCK_EX)
+        verify.probe_account(work)
     if a.kit_dir:
         import pwd
         import shutil

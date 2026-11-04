@@ -907,28 +907,33 @@ def control(out):
     timing["init_s"] = round(time.time() - t0, 2)
     t0 = time.time()
     privileged = bool(CFG.get("privileged"))
-    with open(os.path.join(wire, "obs.fifo"), "w") as fo, open(os.path.join(wire, "act.fifo")) as fi:
-        def policy(t, obs):
-            if privileged:
-                obs["privileged"] = privileged_state(sim)
-            fo.write(json.dumps({"t": t, "obs": obs}) + "\n")
-            fo.flush()
-            line = fi.readline()
-            if not line:
-                out["abort"] = "the wire closed"
-                return None
-            reply = json.loads(line)
-            if "action" not in reply:
-                out["abort"] = reply.get("abort", "no action")
-                return None
-            return reply["action"]
+    m = None
+    try:
+        with open(os.path.join(wire, "obs.fifo"), "w") as fo, open(os.path.join(wire, "act.fifo")) as fi:
+            def policy(t, obs):
+                if privileged:
+                    obs["privileged"] = privileged_state(sim)
+                fo.write(json.dumps({"t": t, "obs": obs}) + "\n")
+                fo.flush()
+                line = fi.readline()
+                if not line:
+                    out["abort"] = "the wire closed"
+                    return None
+                reply = json.loads(line)
+                if "action" not in reply:
+                    out["abort"] = reply.get("abort", "no action")
+                    return None
+                return reply["action"]
 
-        m = sim.run(policy)
-        try:
-            fo.write(json.dumps({"end": True}) + "\n")
-            fo.flush()
-        except (OSError, ValueError):
-            pass
+            m = sim.run(policy)
+            try:
+                fo.write(json.dumps({"end": True}) + "\n")
+                fo.flush()
+            except (OSError, ValueError):
+                pass
+    except OSError:  # (closing the wire after the run ended: the relay may have closed its ends already, after an abort)
+        if m is None:
+            raise
     out.update(m)
     out["hidden"] = sim.hidden_record()
     timing["run_s"] = round(time.time() - t0, 2)

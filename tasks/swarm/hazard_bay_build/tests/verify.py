@@ -9,9 +9,11 @@ all; `probes.py` then measures it (layout, settle, the valve and the plume, the 
 design) and runs the bay mission twice (two seeds): the agent's controller drives the agent's four robots in the
 grader's own stage of the real bay (`mission_stage.py` on `hidden/bay_true.usda`), on the day's random draws, while the
 grader keeps the bay's rules and measures the outcomes. The controller runs as the agent's account behind the kit's
-solver wire; this process relays it to the control probe through two pipes and applies the match lock. A canary scene
-goes through the same launcher first: when that fails, the grading environment is broken and the run ends as a task
-error, not as a zero.
+solver wire, started only once the probe has the mission set up (and every process of the agent's account stopped
+before each run and after it); this process relays the wire to the control probe through two pipes and applies the
+match lock. A canary scene goes through the same launcher first: when that fails, the grading environment is broken
+and the run ends as a task error, not as a zero. So does a mission that cannot be set up twice in a row, before any of
+the agent's code ran, for a scene that passed the scan and simulates on its own.
 
 What the probes read (their code, `grader_config.json` with the real bay's facts, the real bay's layer) sits in a
 folder only the probe account can read (`work/probe`, 0700), and each probe's seed (63 bits) travels in its own
@@ -382,11 +384,27 @@ def perturbed_obs(obs, lock):
     return o
 
 
+def kill_agent():
+    """Every process of the agent's account: what a controller left running (a helper it started with `setsid` leaves
+    the solver's process group) must not reach the next mission run's set-up."""
+    subprocess.run(["/usr/bin/pkill", "-KILL", "-u", agent_user()], check=False)
+    time.sleep(0.5)
+
+
 def run_control(scene, work, cfg, seed, lock_rng, snap, timeout, episode=0):
     """The control probe (Isaac Sim, the probe account) on one side; the agent's controller (`Solver`: `bash run.sh`
     in the snapshot, the agent's account) on the other. This process relays the wire through two pipes and applies
-    the match lock. The controller sees observations and answers actions; nothing else crosses."""
+    the match lock. The controller sees observations and answers actions; nothing else crosses.
+
+    Order: nothing of the agent's runs while the probe sets the mission up (it builds the mission stage, starts Isaac
+    Sim, opens the stage, draws the bay of the day, pre-rolls); the controller starts once the probe opens the wire. So
+    a failure before that point (`setup_failed`) is the grader's or the environment's, never the program's doing. The
+    set-up has its own bound (`setup_timeout_s`); the run's wall-clock budget (`timeout`) counts from the wire."""
     ctl = cfg.get("control", {})
+    if not os.path.isfile(os.path.join(snap, "run.sh")):
+        log("control: no controller (no run.sh in the submission)")
+        return dict(abort="no controller: no run.sh in the submission", end="aborted")
+    kill_agent()
     wire = os.path.join(work, "wire")
     os.makedirs(wire, exist_ok=True)
     pw = pwd.getpwnam(PROBE_USER)
@@ -400,17 +418,10 @@ def run_control(scene, work, cfg, seed, lock_rng, snap, timeout, episode=0):
         os.mkfifo(p, 0o600)
         os.chown(p, pw.pw_uid, pw.pw_gid)
         fifos[n] = p
-    try:
-        solver = Solver(step_timeout=float(ctl.get("step_timeout_s", 10.0)), submission=snap, entry="run.sh",
-                        max_restarts=int(ctl.get("max_restarts", 1)))
-    except SolverMissing as exc:
-        log("control: no controller:", exc)
-        return dict(abort=f"no controller: {exc}", end="aborted")
-    except SolverAborted as exc:
-        log("control: the controller did not come up:", exc)
-        return dict(abort=f"the controller did not come up: {exc}", end="aborted")
     lock = ProbeLock(lock_rng, rate=float(ctl.get("lock_rate", 0.05)), magnitude=float(ctl.get("lock_magnitude", 0.4)))
     path = os.path.join(work, "out", f"control_{episode}.json")
+    if os.path.exists(path):
+        os.remove(path)
     env = probe_env(work, seed)
     env["ARB_WIRE_DIR"] = wire
     proc = subprocess.Popen(probe_cmd([os.path.join(probe_dir(work), "probes.py"), scene, path, "control"]), env=env,
@@ -423,18 +434,23 @@ def run_control(scene, work, cfg, seed, lock_rng, snap, timeout, episode=0):
 
     threading.Thread(target=pump, args=(proc.stdout, "out"), daemon=True).start()
     threading.Thread(target=pump, args=(proc.stderr, "err"), daemon=True).start()
-    state = {"steps": 0, "abort": None}
+    state = {"steps": 0, "abort": None, "wire": False, "solver": None}
 
     def relay():
         try:
             with open(fifos["obs.fifo"]) as fi, open(fifos["act.fifo"], "w") as fo:
+                state["wire"] = time.time()  # (the probe has the mission ready: only now does the agent's program start)
                 try:
-                    solver.reset()
-                except SolverAborted as exc:
-                    state["abort"] = f"reset: {exc}"[:300]
+                    state["solver"] = Solver(step_timeout=float(ctl.get("step_timeout_s", 10.0)), submission=snap, entry="run.sh",
+                                             max_restarts=int(ctl.get("max_restarts", 1)))
+                    state["solver"].reset()
+                except (SolverAborted, SolverMissing) as exc:
+                    state["abort"] = f"the controller did not come up: {exc}"[:300]
+                    log("control:", state["abort"])
                     fo.write(json.dumps({"abort": state["abort"]}) + "\n")
                     fo.flush()
                     return
+                solver = state["solver"]
                 for line in fi:
                     try:
                         msg = json.loads(line)
@@ -462,19 +478,30 @@ def run_control(scene, work, cfg, seed, lock_rng, snap, timeout, episode=0):
     th = threading.Thread(target=relay, daemon=True)
     th.start()
     t0 = time.time()
-    try:
-        proc.wait(timeout=timeout)
-    except subprocess.TimeoutExpired:
-        proc.kill()
-        state["abort"] = state["abort"] or "the control probe did not finish in time"
-    if th.is_alive():  # (the probe died before opening its ends: unblock the relay)
+    setup_s = float(ctl.get("setup_timeout_s", 1200))
+    while proc.poll() is None:  # (the set-up has its own bound; the run's wall-clock budget counts from the wire's opening)
+        try:
+            proc.wait(timeout=2.0)
+        except subprocess.TimeoutExpired:
+            pass
+        if proc.poll() is not None:
+            break
+        if not state["wire"] and time.time() - t0 > setup_s:
+            proc.kill()
+            state["abort"] = state["abort"] or f"the mission was not set up within {setup_s:.0f} s"
+        elif state["wire"] and time.time() - state["wire"] > timeout:
+            proc.kill()
+            state["abort"] = state["abort"] or "the control probe did not finish in time"
+    if th.is_alive():  # (the probe died before opening its ends, or mid-run: unblock the relay)
         for n, mode in (("obs.fifo", os.O_WRONLY), ("act.fifo", os.O_RDONLY)):
             try:
                 os.close(os.open(fifos[n], mode | os.O_NONBLOCK))
             except OSError:
                 pass
-        th.join(timeout=5.0)
-    solver.close()
+        th.join(timeout=60.0)  # (a controller still coming up has 40 s to print READY)
+    if state["solver"] is not None:
+        state["solver"].close()
+    kill_agent()
     data = {}
     if os.path.isfile(path):
         try:
@@ -487,6 +514,7 @@ def run_control(scene, work, cfg, seed, lock_rng, snap, timeout, episode=0):
         data["abort"] = state["abort"]
     data["lock"] = lock.rewards()
     data["relay_steps"] = state["steps"]
+    data["setup_failed"] = not state["wire"]
     data["probe_out"] = "".join(sink["out"])[-3000:]  # (the probe's progress lines, for the record)
     log(f"control probe: {round(time.time() - t0)} s, {state['steps']} steps relayed, abort={state['abort']}, lock={lock.rewards()}")
     return data
@@ -510,6 +538,11 @@ def run_probes(scene, work, timeout, retries, seeds, cfg, lock_rng, snap, cfg_pr
                     log(f"control run {e} failed before its first step:", str(data["error"])[-600:])
                     data = run_control(scene, work, cfg, seed, lock_rng, snap, ctl_timeout, episode=e)
                     data["retried"] = True
+                    if "error" in data and data.get("setup_failed") and "error" not in (groups.get("settle") or {"error": True}):
+                        # the mission could not be set up twice, before any of the agent's code ran, for a scene that
+                        # passed the scan and simulates on its own (the settle probe): the grader's fault, not a zero
+                        fail(f"control run {e}: the bay mission could not be set up in the real bay (twice) for a scene that "
+                             f"passed the scan and runs on its own: {str(data['error'])[-900:]}")
                 runs.append(data)
             groups[g] = runs
             continue

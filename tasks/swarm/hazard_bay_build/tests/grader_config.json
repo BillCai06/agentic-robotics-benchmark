@@ -1,7 +1,7 @@
 {
   "probe_timeout_s": 900,
   "probe_retries": 1,
-  "canary_timeout_s": 900,
+  "canary_timeout_s": 1500,
   "scan_timeout_s": 300,
   "max_submission_bytes": 2147483648,
   "scoring_cap": 1.5,
@@ -476,6 +476,7 @@
       "consistency_zero": 0.3
     },
     "episodes": 2,
-    "episode_timeout_s": 1800
+    "episode_timeout_s": 1800,
+    "setup_timeout_s": 1200
   }
 }
