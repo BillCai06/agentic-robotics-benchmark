@@ -24,6 +24,12 @@
     "spec_hash": "sha256:472d0e693dc5010a5d406716d9f5158cd1bcacc1493d3bad88e468e72ac6a5d5"
   },
   {
+    "content_digest": "sha256:2d8234ea7647ba9f2dc80242ad9408140ff473d8b86ae2e3a9c0c626539c1130",
+    "since": "2026-11-04T16:43:07Z",
+    "slug": "bimanual_cad_design_from_photos",
+    "spec_hash": "sha256:ee4abc6bffe5e48ea067f47fb4dd99e5b496198df89fa7b9ed577f7ffa4b5d7e"
+  },
+  {
     "content_digest": "sha256:6e96572478e441f637ccb8ccc3552cce57a20b97e677c7e2d5e7c52447a25442",
     "since": "2026-11-04T10:13:10Z",
     "slug": "dexhand_shape_sorter_all_pieces",
