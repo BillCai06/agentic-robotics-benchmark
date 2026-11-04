@@ -233,8 +233,8 @@ def stage_file(work, name, src=None):
     return dst
 
 
-def write_probe_config(work, cfg):
-    path = os.path.join(probe_dir(work), "grader_config.json")
+def write_probe_config(work, cfg, name="grader_config.json"):
+    path = os.path.join(probe_dir(work), name)
     with open(path, "w") as f:
         json.dump(cfg, f)
     pw = pwd.getpwnam(PROBE_USER)
@@ -908,8 +908,9 @@ def main():
     write_probe_config(work, cfg_probe)
     log("privileged mode" if privileged else ("oracle token mismatch" if mismatch else "no oracle token"))
     canary(work, int(config.get("canary_timeout_s", 900)))
+    catalog = write_probe_config(work, config["catalog"], "catalog.json")  # (the scan's colliders rule: the declared models' assets)
     try:
-        r = as_probe([os.path.join(probe_dir(work), "scan.py"), scene, "--json"], work, int(config.get("scan_timeout_s", 300)))
+        r = as_probe([os.path.join(probe_dir(work), "scan.py"), scene, "--json", "--catalog", catalog], work, int(config.get("scan_timeout_s", 300)))
         scan = json.loads(r.stdout.strip().splitlines()[-1])
     except subprocess.TimeoutExpired:
         scan = dict(ok=False, errors=["the scan did not finish in time"], facts={})

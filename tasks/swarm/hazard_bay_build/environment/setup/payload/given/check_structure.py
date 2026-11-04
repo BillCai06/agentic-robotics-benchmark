@@ -3,9 +3,11 @@ joints, the ropes, declarations, OmniGraph rules. Reads the USD as data (pxr onl
 nothing. (The controller, `run.sh` + its Python, is the submission's other half; this check only notes whether it is
 there.)
 
-    python3 scan.py /home/user/submission/scene.usda [--json]
+    python3 scan.py /home/user/submission/scene.usda [--json] [--catalog catalog/catalog.json]
 
-The grader runs this same file before it measures anything; a scene with errors scores zero.
+The grader runs this same file before it measures anything; a scene with errors scores zero. Its notes include the
+colliders rule of the bay mission (`interface.md`): a robot that does not keep the colliders of the library models it
+declares scores 0 on the mission's no-collisions check (the catalog beside this file names the models' assets).
 """
 
 import json
@@ -13,7 +15,7 @@ import math
 import os
 import sys
 
-from pxr import Sdf, Usd, UsdGeom, UsdPhysics, UsdUtils
+from pxr import Gf, Sdf, Usd, UsdGeom, UsdPhysics, UsdUtils
 
 ASSET_ROOTS = ("/opt/assets/isaac", "/opt/assets/arb")
 CORE_MDL = {"OmniPBR.mdl", "OmniGlass.mdl", "OmniSurface.mdl", "OmniSurfaceLite.mdl", "OmniEmissive.mdl",
@@ -117,47 +119,93 @@ def _asset_arcs(prim, asset_roots):
 
 
 _ASSET_COLLIDERS = {}
+_ALL_PURPOSES = [UsdGeom.Tokens.default_, UsdGeom.Tokens.render, UsdGeom.Tokens.proxy, UsdGeom.Tokens.guide]
+
+
+def _api_schemas(prim):
+    """Every API schema applied to the prim, registered or not (pxr without Kit does not know PhysX's own schemas, and
+    `GetAppliedSchemas` leaves an unknown one out)."""
+    return list(prim.GetPrimTypeInfo().GetAppliedAPISchemas())
+
+
+def _edges(cache, prim):
+    """A collider's box, its three edge lengths in the world, sorted (a turn does not change them; a scale does)."""
+    b = cache.ComputeWorldBound(prim)
+    r = b.GetRange()
+    if r.IsEmpty():
+        return None
+    m, size = b.GetMatrix(), r.GetSize()
+    return sorted(m.TransformDir(Gf.Vec3d(*[size[k] if j == k else 0.0 for j in range(3)])).GetLength() for k in range(3))
 
 
 def _asset_colliders(path, prim_path):
-    """The colliders a library model defines below the prim a reference takes (paths relative to it)."""
+    """The colliders a library model defines below the prim a reference takes: {path relative to it: box edges}."""
     key = (path, prim_path)
     if key not in _ASSET_COLLIDERS:
-        rel = []
+        rel = {}
         try:
             st = Usd.Stage.Open(path, Usd.Stage.LoadAll)
             top = st.GetPrimAtPath(prim_path) if prim_path else st.GetDefaultPrim()
+            cache = UsdGeom.BBoxCache(Usd.TimeCode.Default(), _ALL_PURPOSES, useExtentsHint=False, ignoreVisibility=True)
+            mpu = UsdGeom.GetStageMetersPerUnit(st) or 1.0  # (the boxes in metres, as the scene's)
             if top and top.IsValid():
                 for p in Usd.PrimRange(top, Usd.TraverseInstanceProxies()):
                     if p.HasAPI(UsdPhysics.CollisionAPI) and p.GetAttribute("physics:collisionEnabled").Get() is not False:
-                        rel.append(p.GetPath().MakeRelativePath(top.GetPath()).pathString)
+                        e = _edges(cache, p)
+                        rel[p.GetPath().MakeRelativePath(top.GetPath()).pathString] = [v * mpu for v in e] if e else None
         except Exception:  # noqa: BLE001 - an asset that does not open has nothing to compare against
-            rel = []
+            rel = {}
         _ASSET_COLLIDERS[key] = rel
     return _ASSET_COLLIDERS[key]
 
 
-def colliders_kept(stage, root, asset_roots):
+def library_models_missing(declared, arcs, catalog):
+    """The robot's declared models (`arb:airframe_model`, `arb:base_model`, `arb:arm_model`) whose library asset it holds
+    no reference to with a collider in it: a robot built from a copy of the model, or from none, keeps none of the
+    library model's colliders."""
+    if not catalog:
+        return []
+    out = []
+    for key, table in (("airframe_model", "airframes"), ("base_model", "bases"), ("arm_model", "arms")):
+        entry = (catalog.get(table) or {}).get(declared.get(key) or "")
+        if entry and entry.get("asset") and not any(entry["asset"] in a["asset"] and a["colliders"] for a in arcs):
+            out.append(declared[key])
+    return out
+
+
+def colliders_kept(stage, root, asset_roots, declared=None, catalog=None):
     """Does the robot keep every collider of the library models it is built from? A collider of a referenced model
-    that is gone from the composed stage (its prim removed or deactivated, its CollisionAPI deleted) or switched off
-    (`physics:collisionEnabled` false) counts against it; colliders added beside them are the robot's own business."""
-    checked, missing, disabled = 0, [], []
+    that is gone from the composed stage (its prim removed or deactivated, its CollisionAPI deleted), switched off
+    (`physics:collisionEnabled` false, or made a trigger) or shrunk (its box smaller than the library's in any
+    direction) counts against it, and so does a declared model whose library asset the robot does not reference (when
+    the catalog is known); colliders added beside them are the robot's own business."""
+    checked, missing, disabled, shrunk, arcs = 0, [], [], [], []
+    cache = UsdGeom.BBoxCache(Usd.TimeCode.Default(), _ALL_PURPOSES, useExtentsHint=False, ignoreVisibility=True)
     rp = stage.GetPrimAtPath(root)
     for p in Usd.PrimRange(rp, Usd.TraverseInstanceProxies()):
         for path, prim_path in _asset_arcs(p, asset_roots):
-            for rel in _asset_colliders(path, prim_path):
+            cols = _asset_colliders(path, prim_path)
+            arcs.append(dict(asset=path, prim=prim_path or "", colliders=len(cols)))
+            for rel, edges in cols.items():
                 checked += 1
                 tgt = p.GetPath() if rel in ("", ".") else p.GetPath().AppendPath(Sdf.Path(rel))
                 q = stage.GetPrimAtPath(tgt)
                 if not q or not q.IsValid() or not q.IsActive() or not q.HasAPI(UsdPhysics.CollisionAPI):
                     missing.append(tgt.pathString)
-                elif q.GetAttribute("physics:collisionEnabled").Get() is False:
+                elif q.GetAttribute("physics:collisionEnabled").Get() is False or "PhysxTriggerAPI" in _api_schemas(q):
                     disabled.append(tgt.pathString)
-    return dict(ok=not missing and not disabled, checked=checked, missing=missing[:8], n_missing=len(missing),
-                disabled=disabled[:8], n_disabled=len(disabled))
+                elif edges:
+                    now = _edges(cache, q)
+                    if now is None or any(a < 0.9 * b - 1e-4 for a, b in zip(now, edges)):
+                        shrunk.append(tgt.pathString)
+    models = library_models_missing(declared or {}, arcs, catalog)
+    return dict(ok=not missing and not disabled and not shrunk and not models, checked=checked, missing=missing[:8], n_missing=len(missing),
+                disabled=disabled[:8], n_disabled=len(disabled), shrunk=shrunk[:8], n_shrunk=len(shrunk), models_not_referenced=models,
+                arcs=arcs[:16])
 
 
-def scan(scene):
+def scan(scene, catalog=None):
+    """The check; `catalog` (the catalog's data, `catalog/catalog.json`) adds the declared models to the colliders rule."""
     errors, notes, facts = [], [], {}
     sub = os.path.realpath(os.path.dirname(scene))
     roots = (sub,) + tuple(os.path.realpath(r) for r in ASSET_ROOTS)
@@ -261,14 +309,17 @@ def scan(scene):
         cams = [p.GetPath().pathString for p in Usd.PrimRange(rp) if p.IsA(UsdGeom.Camera) and p.IsActive()]
         tagged = [c for c in cams if stage.GetPrimAtPath(c).GetAttribute("arb:sensor_model")
                   and stage.GetPrimAtPath(c).GetAttribute("arb:sensor_model").Get()]
-        kept = colliders_kept(stage, root, asset_roots)
+        kept = colliders_kept(stage, root, asset_roots, decl, catalog)
         facts["robots"][name] = dict(articulation_root=str(art[0].GetPath()) if art else None, assets=refs, cameras=cams,
                                      tagged_cameras=tagged, declared=decl, colliders=kept)
         if not tagged:
             notes.append(f"{root} carries no camera with arb:sensor_model")
         if not kept["ok"]:
-            notes.append(f"{root}: {kept['n_missing']} collider(s) of its library models removed and {kept['n_disabled']} switched off "
-                         f"(e.g. {(kept['missing'] + kept['disabled'])[:2]}): in the bay mission it scores 0 on no collisions")
+            what = [f"{kept['n_missing']} removed", f"{kept['n_disabled']} switched off or made triggers", f"{kept['n_shrunk']} shrunk"]
+            eg = (kept["missing"] + kept["disabled"] + kept["shrunk"])[:2]
+            notes.append(f"{root}: of the colliders of its library models {', '.join(what)}" + (f" (e.g. {eg})" if eg else "")
+                         + (f"; no reference to the library asset of {kept['models_not_referenced']}" if kept["models_not_referenced"] else "")
+                         + ": in the bay mission it scores 0 on no collisions")
     # the ropes: under each flying robot a chain of rigid-body links joined by joints, hooked to a body of the robot by a
     # joint outside the articulation, joined to the bucket at its ring; the bucket joined to nothing else; no distance
     # joints in the rigging
@@ -350,7 +401,15 @@ def main():
     scene = sys.argv[1] if len(sys.argv) > 1 and not sys.argv[1].startswith("--") else "/home/user/submission/scene.usda"
     if not os.path.isfile(scene) and scene.endswith(".usda") and os.path.isfile(scene[:-1]):
         scene = scene[:-1]
-    r = scan(scene)
+    # the catalog (for the declared models' library assets): --catalog PATH, else the one beside this file (~/given)
+    cat_path = sys.argv[sys.argv.index("--catalog") + 1] if "--catalog" in sys.argv[:-1] else os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "catalog", "catalog.json")
+    try:
+        with open(cat_path) as f:
+            catalog = json.load(f)
+    except (OSError, ValueError):
+        catalog = None
+    r = scan(scene, catalog)
     if "--json" in sys.argv:
         print(json.dumps(r))
         return
