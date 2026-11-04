@@ -988,7 +988,7 @@ def main():
         write_verdict(zero_verdict(reason=str(exc), anchored=anchor is not None))
         return
     scene = os.path.join(snap, os.path.basename(scene))
-    os.environ["PATH"] = "/usr/sbin:/usr/bin:/bin:" + os.environ.get("PATH", "")  # (the kit spawns `runuser` by name)
+    os.environ["PATH"] = "/usr/sbin:/usr/bin:/bin:" + os.environ.get("PATH", "")  # (system tools first; the kit runs `runuser` by its absolute path)
     probe_account(work)
     for name in PROBE_FILES:
         stage_file(work, name)
