@@ -9,6 +9,15 @@ tank with the rigged bucket, and the fleet the reference designed for it: three 
 SO-101 arm, a thermal and an RGB camera, a cargo hook with a physical rope to the bucket) and a Jackal with a Kinova Gen3 and a
 mast camera. Every mechanism and every hazard rule is physics plus OmniGraph action graphs (no script nodes). With
 --truth it also writes the authored layout (author use only).
+
+The grader's real bay comes from the same code (author use only, once; the outputs live in tests/hidden/):
+
+    python3 build_scene.py --bay-only --out tests/hidden/bay_true.usda --bay-facts tests/hidden/bay_facts.json
+
+--bay-only leaves out the backdrop and the lights, the fleet and its ropes, the hazard logic and the two Flow
+volumes: what is left is the bay itself (its physics scene, floor, markings, tables and parts, crate, steam line and
+valve, gauge, plume box, pan, tank and the bucket with its rings), the layer the bay mission's stage is built on.
+--bay-facts writes the numbers that stage is built from (pads, parking bay, table tops, pan, valve, rings, rope).
 """
 
 import argparse
@@ -21,7 +30,10 @@ from isaacsim import SimulationApp
 ap = argparse.ArgumentParser()
 ap.add_argument("--out", required=True)
 ap.add_argument("--truth")
+ap.add_argument("--bay-only", action="store_true", help="the real bay without fleet, logic, backdrop, lights or Flow volumes")
+ap.add_argument("--bay-facts", help="write the real bay's facts (JSON) here")
 args = ap.parse_args()
+BAY_ONLY = bool(args.bay_only)
 
 app = SimulationApp({"headless": True})
 import omni.kit.app  # noqa: E402
@@ -67,6 +79,8 @@ LEAK = dict(x=2.40)
 PLUME = dict(lo=(1.80, 2.20, 1.10), hi=(3.00, 3.50, 3.20))  # the hazard volume (the photographs show only its core; facts.md gives this box)
 FIRE = dict(center=(2.60, 1.90), r=0.30, rim=0.08, hazard_r=2.0, pour_s=1.0, pour_tilt_deg=15.0, pour_r=0.6, pour_zmax=2.5)
 APPROACH = dict(pos=(2.60, -0.40, 2.50), yaw=90.0)  # the water drop's approach hover (heading +y)
+FLOOR_FRICTION = 0.5  # the floor's static and dynamic friction (facts.md; the PhysX default the truth was measured with)
+RING_OF_PAD = {"Pad_1": 0, "Pad_2": 1, "Pad_3": 2}  # which of the bucket's rings (BUCKET["bails"]) faces each pad
 
 
 # the fleet the reference designed (the catalog the agent gets lists the same models)
@@ -97,6 +111,8 @@ truth = {"tables": {}, "bin": {}, "items": {}, "fleet": {}}
 for _g in (FAC, FLEET, f"{FAC}/Tables", f"{FAC}/Items", f"{FAC}/Pads", f"{FAC}/SteamLine", f"{FAC}/SteamLine/Pipe",
            f"{FAC}/SteamLine/Gauge", f"{FAC}/SteamLine/Leak", f"{FAC}/FirePan", f"{FAC}/Tank", f"{FAC}/CalibMat", "/World/Lights",
            "/World/Looks"):
+    if BAY_ONLY and _g in (FLEET, "/World/Lights"):
+        continue
     UsdGeom.Xform.Define(st, _g) if not _g.endswith("Looks") else UsdGeom.Scope.Define(st, _g)
 
 
@@ -213,17 +229,25 @@ def state_attr(prim, name, value):
 # ---------------------------------------------------------------------------------------------------------------------
 # backdrop, lights, floor, markings
 # ---------------------------------------------------------------------------------------------------------------------
-bd = UsdGeom.Xform.Define(st, "/World/Backdrop")
-bd.GetPrim().GetReferences().AddReference(f"{ASSETS}/Environments/Simple_Warehouse/warehouse.usd")
-dome = UsdLux.DomeLight.Define(st, "/World/Lights/Dome")
-dome.CreateIntensityAttr(300.0)
-sun = UsdLux.DistantLight.Define(st, "/World/Lights/Sun")  # (an area light in the hall shows up in the photographs)
-sun.CreateIntensityAttr(1800.0)
-sun.CreateAngleAttr(4.0)
-UsdGeom.Xformable(sun).AddOrientOp().Set(Gf.Quatf((Gf.Rotation(Gf.Vec3d(0, 0, 1), 35.0) * Gf.Rotation(Gf.Vec3d(1, 0, 0), -50.0)).GetQuat()))
+if not BAY_ONLY:  # (the warehouse has no collider inside the bay below 3.5 m but its pillars' tops; its floors' are off)
+    bd = UsdGeom.Xform.Define(st, "/World/Backdrop")
+    bd.GetPrim().GetReferences().AddReference(f"{ASSETS}/Environments/Simple_Warehouse/warehouse.usd")
+    dome = UsdLux.DomeLight.Define(st, "/World/Lights/Dome")
+    dome.CreateIntensityAttr(300.0)
+    sun = UsdLux.DistantLight.Define(st, "/World/Lights/Sun")  # (an area light in the hall shows up in the photographs)
+    sun.CreateIntensityAttr(1800.0)
+    sun.CreateAngleAttr(4.0)
+    UsdGeom.Xformable(sun).AddOrientOp().Set(Gf.Quatf((Gf.Rotation(Gf.Vec3d(0, 0, 1), 35.0) * Gf.Rotation(Gf.Vec3d(1, 0, 0), -50.0)).GetQuat()))
 
 floor = box(f"{FAC}/Floor", (0, 0, -0.01), (14.0, 14.0, 0.02), M["floor"])
 UsdGeom.Imageable(floor).MakeInvisible()  # a collider under the warehouse's own floor
+# the floor's surface for the simulation (facts.md): sealed concrete, friction 0.5 static and dynamic, no restitution
+floor_mat = UsdShade.Material.Define(st, "/World/Looks/FloorSurface")
+fm = UsdPhysics.MaterialAPI.Apply(floor_mat.GetPrim())
+fm.CreateStaticFrictionAttr(FLOOR_FRICTION)
+fm.CreateDynamicFrictionAttr(FLOOR_FRICTION)
+fm.CreateRestitutionAttr(0.0)
+UsdShade.MaterialBindingAPI.Apply(floor.GetPrim()).Bind(floor_mat, UsdShade.Tokens.weakerThanDescendants, "physics")
 cx, cy = MAT["center"]
 nx, ny = MAT["squares"]
 s = MAT["square"]
@@ -491,10 +515,11 @@ plo, phi = PLUME["lo"], PLUME["hi"]
 pbox = box_lohi(f"{S}/Plume/volume", plo, phi, M["steam"], col=False)
 UsdGeom.Imageable(pbox).MakeInvisible()
 # the steam itself: an NVIDIA Flow volume at the flange, under a switchable Xform
-steam_fx = UsdGeom.Xform.Define(st, f"{S}/Steam")
-flow_steam = UsdGeom.Xform.Define(st, f"{S}/Steam/Flow")
-flow_steam.AddTranslateOp().Set(Gf.Vec3d(lx, py - 0.09, pz + 0.03))
-flow_steam.GetPrim().GetReferences().AddReference(f"{ARB}/flow/FlowSteam.usda")
+if not BAY_ONLY:
+    steam_fx = UsdGeom.Xform.Define(st, f"{S}/Steam")
+    flow_steam = UsdGeom.Xform.Define(st, f"{S}/Steam/Flow")
+    flow_steam.AddTranslateOp().Set(Gf.Vec3d(lx, py - 0.09, pz + 0.03))
+    flow_steam.GetPrim().GetReferences().AddReference(f"{ARB}/flow/FlowSteam.usda")
 truth["steam"] = dict(pipe=PIPE, valve=VALVE, gauge=GAUGE, leak_x=lx, plume=PLUME)
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -507,10 +532,11 @@ fx, fy = FIRE["center"]
 cyl(f"{F}/pan", (fx, fy, FIRE["rim"] / 2), FIRE["r"], FIRE["rim"], "Z", M["pan"])
 cyl(f"{F}/oil", (fx, fy, FIRE["rim"] - 0.012), FIRE["r"] - 0.015, 0.004, "Z", M["black"], col=False)
 # the fire itself: an NVIDIA Flow volume (the task's own asset), under a switchable Xform; the grader never renders
-flames = UsdGeom.Xform.Define(st, f"{F}/Flames")
-flow_fire = UsdGeom.Xform.Define(st, f"{F}/Flames/Flow")
-flow_fire.AddTranslateOp().Set(Gf.Vec3d(fx, fy, FIRE["rim"] - 0.02))
-flow_fire.GetPrim().GetReferences().AddReference(f"{ARB}/flow/FlowFire.usda")
+if not BAY_ONLY:
+    flames = UsdGeom.Xform.Define(st, f"{F}/Flames")
+    flow_fire = UsdGeom.Xform.Define(st, f"{F}/Flames/Flow")
+    flow_fire.AddTranslateOp().Set(Gf.Vec3d(fx, fy, FIRE["rim"] - 0.02))
+    flow_fire.GetPrim().GetReferences().AddReference(f"{ARB}/flow/FlowFire.usda")
 truth["fire"] = FIRE
 
 T = f"{FAC}/Tank"
@@ -720,97 +746,98 @@ def rope_chain(root, root_pos, body_path, hook_local, hook_world, bucket_body, b
     return links
 
 
-hx_, hy_, hz_ = AIRFRAME["hull"]
-rest_z = hz_ / 2 + AIRFRAME["gear"] + 0.0075  # the skids on the floor
-for k, (pad, (px, py_)) in enumerate(PADS.items(), start=1):
-    root = f"{FLEET}/UAV_{k}"
-    rx = xform(root, (px, py_, rest_z), 0.0)  # heading +y (the pad's arrow)
-    state_attr(rx.GetPrim(), "arb:disabled", False)
-    air = UsdGeom.Xform.Define(st, f"{root}/Airframe")
-    air.GetPrim().GetReferences().AddReference(AIRFRAME["file"])
-    body_p = st.GetPrimAtPath(f"{root}/Airframe/Body")
-    UsdPhysics.ArticulationRootAPI.Apply(body_p)
-    pa_ = PhysxSchema.PhysxArticulationAPI.Apply(body_p)
-    pa_.CreateEnabledSelfCollisionsAttr(False)
-    pa_.CreateSolverPositionIterationCountAttr(32)
-    pa_.CreateSolverVelocityIterationCountAttr(4)
-    # the sensors' masses ride on the hull
-    UsdPhysics.MassAPI(body_p).GetMassAttr().Set(AIRFRAME["empty"] + sum(SENSORS[m]["mass"] for m in UAV_SENSORS))
-    mount_arm(root, f"{root}/Airframe/Body", (0.0, 0.07), -hz_ / 2)
-    # forward thermal (the pan from the approach hover), forward RGB, a nadir thermal (the pan and the fire below while
-    # pouring), a nadir wide RGB (the bucket on its ropes), a 3D lidar (the other robots)
-    cams = [camera(f"{root}/Airframe/Body/Thermal", "THERM-C", (0.0, hy_ / 2 + 0.01, -0.025), 50.0),
-            camera(f"{root}/Airframe/Body/Camera", "CAM-RGB-M", (0.0, hy_ / 2 + 0.01, 0.025), 25.0),
-            camera(f"{root}/Airframe/Body/ThermalDown", "THERM-A", (0.06, 0.0, -hz_ / 2 - 0.01), 90.0),
-            camera(f"{root}/Airframe/Body/CameraDown", "CAM-RGB-W", (-0.06, 0.0, -hz_ / 2 - 0.01), 90.0)]
-    lid = UsdGeom.Xform.Define(st, f"{root}/Airframe/Body/Lidar")
-    lid.AddTranslateOp().Set(Gf.Vec3d(0.0, 0.0, hz_ / 2 + 0.03))
-    lid.GetPrim().CreateAttribute("arb:sensor_model", Sdf.ValueTypeNames.String).Set("LIDAR-3D")
-    cyl(f"{root}/Airframe/Body/Lidar/puck", (0.0, 0.0, 0.0), 0.035, 0.05, "Z", M["dark"], col=False)
-    # the tether: a physical rope (a chain) from the hook to one ring of the bucket
-    hook_w = (px + AIRFRAME["hook"][0], py_ + AIRFRAME["hook"][1], rest_z + AIRFRAME["hook"][2])
-    bail_w = (bkx + bail_local[k - 1][0], bky + bail_local[k - 1][1], bail_local[k - 1][2])
-    rope_chain(root, (px, py_, rest_z), f"{root}/Airframe/Body", AIRFRAME["hook"], hook_w, f"{Bk}/Body", bail_local[k - 1], bail_w)
-    truth["fleet"][f"UAV_{k}"] = dict(airframe=AIRFRAME["model"], arm="so101", pad=pad, xy=[px, py_], rest_z=rest_z, cameras=cams,
-                                      hook=AIRFRAME["hook"])
+if not BAY_ONLY:  # the fleet the reference designed (the real bay has none: the mission brings the agent's)
+    hx_, hy_, hz_ = AIRFRAME["hull"]
+    rest_z = hz_ / 2 + AIRFRAME["gear"] + 0.0075  # the skids on the floor
+    for k, (pad, (px, py_)) in enumerate(PADS.items(), start=1):
+        root = f"{FLEET}/UAV_{k}"
+        rx = xform(root, (px, py_, rest_z), 0.0)  # heading +y (the pad's arrow)
+        state_attr(rx.GetPrim(), "arb:disabled", False)
+        air = UsdGeom.Xform.Define(st, f"{root}/Airframe")
+        air.GetPrim().GetReferences().AddReference(AIRFRAME["file"])
+        body_p = st.GetPrimAtPath(f"{root}/Airframe/Body")
+        UsdPhysics.ArticulationRootAPI.Apply(body_p)
+        pa_ = PhysxSchema.PhysxArticulationAPI.Apply(body_p)
+        pa_.CreateEnabledSelfCollisionsAttr(False)
+        pa_.CreateSolverPositionIterationCountAttr(32)
+        pa_.CreateSolverVelocityIterationCountAttr(4)
+        # the sensors' masses ride on the hull
+        UsdPhysics.MassAPI(body_p).GetMassAttr().Set(AIRFRAME["empty"] + sum(SENSORS[m]["mass"] for m in UAV_SENSORS))
+        mount_arm(root, f"{root}/Airframe/Body", (0.0, 0.07), -hz_ / 2)
+        # forward thermal (the pan from the approach hover), forward RGB, a nadir thermal (the pan and the fire below while
+        # pouring), a nadir wide RGB (the bucket on its ropes), a 3D lidar (the other robots)
+        cams = [camera(f"{root}/Airframe/Body/Thermal", "THERM-C", (0.0, hy_ / 2 + 0.01, -0.025), 50.0),
+                camera(f"{root}/Airframe/Body/Camera", "CAM-RGB-M", (0.0, hy_ / 2 + 0.01, 0.025), 25.0),
+                camera(f"{root}/Airframe/Body/ThermalDown", "THERM-A", (0.06, 0.0, -hz_ / 2 - 0.01), 90.0),
+                camera(f"{root}/Airframe/Body/CameraDown", "CAM-RGB-W", (-0.06, 0.0, -hz_ / 2 - 0.01), 90.0)]
+        lid = UsdGeom.Xform.Define(st, f"{root}/Airframe/Body/Lidar")
+        lid.AddTranslateOp().Set(Gf.Vec3d(0.0, 0.0, hz_ / 2 + 0.03))
+        lid.GetPrim().CreateAttribute("arb:sensor_model", Sdf.ValueTypeNames.String).Set("LIDAR-3D")
+        cyl(f"{root}/Airframe/Body/Lidar/puck", (0.0, 0.0, 0.0), 0.035, 0.05, "Z", M["dark"], col=False)
+        # the tether: a physical rope (a chain) from the hook to one ring of the bucket
+        hook_w = (px + AIRFRAME["hook"][0], py_ + AIRFRAME["hook"][1], rest_z + AIRFRAME["hook"][2])
+        bail_w = (bkx + bail_local[k - 1][0], bky + bail_local[k - 1][1], bail_local[k - 1][2])
+        rope_chain(root, (px, py_, rest_z), f"{root}/Airframe/Body", AIRFRAME["hook"], hook_w, f"{Bk}/Body", bail_local[k - 1], bail_w)
+        truth["fleet"][f"UAV_{k}"] = dict(airframe=AIRFRAME["model"], arm="so101", pad=pad, xy=[px, py_], rest_z=rest_z, cameras=cams,
+                                          hook=AIRFRAME["hook"])
 
-# --- the ground vehicle: Jackal base + Kinova Gen3 on its deck + a mast camera, parked in its bay heading +y ---
-root = f"{FLEET}/UGV"
-ux, uy = UGV_BAY["center"]
-rx = xform(root, (ux, uy, 0.0), 90.0)  # the Jackal's forward is its +x: turned to +y
-state_attr(rx.GetPrim(), "arb:disabled", False)
-base = UsdGeom.Xform.Define(st, f"{root}/Base")
-base.GetPrim().GetReferences().AddReference(UGV_BASE["file"])
-base.GetPrim().CreateAttribute("arb:base_model", Sdf.ValueTypeNames.String).Set(UGV_BASE["model"])
-cache.Clear()
-r = cache.ComputeWorldBound(base.GetPrim()).ComputeAlignedRange()
-base_lo, base_hi = r.GetMin(), r.GetMax()
-rx.GetOrderedXformOps()[0].Set(Gf.Vec3d(ux, uy, -base_lo[2] + 0.002))  # wheels on the floor
-deck_z = base_hi[2] - base_lo[2] + 0.002  # the deck's height above the floor, in the vehicle's frame (z offset)
-deck_local_z = base_hi[2]
-for p in Usd.PrimRange(base.GetPrim()):  # the asset's own sensors (cameras, a lidar, an IMU) are not part of this design
-    if p.IsA(UsdGeom.Camera) or p.GetTypeName() in ("Lidar", "IsaacImuSensor", "OmniLidar", "IsaacRtxLidarSensor"):
-        p.SetActive(False)
-# the asset puts the articulation root on its top Xform; PhysX then takes the first body it meets as the root link, which
-# can be the arm's once the arm is joined on. The root goes on the chassis itself.
-base.GetPrim().RemoveAPI(UsdPhysics.ArticulationRootAPI)
-chassis = st.GetPrimAtPath(f"{root}/Base/base_link")
-UsdPhysics.ArticulationRootAPI.Apply(chassis)
-PhysxSchema.PhysxArticulationAPI.Apply(chassis).CreateEnabledSelfCollisionsAttr(False)
-arm = UsdGeom.Xform.Define(st, f"{root}/Arm")
-arm.GetPrim().GetReferences().AddReference(UGV_ARM["file"])
-arm.GetPrim().CreateAttribute("arb:arm_model", Sdf.ValueTypeNames.String).Set(UGV_ARM["model"])
-arm.GetPrim().RemoveAPI(UsdPhysics.ArticulationRootAPI)  # one articulation: the vehicle's
-st.GetPrimAtPath(f"{root}/Arm/{UGV_ARM['root_joint']}").SetActive(False)
-STOW = {"joint_2": -35.0, "joint_4": -100.0, "joint_6": -50.0}  # folded back over the deck (the asset's own targets fold it forward, off the front axle)
-for p in Usd.PrimRange(arm.GetPrim()):  # start where the drives hold it, not swinging there
-    if p.IsA(UsdPhysics.RevoluteJoint):
-        tgt = STOW.get(p.GetName(), 0.0)
-        UsdPhysics.DriveAPI(p, "angular").GetTargetPositionAttr().Set(tgt)
-        PhysxSchema.JointStateAPI.Apply(p, "angular").CreatePositionAttr(float(tgt))
-arm_mount = (0.0, 0.0, deck_local_z + 0.01)  # on the deck's centre (vehicle frame: +x forward)
-xa = UsdGeom.Xformable(arm)
-xa.ClearXformOpOrder()
-xa.AddTranslateOp(opSuffix="mount").Set(Gf.Vec3d(*arm_mount))
-xa.AddOrientOp(opSuffix="mount").Set(Gf.Quatf(1, 0, 0, 0))
-box(f"{root}/Base/base_link/deck_plate", (0.0, 0.0, deck_local_z + 0.005), (0.30, 0.30, 0.01), M["steel"])
-j = UsdPhysics.FixedJoint.Define(st, f"{root}/ArmMount")
-j.CreateBody0Rel().SetTargets([f"{root}/Base/base_link"])
-j.CreateBody1Rel().SetTargets([f"{root}/Arm/{UGV_ARM['base']}"])
-j.CreateLocalPos0Attr(Gf.Vec3f(*arm_mount))
-j.CreateLocalRot0Attr(Gf.Quatf(1, 0, 0, 0))
-j.CreateLocalPos1Attr(Gf.Vec3f(0, 0, 0))
-j.CreateLocalRot1Attr(Gf.Quatf(1, 0, 0, 0))
-mast_top = deck_local_z + 0.45
-box(f"{root}/Base/base_link/mast", (-0.16, 0.14, (deck_local_z + mast_top) / 2), (0.03, 0.03, mast_top - deck_local_z), M["steel"])
-ugv_cam = camera(f"{root}/Base/base_link/Camera", "CAM-RGB-M", (-0.16, 0.14, mast_top + 0.03), -10.0, forward="x", yaw=-62.0)
-# the sensor's mass rides on the chassis (the asset's mass is on its collision body)
-cb = st.GetPrimAtPath(f"{root}/Base/base_link/collisions/body")
-if cb.IsValid() and cb.HasAPI(UsdPhysics.MassAPI):
-    cm = UsdPhysics.MassAPI(cb).GetMassAttr()
-    cm.Set(float(cm.Get()) + SENSORS["CAM-RGB-M"]["mass"])
-truth["fleet"]["UGV"] = dict(base=UGV_BASE["model"], arm=UGV_ARM["model"], bay=UGV_BAY["center"], yaw=90.0, camera=ugv_cam,
-                             deck_z=deck_z, arm_mount=list(arm_mount))
+    # --- the ground vehicle: Jackal base + Kinova Gen3 on its deck + a mast camera, parked in its bay heading +y ---
+    root = f"{FLEET}/UGV"
+    ux, uy = UGV_BAY["center"]
+    rx = xform(root, (ux, uy, 0.0), 90.0)  # the Jackal's forward is its +x: turned to +y
+    state_attr(rx.GetPrim(), "arb:disabled", False)
+    base = UsdGeom.Xform.Define(st, f"{root}/Base")
+    base.GetPrim().GetReferences().AddReference(UGV_BASE["file"])
+    base.GetPrim().CreateAttribute("arb:base_model", Sdf.ValueTypeNames.String).Set(UGV_BASE["model"])
+    cache.Clear()
+    r = cache.ComputeWorldBound(base.GetPrim()).ComputeAlignedRange()
+    base_lo, base_hi = r.GetMin(), r.GetMax()
+    rx.GetOrderedXformOps()[0].Set(Gf.Vec3d(ux, uy, -base_lo[2] + 0.002))  # wheels on the floor
+    deck_z = base_hi[2] - base_lo[2] + 0.002  # the deck's height above the floor, in the vehicle's frame (z offset)
+    deck_local_z = base_hi[2]
+    for p in Usd.PrimRange(base.GetPrim()):  # the asset's own sensors (cameras, a lidar, an IMU) are not part of this design
+        if p.IsA(UsdGeom.Camera) or p.GetTypeName() in ("Lidar", "IsaacImuSensor", "OmniLidar", "IsaacRtxLidarSensor"):
+            p.SetActive(False)
+    # the asset puts the articulation root on its top Xform; PhysX then takes the first body it meets as the root link, which
+    # can be the arm's once the arm is joined on. The root goes on the chassis itself.
+    base.GetPrim().RemoveAPI(UsdPhysics.ArticulationRootAPI)
+    chassis = st.GetPrimAtPath(f"{root}/Base/base_link")
+    UsdPhysics.ArticulationRootAPI.Apply(chassis)
+    PhysxSchema.PhysxArticulationAPI.Apply(chassis).CreateEnabledSelfCollisionsAttr(False)
+    arm = UsdGeom.Xform.Define(st, f"{root}/Arm")
+    arm.GetPrim().GetReferences().AddReference(UGV_ARM["file"])
+    arm.GetPrim().CreateAttribute("arb:arm_model", Sdf.ValueTypeNames.String).Set(UGV_ARM["model"])
+    arm.GetPrim().RemoveAPI(UsdPhysics.ArticulationRootAPI)  # one articulation: the vehicle's
+    st.GetPrimAtPath(f"{root}/Arm/{UGV_ARM['root_joint']}").SetActive(False)
+    STOW = {"joint_2": -35.0, "joint_4": -100.0, "joint_6": -50.0}  # folded back over the deck (the asset's own targets fold it forward, off the front axle)
+    for p in Usd.PrimRange(arm.GetPrim()):  # start where the drives hold it, not swinging there
+        if p.IsA(UsdPhysics.RevoluteJoint):
+            tgt = STOW.get(p.GetName(), 0.0)
+            UsdPhysics.DriveAPI(p, "angular").GetTargetPositionAttr().Set(tgt)
+            PhysxSchema.JointStateAPI.Apply(p, "angular").CreatePositionAttr(float(tgt))
+    arm_mount = (0.0, 0.0, deck_local_z + 0.01)  # on the deck's centre (vehicle frame: +x forward)
+    xa = UsdGeom.Xformable(arm)
+    xa.ClearXformOpOrder()
+    xa.AddTranslateOp(opSuffix="mount").Set(Gf.Vec3d(*arm_mount))
+    xa.AddOrientOp(opSuffix="mount").Set(Gf.Quatf(1, 0, 0, 0))
+    box(f"{root}/Base/base_link/deck_plate", (0.0, 0.0, deck_local_z + 0.005), (0.30, 0.30, 0.01), M["steel"])
+    j = UsdPhysics.FixedJoint.Define(st, f"{root}/ArmMount")
+    j.CreateBody0Rel().SetTargets([f"{root}/Base/base_link"])
+    j.CreateBody1Rel().SetTargets([f"{root}/Arm/{UGV_ARM['base']}"])
+    j.CreateLocalPos0Attr(Gf.Vec3f(*arm_mount))
+    j.CreateLocalRot0Attr(Gf.Quatf(1, 0, 0, 0))
+    j.CreateLocalPos1Attr(Gf.Vec3f(0, 0, 0))
+    j.CreateLocalRot1Attr(Gf.Quatf(1, 0, 0, 0))
+    mast_top = deck_local_z + 0.45
+    box(f"{root}/Base/base_link/mast", (-0.16, 0.14, (deck_local_z + mast_top) / 2), (0.03, 0.03, mast_top - deck_local_z), M["steel"])
+    ugv_cam = camera(f"{root}/Base/base_link/Camera", "CAM-RGB-M", (-0.16, 0.14, mast_top + 0.03), -10.0, forward="x", yaw=-62.0)
+    # the sensor's mass rides on the chassis (the asset's mass is on its collision body)
+    cb = st.GetPrimAtPath(f"{root}/Base/base_link/collisions/body")
+    if cb.IsValid() and cb.HasAPI(UsdPhysics.MassAPI):
+        cm = UsdPhysics.MassAPI(cb).GetMassAttr()
+        cm.Set(float(cm.Get()) + SENSORS["CAM-RGB-M"]["mass"])
+    truth["fleet"]["UGV"] = dict(base=UGV_BASE["model"], arm=UGV_ARM["model"], bay=UGV_BAY["center"], yaw=90.0, camera=ugv_cam,
+                                 deck_z=deck_z, arm_mount=list(arm_mount))
 
 # ---------------------------------------------------------------------------------------------------------------------
 # the bay's rules, as one OmniGraph on every physics step:
@@ -819,53 +846,54 @@ truth["fleet"]["UGV"] = dict(base=UGV_BASE["model"], arm=UGV_ARM["model"], bay=U
 #   the ground vehicle within 2 m of the burning pan is disabled (and stays so);
 #   the bucket tipped past 15 deg over the burning pan, low enough, for 1 s in all, puts the fire out (for good)
 # ---------------------------------------------------------------------------------------------------------------------
-L = Graph(f"{FAC}/Logic", [("closed_t", og.Type(og.BaseDataType.DOUBLE)), ("pour_t", og.Type(og.BaseDataType.DOUBLE)),
-                           ("fire", og.Type(og.BaseDataType.BOOL)), ("init", og.Type(og.BaseDataType.BOOL))]
-          + [(f"dis_{n}", og.Type(og.BaseDataType.BOOL)) for n in ("uav1", "uav2", "uav3", "ugv")])
-L.node("tick", "isaacsim.core.nodes.OnPhysicsStep")
-dt = "tick.outputs:deltaSimulationTime"
-L.node("vstate", "isaacsim.core.nodes.IsaacArticulationState", robotPath=f"{S}/ValveBody", jointNames=["HandleJoint"])
-L.link("tick.outputs:step", "vstate.inputs:execIn")
-L.node("q_lever", "omni.graph.nodes.ArrayIndex", index=0)
-L.link("vstate.outputs:jointPositions", "q_lever.inputs:array")
-turned2 = L.mul("turned2", "q_lever.outputs:value", "q_lever.outputs:value")  # (no Abs node: compare the square)
-closed = L.cmp("closed", turned2, L.const("c_closed", math.radians(VALVE["close_deg"] - 5.0) ** 2), ">=")
-# `fire` starts true: the variable's default is false, so the first step (init false) treats the fire as burning
-not_init = L.cmp("not_init", L.var("init"), L.const("c_false", False, "Bool"), "==")
-fire_now = L.bor("fire_now", L.bvar("fire"), not_init)
-closed_t_next = L.sel("closed_t_next", closed, L.add("closed_t_inc", L.var("closed_t"), dt), L.const("zero_t", 0.0))
-steam_on = L.cmp("steam_on", closed_t_next, L.const("c_stop", VALVE["steam_stop_s"]), "<")
-prev = "tick.outputs:step"
-prev = L.write_attr("w_steam", prev, S, "arb:steam_active", steam_on)
-dis_next = {}
-for k in (1, 2, 3):
-    xyz = L.world_pos(f"p{k}", f"{FLEET}/UAV_{k}/Airframe/Body")
-    inside = L.band(f"in_plume{k}", L.in_box(f"box{k}", xyz, PLUME["lo"], PLUME["hi"]), steam_on)
-    dis_next[f"uav{k}"] = L.bor(f"dis_next{k}", L.bvar(f"dis_uav{k}"), inside)
-    prev = L.write_attr(f"w_dis{k}", prev, f"{FLEET}/UAV_{k}", "arb:disabled", dis_next[f"uav{k}"])
-gxyz = L.world_pos("pg", f"{FLEET}/UGV/Base/base_link")
-near_fire = L.band("near_fire", L.cmp("near_fire_c", L.dist2_xy("gd", gxyz, FIRE["center"]), L.const("c_haz", FIRE["hazard_r"] ** 2), "<="), fire_now)
-dis_next["ugv"] = L.bor("dis_next_ugv", L.bvar("dis_ugv"), near_fire)
-prev = L.write_attr("w_dis_ugv", prev, f"{FLEET}/UGV", "arb:disabled", dis_next["ugv"])
-bxyz = L.world_pos("pb", f"{Bk}/Body")
-upz = L.world_up_z("ub", f"{Bk}/Body")
-tipped = L.cmp("tipped", upz, L.const("c_tip", math.cos(math.radians(FIRE["pour_tilt_deg"]))), "<")
-over = L.band("over_pan", L.cmp("over_r", L.dist2_xy("bd", bxyz, FIRE["center"]), L.const("c_pour_r", FIRE["pour_r"] ** 2), "<="),
-              L.cmp("over_z", bxyz[2], L.const("c_pour_z", FIRE["pour_zmax"]), "<="))
-pouring = L.band("pouring", L.band("tip_over", tipped, over), fire_now)
-pour_t_next = L.sel("pour_t_next", pouring, L.add("pour_inc", L.var("pour_t"), dt), L.var("pour_t"))  # (what is poured stays poured)
-fire_next = L.band("fire_next", fire_now, L.cmp("not_doused", pour_t_next, L.const("c_pour_s", FIRE["pour_s"]), "<"))
-prev = L.write_attr("w_fire", prev, F, "arb:fire_active", fire_next)
-prev = L.write_attr("w_pour", prev, f"{Bk}/Body", "arb:pouring", pouring)
-bb.GetPrim().CreateAttribute("arb:pouring", Sdf.ValueTypeNames.Bool).Set(False)
-# variables last, each after everything that reads it: the flags, the fire (reads pour_t), pour_t, closed_t, init
-for n in ("uav1", "uav2", "uav3", "ugv"):
-    prev = L.write_var(prev, f"dis_{n}", dis_next[n])
-prev = L.write_var(prev, "fire", fire_next)
-prev = L.write_var(prev, "pour_t", pour_t_next)
-prev = L.write_var(prev, "closed_t", closed_t_next)
-prev = L.write_var(prev, "init", L.const("c_true", True, "Bool"))
-L.build()
+if not BAY_ONLY:  # (the hazard logic is the agent's to build; the bay mission keeps the rules itself)
+    L = Graph(f"{FAC}/Logic", [("closed_t", og.Type(og.BaseDataType.DOUBLE)), ("pour_t", og.Type(og.BaseDataType.DOUBLE)),
+                               ("fire", og.Type(og.BaseDataType.BOOL)), ("init", og.Type(og.BaseDataType.BOOL))]
+              + [(f"dis_{n}", og.Type(og.BaseDataType.BOOL)) for n in ("uav1", "uav2", "uav3", "ugv")])
+    L.node("tick", "isaacsim.core.nodes.OnPhysicsStep")
+    dt = "tick.outputs:deltaSimulationTime"
+    L.node("vstate", "isaacsim.core.nodes.IsaacArticulationState", robotPath=f"{S}/ValveBody", jointNames=["HandleJoint"])
+    L.link("tick.outputs:step", "vstate.inputs:execIn")
+    L.node("q_lever", "omni.graph.nodes.ArrayIndex", index=0)
+    L.link("vstate.outputs:jointPositions", "q_lever.inputs:array")
+    turned2 = L.mul("turned2", "q_lever.outputs:value", "q_lever.outputs:value")  # (no Abs node: compare the square)
+    closed = L.cmp("closed", turned2, L.const("c_closed", math.radians(VALVE["close_deg"] - 5.0) ** 2), ">=")
+    # `fire` starts true: the variable's default is false, so the first step (init false) treats the fire as burning
+    not_init = L.cmp("not_init", L.var("init"), L.const("c_false", False, "Bool"), "==")
+    fire_now = L.bor("fire_now", L.bvar("fire"), not_init)
+    closed_t_next = L.sel("closed_t_next", closed, L.add("closed_t_inc", L.var("closed_t"), dt), L.const("zero_t", 0.0))
+    steam_on = L.cmp("steam_on", closed_t_next, L.const("c_stop", VALVE["steam_stop_s"]), "<")
+    prev = "tick.outputs:step"
+    prev = L.write_attr("w_steam", prev, S, "arb:steam_active", steam_on)
+    dis_next = {}
+    for k in (1, 2, 3):
+        xyz = L.world_pos(f"p{k}", f"{FLEET}/UAV_{k}/Airframe/Body")
+        inside = L.band(f"in_plume{k}", L.in_box(f"box{k}", xyz, PLUME["lo"], PLUME["hi"]), steam_on)
+        dis_next[f"uav{k}"] = L.bor(f"dis_next{k}", L.bvar(f"dis_uav{k}"), inside)
+        prev = L.write_attr(f"w_dis{k}", prev, f"{FLEET}/UAV_{k}", "arb:disabled", dis_next[f"uav{k}"])
+    gxyz = L.world_pos("pg", f"{FLEET}/UGV/Base/base_link")
+    near_fire = L.band("near_fire", L.cmp("near_fire_c", L.dist2_xy("gd", gxyz, FIRE["center"]), L.const("c_haz", FIRE["hazard_r"] ** 2), "<="), fire_now)
+    dis_next["ugv"] = L.bor("dis_next_ugv", L.bvar("dis_ugv"), near_fire)
+    prev = L.write_attr("w_dis_ugv", prev, f"{FLEET}/UGV", "arb:disabled", dis_next["ugv"])
+    bxyz = L.world_pos("pb", f"{Bk}/Body")
+    upz = L.world_up_z("ub", f"{Bk}/Body")
+    tipped = L.cmp("tipped", upz, L.const("c_tip", math.cos(math.radians(FIRE["pour_tilt_deg"]))), "<")
+    over = L.band("over_pan", L.cmp("over_r", L.dist2_xy("bd", bxyz, FIRE["center"]), L.const("c_pour_r", FIRE["pour_r"] ** 2), "<="),
+                  L.cmp("over_z", bxyz[2], L.const("c_pour_z", FIRE["pour_zmax"]), "<="))
+    pouring = L.band("pouring", L.band("tip_over", tipped, over), fire_now)
+    pour_t_next = L.sel("pour_t_next", pouring, L.add("pour_inc", L.var("pour_t"), dt), L.var("pour_t"))  # (what is poured stays poured)
+    fire_next = L.band("fire_next", fire_now, L.cmp("not_doused", pour_t_next, L.const("c_pour_s", FIRE["pour_s"]), "<"))
+    prev = L.write_attr("w_fire", prev, F, "arb:fire_active", fire_next)
+    prev = L.write_attr("w_pour", prev, f"{Bk}/Body", "arb:pouring", pouring)
+    bb.GetPrim().CreateAttribute("arb:pouring", Sdf.ValueTypeNames.Bool).Set(False)
+    # variables last, each after everything that reads it: the flags, the fire (reads pour_t), pour_t, closed_t, init
+    for n in ("uav1", "uav2", "uav3", "ugv"):
+        prev = L.write_var(prev, f"dis_{n}", dis_next[n])
+    prev = L.write_var(prev, "fire", fire_next)
+    prev = L.write_var(prev, "pour_t", pour_t_next)
+    prev = L.write_var(prev, "closed_t", closed_t_next)
+    prev = L.write_var(prev, "init", L.const("c_true", True, "Bool"))
+    L.build()
 
 # the robot assets ship their meshes as instanceable prims; rendered, those stayed at the asset origin while the bodies
 # moved. Plain prims follow their bodies.
@@ -873,12 +901,39 @@ for p in list(st.Traverse()):
     if p.IsInstanceable() and p.GetPath().pathString.startswith((FLEET, f"{FAC}/Items")):
         p.SetInstanceable(False)
 
-st.GetRootLayer().customLayerData = {"renderSettings": {"rtx:flow:enabled": True, "rtx:flow:rayTracedReflectionsEnabled": True,
-                                                        "rtx:flow:rayTracedTranslucencyEnabled": True, "rtx:flow:pathTracingEnabled": True}}
+if not BAY_ONLY:
+    st.GetRootLayer().customLayerData = {"renderSettings": {"rtx:flow:enabled": True, "rtx:flow:rayTracedReflectionsEnabled": True,
+                                                            "rtx:flow:rayTracedTranslucencyEnabled": True, "rtx:flow:pathTracingEnabled": True}}
 os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
 st.GetRootLayer().Export(args.out)
+if BAY_ONLY:  # (only the bay: not the render settings and viewport camera a new Kit stage starts with)
+    _lyr = Sdf.Layer.FindOrOpen(args.out)
+    for _spec in list(_lyr.rootPrims):
+        if _spec.name != "World":
+            del _lyr.rootPrims[_spec.name]
+    _lyr.Save()
 if args.truth:
     with open(args.truth, "w") as f:
         json.dump(truth, f, indent=1)
+if args.bay_facts:  # the numbers the grader's bay mission stage is built from (tests/hidden/bay_facts.json)
+    facts = dict(
+        pads={n: dict(center=list(c), size=[PAD_SIZE, PAD_SIZE]) for n, c in PADS.items()},
+        ugv_bay=dict(center=list(UGV_BAY["center"]), size=list(UGV_BAY["size"])),
+        valve_square=dict(center=list(VALVE_SQUARE["center"]), size=list(VALVE_SQUARE["size"])),
+        table_tops=[dict(name=n, center=list(t["center"]), size=list(t["size"]), yaw_deg=t["yaw"], height=t["height"])
+                    for n, t in TABLES.items()],
+        crate=dict(center=list(CRATE["center"]), size=list(CRATE["size"]), wall=CRATE["wall"], yaw_deg=CRATE["yaw"]),
+        pan=dict(center=list(FIRE["center"]), r=FIRE["r"], rim=FIRE["rim"]),
+        valve=dict(stem=list(VALVE["stem"]), lever_m=VALVE["lever"], open_deg=0.0, closed_deg=VALVE["close_deg"],
+                   axis="-y: positive from up toward +x"),
+        floor=dict(static_friction=FLOOR_FRICTION, dynamic_friction=FLOOR_FRICTION, restitution=0.0),
+        rig=dict(bucket_body=f"{FAC}/Bucket/Body", bucket_center=list(BUCKET["xy"]), rings=[list(b) for b in bail_local],
+                 ring_bearing_deg=list(BUCKET["bails"]), ring_of_pad=RING_OF_PAD,
+                 rope=dict(length=ROPE["length"], links=ROPE["links"], radius=ROPE["radius"], kg_per_m=ROPE["kg_per_m"],
+                           angular_damping=0.2, linear_damping=0.02, solver_position_iterations=32, solver_velocity_iterations=4,
+                           contact_offset=0.006, rest_offset=0.0)))
+    os.makedirs(os.path.dirname(os.path.abspath(args.bay_facts)), exist_ok=True)
+    with open(args.bay_facts, "w") as f:
+        json.dump(facts, f, indent=1)
 print("[reference] scene ->", args.out, flush=True)
 os._exit(0)
