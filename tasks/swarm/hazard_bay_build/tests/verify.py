@@ -152,9 +152,7 @@ def snapshot(sub, snap):
 
 
 def lockdown(sub, work, max_bytes):
-    user = agent_user()
-    subprocess.run(["/usr/bin/pkill", "-KILL", "-u", user], check=False)
-    time.sleep(1.0)
+    kill_agent()
     for d in ("cache", "logs", "data"):  # nothing the agent's runs left there reaches the grader's Isaac Sim
         path = os.path.join(KIT_SHARED, d)
         shutil.rmtree(path, ignore_errors=True)
@@ -386,9 +384,14 @@ def perturbed_obs(obs, lock):
 
 def kill_agent():
     """Every process of the agent's account: what a controller left running (a helper it started with `setsid` leaves
-    the solver's process group) must not reach the next mission run's set-up."""
-    subprocess.run(["/usr/bin/pkill", "-KILL", "-u", agent_user()], check=False)
-    time.sleep(0.5)
+    the solver's process group) must not reach the next mission run's set-up. Repeated until none is left (a process
+    that keeps forking can put a child out of reach of one sweep)."""
+    for _ in range(20):
+        subprocess.run(["/usr/bin/pkill", "-KILL", "-u", agent_user()], check=False)
+        time.sleep(0.25)
+        ps = subprocess.run(["/usr/bin/ps", "-o", "stat=", "-u", agent_user()], capture_output=True, text=True)
+        if not [st for st in ps.stdout.split() if not st.startswith("Z")]:  # (a zombie is already gone)
+            return
 
 
 def run_control(scene, work, cfg, seed, lock_rng, snap, timeout, episode=0):
