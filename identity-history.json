@@ -30,6 +30,12 @@
     "spec_hash": "sha256:ee4abc6bffe5e48ea067f47fb4dd99e5b496198df89fa7b9ed577f7ffa4b5d7e"
   },
   {
+    "content_digest": "sha256:dad0860f7fce006e3c98d112da8eec11cb98f51b531bc8f7959b51808466e38f",
+    "since": "2026-11-04T17:56:00Z",
+    "slug": "bimanual_requirements_replica_from_photos",
+    "spec_hash": "sha256:6f50e78650ad63dcb90181ebb568da7f2cfcf336edbd672226d5cf9c648b77e8"
+  },
+  {
     "content_digest": "sha256:6e96572478e441f637ccb8ccc3552cce57a20b97e677c7e2d5e7c52447a25442",
     "since": "2026-11-04T10:13:10Z",
     "slug": "dexhand_shape_sorter_all_pieces",
