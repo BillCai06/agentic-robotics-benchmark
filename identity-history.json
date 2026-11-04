@@ -138,6 +138,12 @@
     "spec_hash": "sha256:10b7f2f5c18dabb35baf33d00b0a851c5d55253e35db11f705d28bd4fa1585d7"
   },
   {
+    "content_digest": "sha256:a45b9217f174daa2e991ead1bf8aee55b0cdf4e2188c267ff44aaa50800f6248",
+    "since": "2026-11-04T19:28:23Z",
+    "slug": "robotic_arm_full_assembly_openarm_panda",
+    "spec_hash": "sha256:809b28ae4780240219598f47f9ec850600052bee3a4aeae0d4d78a5317561fa8"
+  },
+  {
     "content_digest": "sha256:a05f58b602d754fd6747edfc763b78ee0649835e2d0bc00dc29319f10423095a",
     "since": "2026-11-04T12:34:19Z",
     "slug": "robotic_arm_full_assembly_so101_panda",
