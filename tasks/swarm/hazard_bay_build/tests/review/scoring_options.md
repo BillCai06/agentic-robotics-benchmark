@@ -21,9 +21,10 @@ Every verdict records all six combinations in its metrics (`acceptance.<combine>
 `section.control.no_progress_gate`), so a switch needs no new measurement of the agents' runs.
 
 **The anchor follows the config by itself.** `tests/anchor.json` records the reference's value and `full_at` under all
-six combinations (`by_combine`, keyed as the metrics are), measured from the same three full verifies and sized by the
-same rule; the grader takes the entry of the combination in use (the verdict's metrics `anchor_value` and
-`anchor_full_at` say which). Re-measure only when the reference or the grader's scores change.
+six combinations (`by_combine`, keyed as the metrics are): each value the lowest of the same eight full verifies under
+that combination, each `full_at` sized by the same rule from the same runs; the grader takes the entry of the
+combination in use (the verdict's metrics `anchor_value` and `anchor_full_at` say which). Re-measure only when the
+reference or the grader's scores change.
 
 **The agent's text does not.** It must describe the scoring that is used, so a switch also swaps the sentences
 below (the one edit besides the config line):

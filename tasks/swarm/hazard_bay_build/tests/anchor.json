@@ -1,37 +1,37 @@
 {
   "metric": "acceptance_score",
   "direction": "higher",
-  "value": 0.9584,
+  "value": 0.9537,
   "full_at": 0.92,
-  "source": "The privileged reference (solution/: solve.sh with build_scene.py, controller.py and vehicle.py, and the oracle token, so the bay mission's observations carry the true state) measured by three full verifies of this grader as the engine's oracle pass runs it (solve.sh as the agent, then tests/test.sh as root with the submission in the agent's home, the verdict through ROBOTICS_GRADER_VERDICT_PATH), in the task image on one RTX 4090 with 8 cores each, 2026-11-04, branch hard/pr31 at bddeddc (the later commits change no score). acceptance_score (combine mission_gate, progress_gate true): 0.9584, 0.9803, 0.9627 (scene sections 1.0 but hoist 0.952 / 0.9963 / 0.9939; mission 0.9788 / 0.9819 / 0.9653; privileged_mode 1, every mission done with 6 of 6 parts); the value is the lowest. The same verdicts under the other combinations: weighted 0.979 / 0.9895 / 0.98, mission_0.8 0.9789 / 0.9852 / 0.9717; the progress gate changes none of them (the reference completes all three jobs).",
-  "reference_commit": "hard/pr31 bddeddc (solution/reference/ and tests/ as of that commit)",
-  "note": "full_at from the measured spread (design 2.5): ten mission runs of the reference on fresh 63-bit seeds (tests/review/run_mission.py, all done, 6 of 6 parts, no collision; single-run missions 0.884 to 0.988), every pair of them as a two-run mission section by the grader's own score(), times each full verify's scene sections: with the three full verifies, 138 acceptances, mean 0.944, sd 0.025. Mean - 2 sd = 0.894 allows full_at 0.93; the lowest of the 138 (0.8866, the pair with the run that spilt 1.56 L) would then earn 0.9947, under validate's 0.995, so full_at is 0.92: a run from 0.8817 up earns the full reward. The spread is in the mission (the pour's spill, 0 to 1.6 L; the time, done at 320 to 400 s) and in the hoist probe's swing-decay check, which the reference's own twin fails on some draws (decay 1.69 against the band's 1.6). Under another combination (tests/review/scoring_options.md), the same rule gives: weighted value 0.979, full_at 0.96; mission_0.8 value 0.9717, full_at 0.94.",
+  "source": "The privileged reference (solution/: solve.sh with build_scene.py, controller.py and vehicle.py, and the oracle token, so the bay mission's observations carry the true state; solution/ unchanged since bddeddc), measured by full verifies of this grader as the engine's oracle pass runs it (solve.sh as the agent, then tests/test.sh as root with the submission in the agent's home, the verdict through ROBOTICS_GRADER_VERDICT_PATH; the last one is ale validate's own oracle pass), in the task image on one RTX 4090 with 8 cores each, 2026-11-04, branch hard/pr31. The value is the lowest full verify (the anchor rule, the owner's decision of 2026-11-04): 0.9537, the full verify on 2271f1c (scene sections 1.0 but hoist 0.952, the twin's swing-decay check; mission 0.974). All eight recorded, acceptance_score (combine mission_gate, progress_gate true): 0.9584, 0.9803, 0.9627 (the three sizing verifies on bddeddc), 0.9594 (the leak audit's, the reference behind a spy wrapper, on bddeddc), 0.9537 (2271f1c), 0.9769 and 0.9742 (596374b, the second behind a spy wrapper), 0.9606 (validate-5e2c3b6a's oracle pass on 7db2ab5); privileged_mode 1, every mission done with 6 of 6 parts, reward 1.0 each. The later grader changes leave these numbers as they are: the kit from main (a908b21) scores nothing, and the bucket's checks, gated on the fire being out since 2026-11-04, lose nothing in a run that puts it out, as every reference run does.",
+  "reference_commit": "hard/pr31 2271f1c (the lowest full verify; solution/reference/ as of bddeddc, unchanged since)",
+  "note": "full_at 0.92 as sized from the measured spread on 2026-11-04 (design 2.5) and kept by the owner with the lower value: ten mission runs of the reference on fresh 63-bit seeds (T2b: tests/review/run_mission.py, all done, 6 of 6 parts, no collision; single-run missions 0.884 to 0.988), every pair of them as a two-run mission section by the grader's own score(), times each full verify's scene sections: with the eight full verifies, 368 acceptances, mean 0.946, sd 0.025. The lowest of them (0.8866, the pair with the run that spilt 1.56 L) earns the full reward at full_at 0.92 (as does any acceptance from 0.8774 up). With this value the same rule would allow 0.93 (mean - 2 sd = 0.8965 alone allows 0.94, where that lowest pair would earn 0.989, under validate's 0.995; at 0.93 it earns 0.9996). The spread is in the mission (the pour's spill, 0 to 1.6 L; the time, done at 320 to 400 s) and in the hoist probe's swing-decay check, which the reference's own twin fails on some draws (decay 1.69 against the band's 1.6). Under another combination (tests/review/scoring_options.md) the anchor and full_at are in by_combine.",
   "by_combine": {
     "mission_gate": {
-      "value": 0.9584,
+      "value": 0.9537,
       "full_at": 0.92
     },
     "weighted": {
-      "value": 0.979,
+      "value": 0.9764,
       "full_at": 0.96
     },
     "mission_0.8": {
-      "value": 0.9717,
+      "value": 0.9675,
       "full_at": 0.94
     },
     "mission_gate.progress_gate": {
-      "value": 0.9584,
+      "value": 0.9537,
       "full_at": 0.92
     },
     "weighted.progress_gate": {
-      "value": 0.979,
+      "value": 0.9764,
       "full_at": 0.96
     },
     "mission_0.8.progress_gate": {
-      "value": 0.9717,
+      "value": 0.9675,
       "full_at": 0.94
     }
   },
-  "by_combine_note": "The anchor and full_at under each combination of grader_config.json (`combine`, with `.progress_gate` when `progress_gate` is true), from the same three full verifies and the same sizing rule as the note above; the grader uses the entry of the combination in use (the top-level pair is that of the default, mission_gate.progress_gate). The progress gate changes none of the reference's numbers: it completes all three jobs in every run.",
-  "recheck": "Re-measured after the review's grader changes (hard/pr31, 2026-11-04; they change how contacts, colliders and set-up failures are handled, not what the reference scores): full verifies as the oracle pass runs them, 0.9769 on 596374b and 0.9537 on 2271f1c (hoist 0.952: the twin's swing-decay check, as in the first verify above), and 0.9742 for the reference behind a spy wrapper on 596374b; all privileged, every mission done with 6 of 6 parts, reward 1.0. Not folded into the value: it stays the lowest of the three sizing verifies (0.9537 would lower it by 0.5 %)."
+  "by_combine_note": "The anchor and full_at under each combination of grader_config.json (`combine`, with `.progress_gate` when `progress_gate` is true); the grader uses the entry of the combination in use (the top-level pair is that of the default, mission_gate.progress_gate). Each value is the lowest of the same eight full verifies under that combination: mission_gate 0.9537 and weighted 0.9764 (0.976359) from the verify on 2271f1c, mission_0.8 0.9675 (0.96754) from the leak audit's on bddeddc. full_at as sized on 2026-11-04 by the rule in the note and kept with the lower values, as the owner kept the default's: weighted 0.96 (the rule still gives 0.96), mission_0.8 0.94 (the rule now allows 0.95). The progress gate changes none of the reference's numbers: it completes all three jobs in every run, the fire out.",
+  "history": "Before 2026-11-04's decision the value was 0.9584, the lowest of the three sizing verifies only (by_combine weighted 0.979, mission_0.8 0.9717); the later verifies (2271f1c, 596374b, the leak audit's, validate-5e2c3b6a's) were recorded beside it and not folded in."
 }
