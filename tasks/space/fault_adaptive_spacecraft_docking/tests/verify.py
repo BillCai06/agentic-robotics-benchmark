@@ -2,6 +2,7 @@
 
 import math
 import os
+import pwd
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -12,6 +13,7 @@ from robotics_grader import (  # noqa: E402
     Solver,
     SolverAborted,
     SolverMissing,
+    agent_user,
     ratio_rewards,
     read_anchor,
     seed_rng,
@@ -19,6 +21,37 @@ from robotics_grader import (  # noqa: E402
     write_verdict,
     zero_verdict,
 )
+
+SUBMISSION = os.path.join(os.environ.get("ALE_HOME", "/home/user"), "submission")
+
+
+def own_submission(path):
+    """Hand the restored artifact back to the agent account.
+
+    In the separate verifier the engine restores /home/user/submission as root (every
+    artifact write is the framework's), so its files land root-owned with their recorded
+    modes. The kit Solver runs `bash run.sh` AS THE AGENT: the agent must be able to read
+    its own controller (a file it had left non-world-readable would otherwise be
+    unreadable) and write scratch beside it, exactly as it could while it worked. Walk the
+    tree without following links — a freshly restored tree has none, but lchown is the safe
+    habit — and give every entry, then the folder itself, to the agent. A no-op when the
+    path is missing or is a link; the Solver then scores a real zero through SolverMissing.
+    Runs as root, which the verify stage is.
+    """
+    if not os.path.isdir(path) or os.path.islink(path):
+        return
+    try:
+        account = pwd.getpwnam(agent_user())
+    except KeyError:
+        return
+    uid, gid = account.pw_uid, account.pw_gid
+    for dirpath, dirnames, filenames in os.walk(path, followlinks=False):
+        for name in dirnames + filenames:
+            try:
+                os.lchown(os.path.join(dirpath, name), uid, gid)
+            except OSError:
+                pass
+    os.lchown(path, uid, gid)
 
 
 def perturbed_observation(obs, rng):
@@ -87,6 +120,9 @@ def main():
     config = stage_config()
     rng = seed_rng()
     anchor, anchor_meta = read_anchor()
+    # Separate verifier: the restored submission is root-owned; hand it to the agent before
+    # the kit Solver runs `bash run.sh` as the agent.
+    own_submission(SUBMISSION)
     try:
         qualities, successes, collisions, aborted, lock = run_episodes(config, rng)
     except (SolverMissing, SolverAborted) as exc:

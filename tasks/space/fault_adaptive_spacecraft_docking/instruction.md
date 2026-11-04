@@ -165,6 +165,14 @@ If an episode aborts, the grader stops the process (and everything it started) a
 If it cannot, or after three such restarts, every remaining episode aborts. So `run.sh`
 has to work when started a second time: no fixed ports, PID files or locks left behind.
 
+Grading happens in a fresh sandbox that holds only `/home/user/submission/`. The
+development copy of the simulator at `/home/user/spacecraft_docking_env.py`, the practice
+grader, and anything else you leave elsewhere in your home are not present then, so put
+everything `run.sh` needs inside `/home/user/submission/` (you may copy the simulator
+source into that folder). `/opt/venv/bin/python3` with numpy is part of the image and is
+still available. The controller runs as you from that folder and may read and write inside
+it.
+
 The whole grading run has 30 minutes for all 48 episodes, about 15,000 requests, restarts
 included, so answer in well under 0.1 s per request on average. A controller that runs out
 that time scores 0, even if every single reply met its 30-second limit.
