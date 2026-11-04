@@ -25,10 +25,11 @@ true state in each observation (`privileged`): the reference program's channel; 
 Scores: each check is 0..1 (most by closeness, some yes/no, the behaviour checks gated on what they need).
 `acceptance_score` combines the sections as `grader_config.json` says (`combine`): "weighted", the weighted mean of the
 sections (`sections`); "mission_gate", the weighted mean of the five scene sections times the mission section; or the
-name of another weights block (`sections_<name>`, e.g. "mission_0.8"). With `progress_gate` the mission's five safety
-checks (parts not dropped, no losses, no collisions, separation, consistency) count in proportion to the run's
-progress, (steam released + fire out + station cleared) / 3. The metrics record the acceptance under every combination,
-with and without the gate.
+name of another weights block (`sections_<name>`, e.g. "mission_0.8"). With `progress_gate` the mission's checks that a
+run earns without doing its jobs count only as far as it did them: the bucket's three (lift-off level, swing, water
+kept) only in a run that put the fire out; the five safety checks (parts not dropped, no losses, no collisions,
+separation; consistency by the two runs' mean) in proportion to the run's progress, (steam released + fire out +
+station cleared) / 3. The metrics record the acceptance under every combination, with and without the gate.
 """
 
 import hashlib
@@ -809,14 +810,17 @@ def score(scan, got, truth, cfg):
 
     def mission_section(gated):
         """The mission's checks over the two runs: (checks as (name, weight, score, detail), section score, progress).
-        With the progress gate each run's safety checks count in proportion to what the run got done."""
+        With the progress gate the checks a run earns without doing its jobs count only as far as it did them: the
+        bucket's (BUCKET_CHECKS) in a run that put the fire out, the safety checks (SAFETY_CHECKS) in proportion to the
+        run's progress, consistency in proportion to the two runs' mean progress."""
         progress = []
         runs = []
         for lst in per_ep:
             v = {c[0]: c[2] for c in lst}
             prog = (v["steam_released"] + v["fire_out"] + v["station_cleared"]) / 3.0
             progress.append(prog)
-            runs.append([(c[0], c[1], c[2] * prog if (gated and c[0] in SAFETY_CHECKS) else c[2], c[3]) for c in lst])
+            factor = dict({n: v["fire_out"] for n in BUCKET_CHECKS}, **{n: prog for n in SAFETY_CHECKS}) if gated else {}
+            runs.append([(c[0], c[1], c[2] * factor.get(c[0], 1.0), c[3]) for c in lst])
         totals = []
         for lst in runs:
             w = sum(c[1] for c in lst)
@@ -938,6 +942,11 @@ def score(scan, got, truth, cfg):
     return total, checks, section_scores, extra
 
 
+# With the progress gate, the mission's checks a run earns without doing its jobs count only as far as it did them: the
+# bucket's three (lifting the bucket and hovering earns them) only in a run that put the fire out, the four safety
+# checks (doing nothing earns them) in proportion to the run's progress, consistency to the two runs' mean progress. A
+# run that does every job loses nothing by the gate.
+BUCKET_CHECKS = ("liftoff_level", "swing", "water_kept")
 SAFETY_CHECKS = ("parts_not_dropped", "no_losses", "no_collisions", "separation")
 SCENE_SECTIONS = ("layout", "physics", "steam", "hoist", "fleet")
 

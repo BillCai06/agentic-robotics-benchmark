@@ -5,9 +5,16 @@
 - `"combine"`: `"weighted"` (the weighted mean by `sections`), `"mission_gate"` (the weighted mean of the five scene
   sections by their `sections` weights, times the mission section) or the name of another weights block,
   `sections_<name>` (today `"mission_0.8"`: the mission at 0.8, the five scene sections at 0.2 in their proportions);
-- `"progress_gate"`: `true` or `false`. With it, each run's four safety checks (parts not dropped, no losses, no
-  collisions, separation) are multiplied by that run's progress, (steam released + fire out + station cleared) / 3,
-  and consistency by the two runs' mean progress.
+- `"progress_gate"`: `true` or `false`. With it, the mission's checks a run earns without doing its jobs count only as
+  far as it did them: each run's three bucket checks (lift-off level, swing, water kept) are multiplied by its fire-out
+  check (1 when the fire is out at the end, else 0), so lifting the bucket and hovering earns nothing; its four safety
+  checks (parts not dropped, no losses, no collisions, separation) by its progress, (steam released + fire out +
+  station cleared) / 3; and consistency by the two runs' mean progress. A run that does all three jobs loses nothing.
+  The bucket's gate dates from 2026-11-04 (the owner: lifting the bucket and hovering must earn about nothing; before
+  it a lift-and-hover program earned 0.223 of the mission, an idle one 0.041, now both 0.041). Multiplying the bucket
+  checks by the run's progress instead was considered and not kept: it takes from runs that put the fire out but
+  missed another job (Opus's 11-02 submission lost 0.081 of the mission in one of its verifies) and still pays for
+  hovering in a run that did the other jobs (a third or two thirds of the bucket checks).
 
 Every verdict records all six combinations in its metrics (`acceptance.<combine>` and
 `acceptance.<combine>.progress_gate`) and both mission sections (`section.control.progress_gate`,
@@ -43,6 +50,7 @@ below (the one edit besides the config line):
 - The second sentence of the section: `mission_gate`: "The mission's score (the checks' weighted mean) multiplies the
   scene's (`instruction.md`)."; `weighted`: "The section's score is the checks' weighted mean; it is 0.54 of
   `acceptance_score` (`instruction.md`)."; `mission_0.8`: the same with 0.80.
-- `progress_gate: true` (today) keeps the sentence "The five checks marked * count in proportion to what each run got
-  done: ..." and the five `*` marks in the table (parts not dropped, no losses, no collisions, separation,
-  consistency); `progress_gate: false` removes both.
+- `progress_gate: true` (today) keeps the two sentences "The three checks marked † (how the bucket was handled) count
+  only in a run that ends with the fire out: ..." and "The five checks marked * count in proportion to what each run
+  got done: ...", the three `†` marks in the table (lift-off level, swing, water kept) and the five `*` marks (parts
+  not dropped, no losses, no collisions, separation, consistency); `progress_gate: false` removes all of them.

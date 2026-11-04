@@ -179,9 +179,10 @@ The grader's seeds are its own; `practice_control.py` draws the same from `--see
 
 The grader measures the outcomes in the real bay. Each check below is the mean over the two runs; values between full
 and zero score linearly. The mission's score (the checks' weighted mean) multiplies the scene's (`instruction.md`).
-The five checks marked * count in proportion to what each run got done: a run's value times its progress, (steam
-released + fire out + station cleared) / 3, and for consistency the two runs' mean progress; a run that does none of
-the three jobs earns nothing for being careful.
+The three checks marked † (how the bucket was handled) count only in a run that ends with the fire out: lifting the
+bucket and holding it steady earns nothing by itself. The five checks marked * count in proportion to what each run got
+done: a run's value times its progress, (steam released + fire out + station cleared) / 3, and for consistency the two
+runs' mean progress; a run that does none of the three jobs earns nothing for being careful.
 
 | check | weight | full marks | zero |
 |---|---|---|---|
@@ -190,9 +191,9 @@ the three jobs earns nothing for being careful.
 | fire out | 1.5 | the fire is out at the end | still burning |
 | station cleared | 1.5 | all six parts inside the crate at the end | none |
 | in time | 1.0 | the mission ended "done" (all jobs, everything still) within 300 s | not done by 600 s |
-| lift-off level | 0.6 | the bucket's tilt ≤ 3° through the 1.5 s after it leaves the floor | ≥ 10° |
-| swing | 0.6 | the bucket never more than 0.08 m, horizontally, from below the hooks' centroid during the carry (from 2 s after lift-off until it first reaches the pan zone or pours) | ≥ 0.30 m |
-| water kept | 1.0 | ≤ 0.05 L spilt (outside the pan zone) | ≥ 1.0 L |
+| lift-off level † | 0.6 | the bucket's tilt ≤ 3° through the 1.5 s after it leaves the floor | ≥ 10° |
+| swing † | 0.6 | the bucket never more than 0.08 m, horizontally, from below the hooks' centroid during the carry (from 2 s after lift-off until it first reaches the pan zone or pours) | ≥ 0.30 m |
+| water kept † | 1.0 | ≤ 0.05 L spilt (outside the pan zone) | ≥ 1.0 L |
 | parts not dropped * | 0.4 | no part ends off its table and outside the crate | 2 or more |
 | no losses * | 1.0 | no robot lost (by the bay's rules), none crashed (a flying robot below 0.3 m away from its pad), the bucket never dropped before the pour | any |
 | no collisions * | 1.0 | no robot body touched another robot or its rope, a table, the crate, the tank, the pan, the steam line (its lever excepted) or the bucket; and every robot keeps the colliders of the library models it declares (each model referenced from the library, not a copy; none of its colliders removed, switched off, made a trigger or shrunk: `check_structure.py` says so; otherwise this check scores 0) | 5 or more contacts (each counted once per onset) |
