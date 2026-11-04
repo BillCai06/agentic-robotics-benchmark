@@ -30,5 +30,23 @@ memory_mb = 8192
 timeout_sec = 14400
 network_mode = "no-network"
 
+# Separate verification: after the agent phase the engine releases the agent's sandbox and scores in a fresh verifier
+# sandbox started from this task's image, into which it restores only the declared artifact /home/user/submission
+# (regular files and directories; links are never copied). Under shared verification the grader would run as root
+# in the agent's own sandbox, where the ALE base image leaves /usr/local/bin writable for the agent account and ahead
+# of /usr/bin on root's PATH: a program planted there would run as root when the engine starts `bash test.sh`. The
+# verifier has everything the grader reads: tests/ (gt/, grader_config.json, anchor.json, the grading modules, the
+# kit), the image's /opt/venv and the restored submission. environment/setup/setup.sh does not run there, and verify
+# reads nothing it stages (the grader's givens are its own copies in tests/gt/). Its machine: the grader is static and
+# single-threaded (test.sh pins the BLAS threads to 1); on the oracle it peaked at 135 MB RSS and used 3 s of one CPU,
+# and the whole verifier, the base image's desktop session included, at 510 MB, so 2 CPUs and 4 GB, no GPU.
+# timeout_sec also covers the verifier's start, the restore of the submission and the stage upload (about 5 s before
+# test.sh starts), far inside 900 s.
 [verifier]
 timeout_sec = 900
+environment_mode = "separate"
+
+[verifier.environment]
+cpus = 2
+memory_mb = 4096
+gpus = 0

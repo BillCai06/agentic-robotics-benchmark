@@ -1,5 +1,14 @@
 """Grader of robotic_arm_requirements_replica_from_photos (info tier, requirements stage, rung I2). Root, verify stage, agent gone.
 
+Separate verification (task.toml: [verifier] environment_mode = "separate"). The engine releases the agent's sandbox,
+starts a fresh verifier sandbox from the task image and restores into it only the declared artifact
+/home/user/submission (regular files and directories, owned by root; links and special files are never copied), then
+uploads this folder. Everything read here is in this folder (gt/, grader_config.json, anchor.json, the grading modules,
+the kit), in the image (/opt/venv) or in that restored submission. environment/setup/setup.sh does not run in the
+verifier, so the givens it stages into the agent home are not there; the grader reads its own copies (gt/) and none
+of the agent's files besides the submission. given_hashes.json stays here as the maintainers' pin of the givens; this
+grader does not read it.
+
   0. FIRST THING, stdlib only (`_early_lockdown`; test.sh has already chmod 0700 the stage and its parent): record when
      the engine began uploading this folder (earliest ctime of its files), freeze and kill every process of the agent
      account (stats agent_processes_killed / _left: a survivor voids the run -> task error), lock the stage (0700 / 0600,
@@ -9,7 +18,12 @@
      G1 also checks the submission ROOT (lstat, never followed): a symbolic link, a non-directory, or a directory whose
      own ctime / mtime is at or after the upload (a directory renamed into place or edited by a leftover process: a
      rename updates the moved directory's ctime, not its children's) zeroes every criterion (stat
-     submission_root_violation); nothing behind a symlinked root is read.
+     submission_root_violation); nothing behind a symlinked root is read. In the separate verifier nothing the agent
+     started is running: the kill stops only the image's own desktop session, which the base image's supervisord runs
+     as the agent account (Xvnc, noVNC, PulseAudio, GNOME: about 50 processes) and which this grader does not use. The
+     engine restores the submission before it uploads this folder, so no restored entry is late. The lockdown stays as
+     defence in depth. A submission root that is not a directory is restored as such and still zeroes G1; a
+     symbolic-link root is not restored at all (the engine copies no link), so G0 then finds the three files missing.
   1. G0 structure: the three files parse (YAML safe_load, JSON), validate against the v2 schemas, ids unique, one
      servo line with count 1 per joint, one PSU line, quote membership with the quote's role, bus 7.5 / 12 V, links =
      nominal +- tol, sketch servo ids = BOM lines. Failure -> every criterion 0.
@@ -182,36 +196,10 @@ def main():
             cfg = json.load(fh)
         weights = cfg["weights"]
         sub = SNAPSHOT if early["submission_snapshot"] else SUBMISSION
-        import hashlib
         from arm.req_info.i2 import grade as GR
         from arm.req_info.i2.catalog import Catalogue
         diagnostics = {}
         rewards = {c: 0.0 for c in CRITERIA}
-        # given files unchanged (stat only): the agent's home copies vs given_hashes.json. lstat, regular files only
-        # (a symlink counts as changed), a size different from the pinned one counts as changed without reading, the
-        # hash is streamed; any error sets the stat to -1 (an agent-owned file never breaks the verdict)
-        try:
-            with open(os.path.join(STAGE_DIR, "given_hashes.json")) as fh:
-                ghj = json.load(fh)
-            gh, sizes = ghj["files"], ghj.get("sizes", {})
-            ok = 0
-            for rel, dig in gh.items():
-                p = os.path.join(HOME, rel)
-                try:
-                    st = os.lstat(p)
-                except OSError:
-                    continue
-                if not statmod.S_ISREG(st.st_mode) or (rel in sizes and st.st_size != int(sizes[rel])):
-                    continue
-                h = hashlib.sha256()
-                with open(p, "rb") as fh:
-                    for blk in iter(lambda: fh.read(1 << 20), b""):
-                        h.update(blk)
-                if h.hexdigest() == dig:
-                    ok += 1
-            stats["given_files_unchanged"] = ok / max(1, len(gh))
-        except Exception:  # noqa: BLE001  (a stat, never a verdict)
-            stats["given_files_unchanged"] = -1.0
         if early["submission_late_writes"] > 0:
             stats["gate_g1_submission_integrity"] = 0.0
             diagnostics = {c: "G1: " + "; ".join(early["reasons"]) for c in CRITERIA}
