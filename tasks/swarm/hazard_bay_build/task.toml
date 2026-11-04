@@ -35,3 +35,12 @@ network_mode = "no-network"
 
 [verifier]
 timeout_sec = 5400
+# Separate verification (2026-11-04): a fresh verifier sandbox from the same image, which the agent never touched;
+# only the declared artifact (/home/user/submission) is restored into it. In a shared sandbox, programs the agent
+# leaves earlier on root's PATH (the base image's /usr/local/bin is the agent's) would run as root at verify.
+environment_mode = "separate"
+
+[verifier.environment]
+cpus = 8
+memory_mb = 32768
+gpus = 1
