@@ -1,0 +1,66 @@
+# bimanual_cad_design_from_photos: the hardware-design (CAD) stage of the robotic-arm full-stack workflow for a two-arm
+# unit (an atomic task). A mechanical designer re-creates the lost CAD of a modified dual-arm unit (a column on a base
+# plate carrying two seven-joint arms with two-finger gripper modules; the arms modified differently) in FreeCAD 1.1,
+# known only from one fixed photo set (153 photos rendered with Blender Cycles in a lab room: the 29 made parts on a
+# cutting mat, both sides, close-ups, the re-assembled unit in three poses, the grippers closed and open) and the bought
+# parts' datasheets, drawings and STEP files. No topology, no templates, no practice units. It delivers one FreeCAD
+# document, /home/user/submission/unit.FCStd: 29 PartDesign Bodies labelled with the part tags, the bought parts placed,
+# one Assembly with Grounded / Fixed / Revolute joints (a closed four-bar loop per arm) and limits, saved in
+# configuration Z.
+#
+# The agent drives the FreeCAD GUI session through the task's MCP server ([[environment.mcp_servers]] below; its
+# execute_code runs Python inside the session); the instruction asks for it, the harness's own tools stay available,
+# and verify records the tool use as statistics only.
+#
+# Grading (tests/verify.py, in a separate verifier sandbox: [verifier] below; every number in tests/cad_tree/rules.json;
+# no agent code runs): headless FreeCAD reads the document as an unprivileged account, the mechanism (a tree with loops)
+# is inferred and matched to the unit's by the links each joint connects, the torso aligned onto the unit's, then per
+# arm: the arm gate cad_json_consistent x kinematic_fidelity 0.30, feature_fidelity 0.25, shape_fidelity 0.25,
+# mass_properties 0.10, component_fit 0.05, interference_free 0.05 (within the arm and between the arms), with shape /
+# tool-point floors; an arm whose mechanism differs (a link not found, a missing or extra joint) scores 0, the other arm
+# is still scored; a part fixed to another link than the unit's is graded where it is, an actuator case on the other
+# side of its joint is reported. design_score = the mean of the arm scores x the unit gates cad_valid and
+# public_model_reuse; reward = design_score (tests/anchor.json).
+
+schema_version = "1.4+ale.1"
+artifacts = ["/home/user/submission"]
+
+[task]
+name = "grounded-intelligence-initiative/bimanual_cad_design_from_photos"
+
+[metadata]
+platform = "arm"
+
+[environment]
+cpus = 8
+memory_mb = 16384
+
+# The FreeCAD MCP server of this task (environment/vendor/freecad-mcp, neka-nat/freecad-mcp at a pinned commit): it
+# drives the FreeCAD session on the desktop through the addon's local RPC server. Tools: documents, objects (create /
+# edit / delete / inspect), views (screenshots), parts library, FEM, and execute_code (Python inside FreeCAD).
+[[environment.mcp_servers]]
+name = "freecad"
+transport = "stdio"
+command = "/opt/freecad-mcp/bin/freecad-mcp"
+args = ["--freecadcmd", "/opt/freecad/usr/bin/freecadcmd"]
+
+# setup: stage the photo set and the bought parts' documents (< 30 s). agent: re-model the unit in FreeCAD (6 h).
+# verify: the verifier sandbox's start, the lockdown, the FreeCAD document read by headless FreeCAD, the conversion and
+# the grade in a child process with its own time limit (tests/grader_config.json).
+[agent]
+timeout_sec = 21600
+network_mode = "no-network"
+
+# Separate verification: the engine releases the agent's sandbox and scores in a fresh one started from the task image,
+# into which it restores only the declared artifact (/home/user/submission, written back by root). Nothing else the
+# agent left behind (a program on root's PATH, its home, its processes) reaches the grader, which runs as root.
+# setup.sh does not run there, and verify needs nothing it staged: the bought parts the grader reads are its own copies
+# in tests/given/. The verifier runs the image's own desktop as the agent account; verify stops it first.
+[verifier]
+timeout_sec = 1800
+environment_mode = "separate"
+
+[verifier.environment]
+cpus = 8
+memory_mb = 16384
+gpus = 0

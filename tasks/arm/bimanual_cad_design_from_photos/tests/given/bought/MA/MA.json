@@ -1,0 +1,373 @@
+{
+ "format": "bimanual-cad-bought/1",
+ "generator": "bimanual-cad-standins/1.0.0",
+ "class": "MA",
+ "pn": "HXA-9862",
+ "vendor": "Halvard Actuation",
+ "title": "joint actuator, 98 mm frame",
+ "kind": "motor",
+ "step": "HXA-9862.step",
+ "frame": "+z = the output axis, from the housing towards the output face; origin on the axis at the housing's rear face (z = 0); the output (mating) face at z = output_face_z; hole angles from +x about +z",
+ "output_face_z": 61.7,
+ "output_face": {
+  "diameter": 40.0,
+  "point": [
+   0.0,
+   0.0,
+   61.7
+  ],
+  "normal": [
+   0.0,
+   0.0,
+   1.0
+  ]
+ },
+ "output_bolts": {
+  "count": 6,
+  "pcd": 32.0,
+  "angle0_deg": 30.0,
+  "d": 4.2,
+  "depth": 6.0,
+  "role": "bolts",
+  "xy": [
+   [
+    13.8564,
+    8.0
+   ],
+   [
+    0.0,
+    16.0
+   ],
+   [
+    -13.8564,
+    8.0
+   ],
+   [
+    -13.8564,
+    -8.0
+   ],
+   [
+    0.0,
+    -16.0
+   ],
+   [
+    13.8564,
+    -8.0
+   ]
+  ]
+ },
+ "output_holes": [
+  {
+   "count": 2,
+   "pcd": 32.0,
+   "angle0_deg": 0.0,
+   "d": 3.0,
+   "depth": 4.0,
+   "role": "dowel",
+   "xy": [
+    [
+     16.0,
+     0.0
+    ],
+    [
+     -16.0,
+     0.0
+    ]
+   ]
+  },
+  {
+   "count": 2,
+   "pcd": 32.0,
+   "angle0_deg": 120.0,
+   "d": 4.0,
+   "depth": 4.0,
+   "role": "dowel",
+   "xy": [
+    [
+     -8.0,
+     13.8564
+    ],
+    [
+     8.0,
+     -13.8564
+    ]
+   ]
+  },
+  {
+   "count": 1,
+   "pcd": 0.0,
+   "angle0_deg": 0.0,
+   "d": 24.0,
+   "depth": 5.0,
+   "role": "bore",
+   "xy": [
+    [
+     0.0,
+     0.0
+    ]
+   ]
+  }
+ ],
+ "mount_faces": [
+  {
+   "name": "front",
+   "what": "housing front face, around the output flange",
+   "normal": [
+    0.0,
+    0.0,
+    1.0
+   ],
+   "point": [
+    0.0,
+    0.0,
+    52.0
+   ],
+   "annulus_mm": [
+    41.0,
+    49.0
+   ],
+   "bolts": {
+    "count": 6,
+    "pcd": 90.0,
+    "angle0_deg": 30.0,
+    "d": 3.3,
+    "depth": 6.0,
+    "role": "bolts",
+    "xy": [
+     [
+      38.9711,
+      22.5
+     ],
+     [
+      0.0,
+      45.0
+     ],
+     [
+      -38.9711,
+      22.5
+     ],
+     [
+      -38.9711,
+      -22.5
+     ],
+     [
+      0.0,
+      -45.0
+     ],
+     [
+      38.9711,
+      -22.5
+     ]
+    ]
+   },
+   "other_holes": []
+  },
+  {
+   "name": "rear_step",
+   "what": "housing rear shoulder, behind the 98 mm housing",
+   "normal": [
+    0.0,
+    0.0,
+    -1.0
+   ],
+   "point": [
+    0.0,
+    0.0,
+    11.2
+   ],
+   "annulus_mm": [
+    35.5,
+    49.0
+   ],
+   "bolts": {
+    "count": 6,
+    "pcd": 90.0,
+    "angle0_deg": 30.0,
+    "d": 3.3,
+    "depth": 4.0,
+    "role": "bolts",
+    "xy": [
+     [
+      38.9711,
+      22.5
+     ],
+     [
+      0.0,
+      45.0
+     ],
+     [
+      -38.9711,
+      22.5
+     ],
+     [
+      -38.9711,
+      -22.5
+     ],
+     [
+      0.0,
+      -45.0
+     ],
+     [
+      38.9711,
+      -22.5
+     ]
+    ]
+   },
+   "other_holes": []
+  }
+ ],
+ "housing": {
+  "diameter": 98.0,
+  "length": 61.7,
+  "profile_rz": [
+   [
+    0.0,
+    0.0
+   ],
+   [
+    35.5,
+    0.0
+   ],
+   [
+    35.5,
+    11.2
+   ],
+   [
+    49.0,
+    11.2
+   ],
+   [
+    49.0,
+    52.0
+   ],
+   [
+    41.0,
+    52.0
+   ],
+   [
+    41.0,
+    55.0
+   ],
+   [
+    39.0,
+    57.0
+   ],
+   [
+    35.0,
+    57.0
+   ],
+   [
+    35.0,
+    57.7
+   ],
+   [
+    33.0,
+    59.7
+   ],
+   [
+    26.25,
+    59.7
+   ],
+   [
+    26.25,
+    60.7
+   ],
+   [
+    20.0,
+    60.7
+   ],
+   [
+    20.0,
+    61.7
+   ],
+   [
+    0.0,
+    61.7
+   ]
+  ],
+  "z_levels": [
+   0.0,
+   11.2,
+   52.0,
+   55.0,
+   57.0,
+   57.7,
+   59.7,
+   60.7,
+   61.7
+  ],
+  "recesses": [],
+  "flats": [
+   {
+    "angle_deg": 270.0,
+    "dist": 32.25,
+    "z": [
+     0.0,
+     6.5
+    ]
+   }
+  ]
+ },
+ "facts": {
+  "rated_torque_nm": 12.0,
+  "peak_torque_nm": 30.0,
+  "no_load_speed_rpm": 260.0,
+  "speed_at_peak_rpm": 110.0,
+  "rated_voltage_v": 24.0,
+  "voltage_range_v": [
+   18.0,
+   48.0
+  ],
+  "gear_ratio": "8 : 1 planetary",
+  "encoder": "14-bit absolute, on the output",
+  "interface": "CAN 2.0B, 1 Mbit/s"
+ },
+ "keepout": "HXA-9862_keepout.step",
+ "keepout_covers": "the housing envelope: the revolved housing profile with every bolt hole, the centre bore, the connector recesses and the rear flat filled; a made part may touch it, never enter it",
+ "volume_mm3": 387521.98250633123,
+ "extents_sorted_mm": [
+  61.7,
+  98.0,
+  98.0
+ ],
+ "bbox_mm": [
+  [
+   -49.0,
+   -49.0,
+   0.0
+  ],
+  [
+   49.0,
+   49.0,
+   61.7
+  ]
+ ],
+ "mass_kg": 0.896,
+ "com_mm": [
+  -1.3899481104842175e-14,
+  0.036535473915731906,
+  30.914812420280654
+ ],
+ "inertia_kg_mm2": [
+  [
+   706.2495119724455,
+   -0.025766303543905602,
+   6.864565314787008e-13
+  ],
+  [
+   -0.025766303543905602,
+   707.3027179985405,
+   0.9056293411777178
+  ],
+  [
+   6.864565314787008e-13,
+   0.9056293411777178,
+   979.772035964455
+  ]
+ ],
+ "mass_model": "the stated mass spread uniformly over the solid: com_mm and inertia_kg_mm2 are the solid's at density mass / volume",
+ "documents": {
+  "datasheet": "datasheet_HXA-9862.png",
+  "drawing": "drawing_HXA-9862.png"
+ }
+}

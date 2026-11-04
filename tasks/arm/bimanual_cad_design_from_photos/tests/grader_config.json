@@ -1,0 +1,6 @@
+{
+  "extract_timeout_s": 600,
+  "grade_timeout_s": 1200,
+  "grader_cpus": 8,
+  "note": "time limits of the FreeCAD reader (cad_tree/extract.py under freecadcmd) and of the grading child (grade_unit.py: conversion + grade), and the CPUs the grader's thread pools may use; every band, weight, floor, gate and sample count is in cad_tree/rules.json"
+}

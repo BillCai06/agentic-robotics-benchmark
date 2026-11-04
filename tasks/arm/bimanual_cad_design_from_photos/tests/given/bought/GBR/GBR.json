@@ -1,0 +1,173 @@
+{
+ "format": "bimanual-cad-bought/1",
+ "generator": "bimanual-cad-standins/1.0.0",
+ "class": "GBR",
+ "pn": "OGM-25-B-R",
+ "vendor": "Ostwyn Automation",
+ "title": "two-finger gripper module, body (right-hand)",
+ "kind": "gripper_body",
+ "step": "OGM-25-B-R.step",
+ "side": "R",
+ "module": {
+  "pn": "OGM-25-R",
+  "pieces": {
+   "body": "OGM-25-B-R",
+   "A": "OGM-25-FA-R",
+   "B": "OGM-25-FB-R"
+  },
+  "classes": {
+   "body": "GBR",
+   "A": "GAR",
+   "B": "GFR"
+  },
+  "mass_kg": 0.6420944989104231
+ },
+ "frame": "module frame: origin on the drive axis at the mounting face (the face that bolts to the actuator's output), +z along that axis away from the actuator, +x from finger hinge B to finger hinge A; the finger pieces' frames coincide with it at the closed stop (fingers at zero)",
+ "hinges": {
+  "A": {
+   "point": [
+    18.000000002275385,
+    67.99999999819215,
+    0.0
+   ],
+   "dir": [
+    0.0,
+    0.0,
+    -1.0
+   ]
+  },
+  "B": {
+   "point": [
+    -17.999999997724615,
+    67.99999999819215,
+    0.0
+   ],
+   "dir": [
+    0.0,
+    0.0,
+    1.0
+   ]
+  }
+ },
+ "open_stop_rad": 0.7853981633974483,
+ "open_stop_deg": 45.0,
+ "coupling": "the two fingers are geared 1:1: both turn by the same angle, A about hinges.A.dir, B about hinges.B.dir",
+ "pointing": [
+  0.0032710051965743484,
+  0.999994650248192,
+  -6.800735652691579e-18
+ ],
+ "tcp": [
+  0.06493474199280058,
+  159.78212098728744,
+  -34.165144590422095
+ ],
+ "fingertips": {
+  "A": [
+   5.0897444712184665,
+   169.78554510410663,
+   -34.16857839597207
+  ],
+  "B": [
+   -4.894454883301364,
+   169.7785898754321,
+   -34.16171078487211
+  ]
+ },
+ "tcp_rule": "fingertips: the centroid of each finger's tip region (its surface within 1 mm of its extreme point along `pointing`) at the closed stop; tcp: their midpoint moved 10 mm back against `pointing`",
+ "keepout": "OGM-25-B-R_keepout.step",
+ "keepout_covers": "the stand-in itself",
+ "mount_face": {
+  "name": "mounting face",
+  "normal": [
+   0.0,
+   0.0,
+   -1.0
+  ],
+  "point": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "bolts": {
+   "count": 6,
+   "pcd": 27.0,
+   "angle0_deg": 0.0,
+   "d": 3.4,
+   "xy": [
+    [
+     13.5,
+     -0.0
+    ],
+    [
+     6.75,
+     11.691
+    ],
+    [
+     -6.75,
+     11.691
+    ],
+    [
+     -13.5,
+     -0.0
+    ],
+    [
+     -6.75,
+     -11.691
+    ],
+    [
+     6.75,
+     -11.691
+    ]
+   ]
+  },
+  "seat_diameter": 35.0,
+  "note": "seats on the drive actuator's output face (dia. 35) and bolts to it through these holes"
+ },
+ "volume_mm3": 153221.93563887905,
+ "extents_sorted_mm": [
+  57.60736228242378,
+  94.77292218013287,
+  114.00000000000041
+ ],
+ "bbox_mm": [
+  [
+   -48.272922177294866,
+   -17.500000001114415,
+   -35.40000000450003
+  ],
+  [
+   46.500000002838,
+   96.499999998886,
+   22.207362277923746
+  ]
+ ],
+ "mass_kg": 0.41216824558161025,
+ "com_mm": [
+  13.460737762407401,
+  62.45938346325261,
+  -6.406331231419938
+ ],
+ "inertia_kg_mm2": [
+  [
+   306.25114871964536,
+   -31.263515181904967,
+   -6.565137354197122
+  ],
+  [
+   -31.263515181904967,
+   231.81495026536055,
+   31.493238077521543
+  ],
+  [
+   -6.565137354197122,
+   31.493238077521543,
+   334.5163527103832
+  ]
+ ],
+ "mass_model": "the stated mass spread uniformly over the solid: com_mm and inertia_kg_mm2 are the solid's at density mass / volume",
+ "documents": {
+  "datasheet": "datasheet_OGM-25-B-R.png",
+  "drawing": "drawing_OGM-25-B-R.png"
+ }
+}

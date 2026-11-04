@@ -1,0 +1,138 @@
+{
+ "format": "cad-tree-rules/1",
+ "note": "Every band, weight, floor, sample count and tolerance of the tree grader (cad_tree.convert, cad_tree.grade). Bands are [full, zero]: 1 at |error| <= full, 0 at >= zero, linear between. Lengths mm, angles deg where a key says so, else rad. Starting values from robotic_arm_cad_design_from_photos (design_rules.yaml, grader_config.json, 2026-10-21 floors).",
+ "weights": {
+  "kinematic_fidelity": 0.30,
+  "feature_fidelity": 0.25,
+  "shape_fidelity": 0.25,
+  "mass_properties": 0.10,
+  "component_fit": 0.05,
+  "interference_free": 0.05
+ },
+ "gates": {
+  "unit": ["cad_valid", "public_model_reuse"],
+  "arm": ["cad_json_consistent"],
+  "note": "unit gates multiply the design score; arm gates multiply that arm's criteria only (an arm whose joints disagree with its motors scores 0, the other arm is still scored). Put cad_json_consistent under unit to make it unit-wide."
+ },
+ "bands": {
+  "axis_mm": [0.3, 3.0],
+  "axis_deg": [0.5, 5.0],
+  "length_mm": [0.3, 3.0],
+  "fk_median_mm": [0.5, 8.0],
+  "fk_p90_mm": [1.0, 15.0],
+  "fingertip_median_mm": [0.5, 8.0],
+  "fingertip_p90_mm": [1.0, 15.0],
+  "cutout_offset_mm": [0.3, 3.0],
+  "cutout_area_rel": [0.10, 0.50],
+  "spacer_mm": [0.3, 3.0],
+  "extent_mm": [0.3, 3.0],
+  "surface_mm": [0.3, 2.5],
+  "one_minus_iou": [0.05, 0.40],
+  "mass_rel": [0.02, 0.15],
+  "com_mm": [0.5, 6.0],
+  "floor_iou": [0.20, 0.50],
+  "floor_fk_mm": [15.0, 60.0]
+ },
+ "subweights": {
+  "kinematic": {"axes": 0.35, "lengths": 0.15, "fk": 0.40, "range": 0.10},
+  "axes": {"distance": 0.6, "angle": 0.4},
+  "fk": {"median": 0.40, "p90": 0.35, "fingertips": 0.25},
+  "fingertip": {"median": 0.6, "p90": 0.4},
+  "feature": {"cutouts": 0.50, "spacers": 0.10, "extents": 0.25},
+  "shape": {"surface": 0.6, "iou": 0.4},
+  "mass": {"mass": 0.5, "com": 0.5},
+  "interference": {"self": 0.75, "inter_arm": 0.25}
+ },
+ "arms": {
+  "left": {"joint_prefix": "l_", "tag_prefix": "L"},
+  "right": {"joint_prefix": "r_", "tag_prefix": "R"}
+ },
+ "key_lengths": {
+  "note": "per arm, from the joint axes at configuration Z (both units by the same rule): anchor = the driving motor's output-face centre projected on the joint axis; centre = the point nearest the listed axes (the shoulder centre J1 x J2 and the wrist centre J6 x J7 of the generator's key_quantities); distances point-point, point-line or line-line by the entity kinds",
+  "shoulder_offset": [["anchor", "j1"], ["centre", "j1", "j2"]],
+  "upper_arm": [["centre", "j1", "j2"], ["axis", "j4"]],
+  "forearm": [["axis", "j4"], ["centre", "j6", "j7"]],
+  "wrist": [["anchor", "j5"], ["centre", "j6", "j7"]],
+  "j7_to_tcp": [["anchor", "j7"], ["tcp"]],
+  "crank": [["axis", "jc"], ["axis", "jp1"]],
+  "coupler": [["axis", "jp1"], ["axis", "jp2"]]
+ },
+ "samples": {
+  "fk_configs": 64,
+  "interference_configs": 32,
+  "interference_candidates": 128,
+  "inter_arm_configs": 32,
+  "inter_arm_candidates": 128
+ },
+ "operating_box": {
+  "note": "the box is the reference's tree-joint limits (unit.json), else gt.json operating_box_rad, else this provisional box (said so in the output)",
+  "provisional_rad": {"motor": [-0.6, 0.6], "linkage": [-0.6, 0.6]},
+  "finger": "the finger joints' own limits in unit.json (0 .. the module's open stop)"
+ },
+ "tolerances": {
+  "consistency_deg": 1.0,
+  "consistency_mm": 0.5,
+  "motor_match_deg": 10.0,
+  "motor_match_mm": 10.0,
+  "finger_match_deg": 10.0,
+  "finger_match_mm": 10.0,
+  "placement_centroid_mm": 1.0,
+  "registration_rms_mm": 0.5,
+  "registration_samples": [30000, 6000],
+  "motor_near_driven_mm": 2.0,
+  "missing_limit_coverage": 0.0,
+  "range_metric": "iou",
+  "fk_failure_mm": 1000.0,
+  "link_membership": "majority",
+  "case_side": "reported",
+  "case_side_note": "strict: a motor whose case rides on the other side of its joint than the unit's invalidates the arm; reported: it is reported, and the joint's sense is taken from the side the case rides on (cad_tree.convert).",
+  "link_membership_note": "strict: a link is the reference link with the same tag set, a part fixed to another link invalidates the arm; majority: the rigid link holding the largest share of the reference link's part volume, a part fixed elsewhere is graded where it is and reported (cad_tree.convert)."
+ },
+ "interference": {
+  "reference": "config",
+  "note": "which draws count: config = the reference unit has no colliding pair at the draw (the brief's rule); pair = every draw, the pairs that collide in the reference left out (more draws when the box's joint combinations often collide)"
+ },
+ "clearances": {
+  "adjacent_ratio": 0.01,
+  "nonadjacent_ratio": 0.001,
+  "note": "overlap volume over the smaller link's volume; 1 at <= ratio, 0 at >= 10 x ratio, log-linear between (score_ratio); adjacent = joined by any joint, loop joints included"
+ },
+ "fit": {
+  "keepout_ratio": 0.001,
+  "probe_outboard_mm": 1.0,
+  "ring_points": 24,
+  "ring_margin_mm": 1.0,
+  "ref_min_fraction": 0.5,
+  "relative_ring": [0.25, 0.75],
+  "note": "per motor: keep-out x case side x output side. Keep-out: the volume of the made parts of the case link and the driven link inside the class keep-out beyond the reference's own, over the class volume (score_ratio). Each side: rings 1 mm outboard of the mounting faces / the output face, at the bolt circle radius -+ (bolt d / 2 + margin); a ring counts when the reference's own parts fill at least ref_min_fraction of it; score = ring_score(f_sub / f_ref) over the counted rings (a side with none counted is not scored)"
+ },
+ "part_alignment": {
+  "n_src": 20000,
+  "n_dst": 200000,
+  "n_dst_per_mm2": 3.0,
+  "n_dst_max": 600000,
+  "trim": 0.90,
+  "iters": 40,
+  "max_t_mm": 15.0,
+  "max_r_deg": 15.0,
+  "multistart_rms_mm": 3.0,
+  "note": "per part: restricted point-to-plane ICP from the identity (n_src samples of the submitted part against max(n_dst, n_dst_per_mm2 x area) of the reference part, capped at n_dst_max, trimmed, total correction within max_t_mm / max_r_deg); above multistart_rms_mm the 24 principal-axis starts"
+ },
+ "probes": {
+  "cutout_px_mm": 0.1,
+  "cutout_search_mm": 6.0,
+  "cutout_present_frac": 0.6,
+  "spacer_back_mm": 2.0,
+  "spacer_ring": [0.25, 0.50, 0.75],
+  "spacer_disc": [0.70, 0.80, 0.90],
+  "spacer_angles": 16,
+  "note": "cad_tree.features: the cut-out section raster, its search window and presence threshold; the spacer rays (start behind the output face, circles across the ring or the disc, angles per circle)"
+ },
+ "torso_alignment": {
+  "seed": 20261027,
+  "samples": 40000,
+  "reference_samples": 200000,
+  "flat_agree_deg": 0.05,
+  "note": "the submitted torso (made parts, column, J1 motors) onto the reference's: the column frames matched, then point-to-plane ICP; the 24 principal-axis starts when the trimmed RMS exceeds 3 mm; last a point-to-plane polish on the correspondences whose normals agree within flat_agree_deg (no curvature bias)"
+ }
+}
