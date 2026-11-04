@@ -10,8 +10,8 @@ the steam and the fire are there. The plant wants a robot fleet that can, from i
 3. then clear the assembly station: every part off the tables and into the crate.
 
 Your job is the simulation they will develop this in: a twin of the bay as it is, with its rig and its hazards, a
-fleet you design to meet `requirements.md`, and the program that runs that fleet through the three jobs above in your
-twin (`control.md`). The photographs in `photos/`, `facts.md`, the account below of the plant's own tests and the offline
+fleet you design to meet `requirements.md`, and the program that runs that fleet through the three jobs above,
+rehearsed in your twin and graded in the real bay (`control.md`). The photographs in `photos/`, `facts.md`, the account below of the plant's own tests and the offline
 libraries are all there is to know about the bay. Nobody can tell you more.
 
 ## Where things are
@@ -25,6 +25,11 @@ nothing else; the cameras' poses are yours to recover.
 The photographs were taken before the fleet existed: **there is no robot in them**. The floor markings below show where
 the robots will stand, and the bucket's three ropes lie on the floor with their hooks free, waiting for the flying
 robots' hooks.
+
+The photographs show the bay on an earlier day. On the day of the job the parts lie wherever they were left on the two
+tables, the vehicle stands somewhere in its parking bay, the valve's lever may have been left partly turned, and the pan
+may stand up to 0.30 m from where the photographs show it; everything else stands as photographed. Your twin is the bay
+as photographed; the fleet's program meets the bay of the day (`control.md`).
 
 Painted on the floor: three square launch pads with an arrow (the flying robots, one per pad, facing the arrow), a
 larger rectangular parking bay with an arrow (the ground vehicle, facing the arrow), and a white square in front of

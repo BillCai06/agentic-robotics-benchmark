@@ -66,7 +66,7 @@ rope as it hangs, sags, carries and swings, against the real bay's rig (`require
 
 `arb:steam_active`, `arb:fire_active` and the four `arb:disabled` are plain `bool` attributes on the prims above, true /
 true / false at the start, maintained by your OmniGraph logic as `bay_brief.md`'s hazard rules say. The grader reads
-them from the stage while it steps the simulation, and feeds `arb:disabled` back to your controller.
+them in its scene checks; in the bay mission it keeps the rules itself (`control.md`).
 
 ## OmniGraph rules
 
@@ -80,3 +80,12 @@ attributes, with the attribute name a constant; nothing else.
 
 `~/given/check_structure.py <scene>` checks this page's rules (paths, files, ropes, declarations, graph nodes) without
 scoring anything. The grader runs the same check first; a scene that fails it scores 0.
+
+## In the bay mission
+
+The graded mission takes from your stage only the four robots, each the whole subtree under `/World/Fleet/<robot>`
+as composed; it drops the ropes, any joint from a robot to something outside its own subtree, and everything outside
+the four robots (physics materials a robot binds are kept wherever under `/World` they are defined). Build each robot
+so that it works on its own in another bay. Each robot keeps the colliders of the library models it is built from:
+add your own beside them if you like, but a robot with one of them removed or switched off scores 0 on the mission's
+no-collisions check (`check_structure.py` notes it).

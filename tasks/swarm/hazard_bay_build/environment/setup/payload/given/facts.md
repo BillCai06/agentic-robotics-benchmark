@@ -3,6 +3,7 @@
 What a tape measure and a kitchen scale gave, and what the nameplates say. Nothing here can be read from a picture.
 
 - **The calibration mat**: 7 × 5 squares of 100.0 mm; centre at x = 0.00 m, y = -0.60 m; long side along x.
+- **The floor**: sealed concrete; for the simulation, friction 0.5 static and dynamic, no restitution.
 - **The six parts on the tables** (kitchen scale): cracker box 411 g, mustard bottle 603 g, sugar box 514 g,
   tomato soup can 349 g, power drill 895 g, mug 118 g.
 - **The bucket**: 1.2 kg empty; 10.0 L of water fill it to 3 cm below the rim, and it is full. Three lifting rings

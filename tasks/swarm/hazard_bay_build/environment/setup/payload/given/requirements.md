@@ -5,8 +5,8 @@ The fleet: **three flying robots** (`/World/Fleet/UAV_1`, `UAV_2`, `UAV_3`) and 
 of the grader's checks; the numbers are the ones it uses.
 
 **R1 — At rest where they belong.** At the start the flying robots stand on the three pads (UAV_1 on the pad nearest
-the mat, UAV_2 and UAV_3 on the two behind it, left and right as seen from the back wall) and the vehicle in its bay,
-each facing its marking's arrow (+y). Nothing moves until something acts on it; the ropes may settle.
+the mat, UAV_2 on the pad behind it on the -x side, UAV_3 on the one on the +x side) and the vehicle in its bay, each
+facing its marking's arrow (+y). Nothing moves until something acts on it; the ropes may settle.
 
 **R2 — Each flying robot carries a manipulator** from the arm catalog (at least four driven joints and a gripper),
 declared with `arb:arm_model`.
@@ -62,4 +62,4 @@ reports the bucket only while the bucket is in its field of view.
 **R12 — The program.** The fleet does the whole job under your program, `control.md`: the valve closed, the fire
 put out (a synchronised take-off, a level lift, a carry with little swing and little spill, the pour), every part off
 the tables and into the crate; nothing lost to the hazards, nothing driven or flown into, the robots still at the end,
-within the mission's time, and the same way every time.
+within the mission's time, and the same way every time, in the real bay (`control.md`).

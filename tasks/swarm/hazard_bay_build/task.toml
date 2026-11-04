@@ -6,8 +6,9 @@
 # chains, the fleet, the OmniGraph logic for the hazard rules) and the fleet's program (run.sh). The grader runs none
 # of the agent's scene code: it opens the stage in its own Isaac Sim processes as an unprivileged account and measures
 # it (layout, rest and masses, the valve and the plume, the bucket on its ropes under the grader's own moves, the
-# fleet's design), then runs the agent's program on the agent's scene twice behind a wire and measures the outcomes.
-# Needs one NVIDIA RTX GPU.
+# fleet's design), then runs the agent's program twice behind a wire in the grader's own stage of the real bay (the
+# agent's four robots mounted in it, the plant's rope rig, the day's random parts, vehicle pose, lever and pan) and
+# measures the outcomes. Needs one NVIDIA RTX GPU.
 
 schema_version = "1.4+ale.1"
 artifacts = ["/home/user/submission"]
@@ -24,8 +25,9 @@ memory_mb = 32768
 gpus = 1
 
 # Setup (environment/setup/setup.sh: stage ~/given, < 1 min) has no field: the engine bounds it at a fixed 1800 s.
-# [agent] timeout_sec: 8 h. [verifier] timeout_sec: a canary, the scan, five probe groups and two mission runs, each in
-# a fresh Isaac Sim process (the oracle's verify takes about 25 min; the first Isaac Sim start compiles shaders).
+# [agent] timeout_sec: 8 h. [verifier] timeout_sec: a canary, the scan, five probe groups and two mission runs in the
+# real bay, each in a fresh Isaac Sim process (two missions that run to their 600 s limit take about 25 min at 20 ms a
+# control step; the first Isaac Sim start compiles shaders).
 [agent]
 timeout_sec = 28800
 network_mode = "no-network"

@@ -7,7 +7,7 @@ its lifting rig behave, a list of what the fleet must be able to do, and a catal
 Deliver one USD stage that behaves like the real bay — the right things in the right places, the bucket on its three
 ropes hanging, swinging and tipping as the real rig does, the hazards doing what the brief says — holding a fleet
 you designed that meets the requirements; and deliver the program that runs that fleet through the plant's whole job
-in that stage (the valve closed, the fire put out with the bucket the three flying robots carry, the station cleared
+in the real bay (the valve closed, the fire put out with the bucket the three flying robots carry, the station cleared
 by the vehicle), from what the robots' own sensors tell them: the control of every robot and the planning that
 sequences them.
 
@@ -26,7 +26,7 @@ You have **8 hours** of wall time for the whole job. Have a usable scene and a p
 | `~/given/catalog/` | airframes, sensors, ground vehicles and arms you may build the fleet from, with their data (`catalog.json`: the same, as data) |
 | `~/given/interface.md` | how the grader reads your scene: stage settings, the prim paths it looks for, the ropes, the rules |
 | `~/given/check_structure.py` | checks a scene against `interface.md` (paths, files, ropes, graph nodes); it scores nothing |
-| `~/given/practice_control.py`, `control_sim.py` | the bay mission on your own scene with your own program: the grader's simulation, raw numbers, no score |
+| `~/given/practice_control.py`, `control_sim.py` | the bay mission on your own scene with your own program: the grader's simulation with the same random draws, raw numbers, no score |
 | `/opt/assets/isaac/` | a part of NVIDIA's Isaac Sim asset library, offline (robots, objects, environments) |
 | `/opt/assets/arb/` | the task's own assets: four multirotor airframes; two NVIDIA Flow volume effects (a fire, a steam plume) for the pictures, if you want them |
 
@@ -52,7 +52,9 @@ In `/home/user/submission/`:
 After your session ends, every process of yours is stopped and the submission is copied. The grader checks the
 scene against `interface.md` (as `check_structure.py` does; a scene that fails it scores 0), then opens it in its own
 Isaac Sim process, several times, steps it at 120 Hz and measures it. Each check scores between 0 and 1 by how close
-the measured value is to the real bay's or to what the brief requires; `acceptance_score` is a weighted mean:
+the measured value is to the real bay's or to what the brief requires. `acceptance_score` is the scene's score times
+the mission's: the scene's score is the weighted mean of the first five sections below (the weights in brackets), the
+mission's is the last section's score.
 
 - **Layout (0.08)**: where the bay's furniture and fixtures are and how big they are, which objects stand on the
   tables and where (an object counts when it has the library model's shape), the fleet on its pads.
@@ -62,13 +64,15 @@ the measured value is to the real bay's or to what the brief requires; `acceptan
 - **The rig (0.20)**: the grader holds the three flying robots and moves them through the moves of `requirements.md`
   R3 — slack ropes, the lift, a one-sided pull, a sideways step, one rope lowered, the pour over the pan, a dead
   stop, the set-down — and compares how the bucket and the ropes behave with the real rig under the same moves.
-- **The mission (0.54)**: your program runs the fleet, as dynamic bodies under its commands, through the whole job
-  in your scene, twice; the grader keeps the bay's rules and measures only the outcomes: the steam released, the fire
-  out, the parts in the crate, the time, the lift, the swing, the water spilt, the losses, the collisions, the
-  separation, and how alike the two runs were (`control.md`).
 - **The fleet's design (0.10)**: the requirements in `requirements.md`, each checked from the stage and the catalog.
+- **The mission (it multiplies the scene's score)**: your program runs the fleet, as dynamic bodies under its
+  commands, through the whole job in the real bay (the grader's own stage of the bay as it really is, with your four
+  robots in it as your stage builds them and the plant's rope rig), twice; the grader keeps the bay's rules and
+  measures only the outcomes: the steam released, the fire out, the parts in the crate, the time, the lift, the swing,
+  the water spilt, the losses, the collisions, the separation, and how alike the two runs were (`control.md`).
 
 The amounts, angles, points, directions and timings of these tests, the water in the bucket and the wind are drawn
-at random for each run. Measurements come from the simulation itself (body poses, masses, joint motion) and from the
-state attributes the interface declares, never from anything else the scene, the controller or the plan reports about
-itself.
+at random for each run, and so, in the mission, are where the six parts lie on the tables, where the vehicle stands in
+its bay, how far the valve's lever is turned and where the burning pan stands. Measurements come from the simulation
+itself (body poses, masses, joint motion) and from the state attributes the interface declares, never from anything
+else the scene, the controller or the plan reports about itself.
