@@ -48,7 +48,11 @@ READY                                       <- your first line, within 40 s of l
   `obs.time` is the simulation clock.
 - Every reply within 10 s of wall time. A missed deadline, a crash, a malformed reply or a reply without an action
   aborts the run: every check of that run scores 0. (The grader restarts `run.sh` at most once in a run; your process
-  must be able to start twice, and it is started afresh for the second run.)
+  must be able to start twice, and it is started afresh for the second run, after everything the first one left
+  running has been stopped.)
+- A run also has a wall-clock budget: one that has not ended 30 minutes after its first observation is stopped and
+  counts as aborted. The simulation itself takes about 20 ms of wall time per control step, so a run that lasts its full
+  600 s (36,000 steps) leaves your program about 20 ms per reply on average.
 - **A step may be asked more than once with the same `t`.** Repeated queries do not advance the mission; answer each
   from the observation it carries, and count steps by `t`, not by requests.
 - Nothing you print besides the wire's replies reaches the grader; stderr is discarded.
@@ -135,7 +139,8 @@ robots in it.
   from a robot to something outside it. Nothing else of your scene comes over: not your bay, not your OmniGraph
   logic, not your lights or helpers, not your physics scene (the real bay's: one scene, 120 Hz, gravity 9.81 m/s²,
   the TGS solver, on the CPU; the floor's friction is 0.5, `facts.md`); collision filtering in your stage reaches only
-  your own robots.
+  your own robots (a collision group or collection of yours that takes in the whole stage takes in only your robots
+  there), and every contact of a robot's body is reported, whatever contact-report settings your scene authors.
 - **Where they stand**: each flying robot on the real pad nearest to where your scene puts it, the vehicle in the real
   parking bay (then moved as What varies per run says), each turned as your scene turns it, its footprint centred on
   the marking as the layout check measures it.
@@ -190,7 +195,7 @@ the three jobs earns nothing for being careful.
 | water kept | 1.0 | ≤ 0.05 L spilt (outside the pan zone) | ≥ 1.0 L |
 | parts not dropped * | 0.4 | no part ends off its table and outside the crate | 2 or more |
 | no losses * | 1.0 | no robot lost (by the bay's rules), none crashed (a flying robot below 0.3 m away from its pad), the bucket never dropped before the pour | any |
-| no collisions * | 1.0 | no robot body touched another robot or its rope, a table, the crate, the tank, the pan, the steam line (its lever excepted) or the bucket; and every robot keeps the colliders of the library models it is built from (none removed or switched off: `check_structure.py` says so; otherwise this check scores 0) | 5 or more contacts (each counted once per onset) |
+| no collisions * | 1.0 | no robot body touched another robot or its rope, a table, the crate, the tank, the pan, the steam line (its lever excepted) or the bucket; and every robot keeps the colliders of the library models it declares (each model referenced from the library, not a copy; none of its colliders removed, switched off, made a trigger or shrunk: `check_structure.py` says so; otherwise this check scores 0) | 5 or more contacts (each counted once per onset) |
 | separation * | 0.6 | the flying robots never closer than 1.2 m to each other (centre to centre) | ≤ 0.9 m |
 | steady end | 0.4 | the run ended "done" | otherwise |
 | consistency * | 1.0 | the two runs' scores (over the checks above) within 0.05 of each other | 0.30 apart or more |

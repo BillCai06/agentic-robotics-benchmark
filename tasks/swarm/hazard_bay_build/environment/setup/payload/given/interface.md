@@ -50,8 +50,8 @@ chain. The first link is joined to a body of the robot (the **hook** joint); the
 `physics:excludeFromArticulation = true`: the links are plain rigid bodies, not links of the robot's articulation
 (PhysX cannot hang a heavy body off a light leaf link of an articulation; a chain built that way blows up). No
 distance joints anywhere in the rigging; the bucket is joined to nothing but its three ropes. The grader measures the
-rope as it hangs, sags, carries and swings, against the real bay's rig (`requirements.md` R3), and the bay mission
-(`control.md`) flies on it.
+rope as it hangs, sags, carries and swings, against the real bay's rig (`requirements.md` R3); the bay mission
+(`control.md`) flies on the plant's own ropes, hooked where your hook joint holds yours.
 
 ## Declarations
 
@@ -86,6 +86,9 @@ scoring anything. The grader runs the same check first; a scene that fails it sc
 The graded mission takes from your stage only the four robots, each the whole subtree under `/World/Fleet/<robot>`
 as composed; it drops the ropes, any joint from a robot to something outside its own subtree, and everything outside
 the four robots (physics materials a robot binds are kept wherever under `/World` they are defined). Build each robot
-so that it works on its own in another bay. Each robot keeps the colliders of the library models it is built from:
-add your own beside them if you like, but a robot with one of them removed or switched off scores 0 on the mission's
-no-collisions check (`check_structure.py` notes it).
+so that it works on its own in another bay. Each robot keeps the colliders of the library models it declares
+(`arb:airframe_model`, `arb:base_model`, `arb:arm_model`): it references each model's file in the library (not a copy
+of it), and none of the model's colliders is removed, switched off (`physics:collisionEnabled`), made a trigger or
+shrunk. Add your own colliders beside them if you like; a robot that breaks this rule scores 0 on the mission's
+no-collisions check (`check_structure.py` notes it). Your collision groups and filtered pairs act there among your own
+robots only, and the grader reports every contact of a robot's body whatever your scene's contact-report settings.
