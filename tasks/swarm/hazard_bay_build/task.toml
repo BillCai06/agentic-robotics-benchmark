@@ -26,8 +26,9 @@ gpus = 1
 
 # Setup (environment/setup/setup.sh: stage ~/given, < 1 min) has no field: the engine bounds it at a fixed 1800 s.
 # [agent] timeout_sec: 8 h. [verifier] timeout_sec: a canary, the scan, five probe groups and two mission runs in the
-# real bay, each in a fresh Isaac Sim process (two missions that run to their 600 s limit take about 25 min at 20 ms a
-# control step; the first Isaac Sim start compiles shaders).
+# real bay, each in a fresh Isaac Sim process. Measured on one RTX 4090 with 8 cores (2026-11-04): 34.5 min in all for a
+# submission whose two missions both run to their 600 s limit (12.5 min each, 21 ms a control step; the first Isaac Sim
+# start compiles shaders for about 6 min). The reference's missions end done at about 370 s, some 10 min less in all.
 [agent]
 timeout_sec = 28800
 network_mode = "no-network"
