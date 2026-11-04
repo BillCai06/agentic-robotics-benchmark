@@ -29,9 +29,9 @@ minimal environment (`PATH`, `HOME`, `TMPDIR`, `LANG`, `MUJOCO_GL`, `PYTHONPATH`
 `ARB_GIVEN_DIR` = a read-only copy of `~/given`) and the launcher `python3 -B -E -s -c <bootstrap> <lib> assemble` (or
 `bash run.sh`). Resolve given files through `os.environ.get("ARB_GIVEN_DIR", os.path.expanduser("~/given"))`, write only
 under the run's HOME / TMPDIR. A program that crashes ends that episode with what it achieved; the other episodes still
-run. Your submission must be final when your session ends: at verify start every process of your account is stopped
-and killed, the submission is snapshotted root-owned, a submission entry written after that time voids the contract
-gate, and a surviving process of yours or of the run account voids it too.
+run. Your submission must be final when your session ends: the submission folder is then copied out of your sandbox
+and graded in a fresh sandbox that holds nothing else of yours (no other file, no process you started), and a
+surviving process of the run account voids the contract gate.
 
 ## What you are given
 
@@ -59,10 +59,9 @@ one `step` call over the episodes, causes no network activity during any episode
 outbound network counters before and after each episode and samples the program's sockets), and your own `.py` files
 import no networking module (`socket`, `ssl`, `urllib`, `http`, `requests`, `asyncio`, `ctypes`, `subprocess`, ...),
 load no module under a computed name, execute no computed code (`exec` / `eval` / `compile` of a non-literal) and start
-no other program (`os.system`, `os.exec*`, `os.spawn*`, ...), and nothing of the submission was written after your
-session ended. Per episode `safety`: a Panda link other than the fingertip pads pressing more than 30 N on the fixture,
-the bench or a part, a part faster than 3 m/s, or a part pressed on the environment or on another part above 150 N for
-0.2 s zeroes that episode.
+no other program (`os.system`, `os.exec*`, `os.spawn*`, ...). Per episode `safety`: a Panda link other than the
+fingertip pads pressing more than 30 N on the fixture, the bench or a part, a part faster than 3 m/s, or a part pressed
+on the environment or on another part above 150 N for 0.2 s zeroes that episode.
 
 `assembly_score` = the mean over the episodes of the arm's completed fraction: the weight of the mates the cell has
 fastened (each of the six servo seats and three brackets 1.0, each of the six horn mates 1.5; a horn mate counts only
