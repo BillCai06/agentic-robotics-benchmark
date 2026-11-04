@@ -42,6 +42,12 @@
     "spec_hash": "sha256:6e5220c8e1f23619af7b813d0c474767decdddfcf79f2133b4d1c442f9b581a8"
   },
   {
+    "content_digest": "sha256:275d9550dcff9647dd6c7fba02c3b719a6af58b6e405770159c44146175c695c",
+    "since": "2026-11-04T12:34:19Z",
+    "slug": "fault_adaptive_spacecraft_docking",
+    "spec_hash": "sha256:9e8fd30edfeae0642fed9be959a84ad6f6c42fd90b1bd753a8807f733bb36430"
+  },
+  {
     "content_digest": "sha256:9081b9f1a1a18f7ce409a8a35a6e5fa907fad03c1a2c738f68d0137fa608d2e7",
     "since": "2026-11-04T10:13:10Z",
     "slug": "fault_adaptive_spacecraft_docking",
@@ -96,6 +102,12 @@
     "spec_hash": "sha256:731d35a62337ae85950a7f5d4af15848626bd52cb6692d1a878b6f502f51dbbe"
   },
   {
+    "content_digest": "sha256:2caf7f25046aad5b3b29eb8f69ae29b1537004665012c3b230011d63bfec16ce",
+    "since": "2026-11-04T12:34:19Z",
+    "slug": "robotic_arm_cad_design_from_photos",
+    "spec_hash": "sha256:76ca643aa8e8c1b3358cce67112a15edf51ddfed4bc746db7ee6b5ec94ebf8ab"
+  },
+  {
     "content_digest": "sha256:d7dc11c417cec2c91d458fbae767ab1320bd55b3d0400ae5387784c1d9d91785",
     "since": "2026-11-04T10:13:10Z",
     "slug": "robotic_arm_cad_design_from_photos",
@@ -112,6 +124,12 @@
     "since": "2026-10-27T17:31:33Z",
     "slug": "robotic_arm_cad_design_from_photos",
     "spec_hash": "sha256:10b7f2f5c18dabb35baf33d00b0a851c5d55253e35db11f705d28bd4fa1585d7"
+  },
+  {
+    "content_digest": "sha256:a05f58b602d754fd6747edfc763b78ee0649835e2d0bc00dc29319f10423095a",
+    "since": "2026-11-04T12:34:19Z",
+    "slug": "robotic_arm_full_assembly_so101_panda",
+    "spec_hash": "sha256:43a4d259751ed6be3bd598b84d0cbae04a391ffd12234553ec87eb2df8d08207"
   },
   {
     "content_digest": "sha256:02bf5afb7757afefa5261e46f34d12b78da41e0a66acf23b1c7a9ee27a59e6c0",
@@ -132,6 +150,12 @@
     "spec_hash": "sha256:d86b078a68c6455a35bb80ff3f80a622ab08e85391aadf161eb44517f7bc9e41"
   },
   {
+    "content_digest": "sha256:896cce1bd0778cf6bb02172c50bf7f46bf2b63e7c9f0a12af5fb3b482c8185cb",
+    "since": "2026-11-04T12:34:19Z",
+    "slug": "robotic_arm_requirements_replica_from_photos",
+    "spec_hash": "sha256:f82819e241ae27b77a08a95fc88c90278fa1c3cef57af62c6ab5f546dba83836"
+  },
+  {
     "content_digest": "sha256:f67c271e3495237025dea4b2b12624deba29a32c61576998ab0c7aefb2c038cb",
     "since": "2026-11-04T10:13:10Z",
     "slug": "robotic_arm_requirements_replica_from_photos",
@@ -148,6 +172,12 @@
     "since": "2026-10-27T19:49:28Z",
     "slug": "robotic_arm_requirements_replica_from_photos",
     "spec_hash": "sha256:58d88f2534d367fe47af9c59fae8dc46e1fa52d56a5bed83dedc828b5e33ae89"
+  },
+  {
+    "content_digest": "sha256:a2d3c5b6a55990094fedbf8f9fe90f3a3e5e94b6a85407598f1746a238696800",
+    "since": "2026-11-04T12:34:19Z",
+    "slug": "visual_low_level_flight_control",
+    "spec_hash": "sha256:301a91a5fee60d49182c9832f99f4ec7d43788b5e408dc95433c0d6596ffa645"
   },
   {
     "content_digest": "sha256:c95c49039bbff11de65d5c5e1f2f5382eb3dda04aad7b1a7e72bd1cb3bb7a9fb",
