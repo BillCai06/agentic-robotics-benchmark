@@ -7,9 +7,12 @@ properties make that safe to score:
    runs it on the task's behalf — so spawning the solver directly would give the agent's
    code the grader's own privileges. `stage.deprivileged` drops to the agent account, and
    from there `/opt/ale` is untraversable and the grader's memory unreadable.
-2. **Every exchange has a deadline.** A solver that hangs must cost the episode, not the
-   run. Reads happen on a queue fed by a reader thread, so a stall is a timeout rather
-   than a wedged pipe.
+2. **Every request has a single deadline.** A solver that hangs must cost the episode,
+   not the run. Reads happen on a queue fed by a reader thread, so a stall is a timeout
+   rather than a wedged pipe — and the deadline is fixed once, when the request is written
+   (the `READY` handshake likewise), so blank lines, a partial line or a trickle of output
+   are all charged against the same `step_timeout` and cannot extend it. Missing the
+   deadline aborts the episode exactly as a slow reply does.
 3. **The wire carries no scoring input.** The solver returns actions. The metric is
    computed by the grader from its own simulator state, so nothing the solver prints can
    move its score.
@@ -66,6 +69,11 @@ __all__ = ["READY_TIMEOUT_FACTOR", "ProbeLock", "Solver", "SolverAborted", "Solv
 
 #: A solver may print library noise before its handshake; tolerate a bounded banner.
 MAX_PRE_READY_LINES = 200
+
+#: Blank lines the kit skips while waiting for one request's reply, before it gives up on
+#: that request. A well-behaved solver writes none; the cap bounds a solver that floods
+#: blank lines faster than the deadline so one request cannot spin the grader.
+MAX_BLANK_LINES = 1000
 
 #: `READY` must arrive within this many step deadlines of launch (model loading is slower
 #: than a step). With the template's 30 s step deadline that is 120 s; the instruction
@@ -184,21 +192,35 @@ class Solver(object):
             lines.put(line)
         lines.put(None)  # EOF
 
-    def _readline(self, timeout, what="step"):
+    def _readline(self, deadline, budget, what="step"):
+        """One line, or an abort, against a single wall-clock `deadline`.
+
+        `deadline` is a `time.monotonic()` instant fixed when the request was written (or
+        the launch began), NOT reset per line: blank lines, a partial line or a trickle of
+        output are read against the time that remains, so they cannot extend the budget.
+        `budget` is the whole allowance, named only for the abort message.
+        """
+        remaining = deadline - time.monotonic()
         try:
-            line = self._lines.get(timeout=timeout)
+            line = self._lines.get(timeout=max(0.0, remaining))
         except queue.Empty:
-            raise SolverAborted("solver exceeded its {}s {} deadline".format(timeout, what))
+            raise SolverAborted(
+                "solver exceeded its {:g}s {} deadline".format(budget, what))
         if line is None:
             raise SolverAborted("solver closed its stdout")
         return line
 
     def _await_ready(self):
+        # One deadline for the whole handshake: a banner that trickles out slowly, or
+        # floods blank lines, cannot push READY past the budget.
+        budget = self.step_timeout * READY_TIMEOUT_FACTOR
+        deadline = time.monotonic() + budget
         for _ in range(MAX_PRE_READY_LINES):
-            line = self._readline(self.step_timeout * READY_TIMEOUT_FACTOR, what="READY")
+            line = self._readline(deadline, budget, what="READY")
             if line.strip() == "READY":
                 return
-        raise SolverAborted("solver never printed READY")
+        raise SolverAborted(
+            "solver wrote {} lines before READY".format(MAX_PRE_READY_LINES))
 
     def request(self, message):
         if self._dead:
@@ -215,8 +237,13 @@ class Solver(object):
             self.proc.stdin.flush()
         except (IOError, OSError, ValueError):
             raise SolverAborted("solver stdin closed")
-        while True:
-            line = self._readline(self.step_timeout).strip()
+        # One deadline per request, fixed the moment it is written. Blank lines are still
+        # skipped, but every read — blank, slow or partial — is charged against this one
+        # deadline, so a solver cannot keep the request alive by dribbling output; and the
+        # blank-line count is capped so a flood faster than the deadline cannot spin.
+        deadline = time.monotonic() + self.step_timeout
+        for _ in range(MAX_BLANK_LINES):
+            line = self._readline(deadline, self.step_timeout).strip()
             if not line:
                 continue
             try:
@@ -228,6 +255,9 @@ class Solver(object):
             if isinstance(reply, dict):
                 return reply
             raise SolverAborted("solver reply is not an object")
+        raise SolverAborted(
+            "solver wrote {} blank lines to one request without a reply".format(
+                MAX_BLANK_LINES))
 
     # -- protocol ------------------------------------------------------------ #
     def reset(self):

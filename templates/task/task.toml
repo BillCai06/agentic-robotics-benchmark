@@ -59,8 +59,20 @@ timeout_sec = 3600
 network_mode = "no-network"
 
 # The scoring run (tests/test.sh) in seconds: closed_loop needs room for every episode plus
-# probes. Verification is shared: once the agent is done, tests/ is staged into the same
-# sandbox and runs there as root.
+# probes.
+#
+# environment_mode = "separate" is the recommended default for EVERY task, and what this
+# template ships: the engine scores in a FRESH verifier sandbox the agent never touched and
+# restores only the declared `artifacts` into it, so the grader never runs beside anything
+# the agent left behind. Shared verification (omit the key, or set "shared") instead runs
+# the grader as root in the agent's OWN sandbox — where the ALE base image leaves
+# /usr/local/bin owned by the agent account and ahead of /usr/bin on root's PATH, so a
+# program the agent drops there (bash, sh, rm, …) runs as root the moment the engine starts
+# `bash test.sh`, bypassing the grader and writing any reward it likes. Separate verification
+# closes that whole class. Declare the verifier's own machine in [verifier.environment];
+# cpus and memory_mb fall back to [environment]'s, and with no image it reuses the solver's.
+# Only what the task provides is present there: setup.sh does NOT run in the verifier, so
+# anything verify reads must ride in the declared artifacts or in tests/ itself.
 #
 # Grader knobs live in tests/grader_config.json, never in this file: [metadata] has no
 # runtime behavior, and episode counts are the grader's business anyway. Not
@@ -74,3 +86,9 @@ network_mode = "no-network"
 # measured seed-to-seed spread. See that file.
 [verifier]
 timeout_sec = 900
+environment_mode = "separate"
+
+[verifier.environment]
+cpus = 2
+memory_mb = 4096
+gpus = 0

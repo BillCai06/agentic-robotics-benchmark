@@ -116,6 +116,18 @@ Nothing you print to stdout is a scoring input. The grader computes the metric u
 physics and writes the result to `/logs/verifier`, which the engine empties and gives to root
 alone before scoring, so your solution can neither pre-create nor overwrite it.
 
+**Verify in a separate sandbox.** Set `[verifier] environment_mode = "separate"` (with a
+`[verifier.environment]` giving the verifier its `cpus`/`memory_mb`), as the template and
+every task here do. Shared verification runs the grader as root in the agent's own sandbox,
+where the base image leaves `/usr/local/bin` agent-writable and ahead of `/usr/bin` on root's
+PATH: a program the agent dropped there would run as root before the grader and score itself
+1.0. A separate verifier is fresh, with only your declared `artifacts` restored — so stage
+anything verify needs in `tests/` or an artifact, because `setup.sh` does not run there. If
+your grader drives a solver over the wire (closed_loop), each request has a single deadline
+(`step_timeout_s`) fixed when it is sent: blank or partial output is charged against it and
+cannot extend it, so a stalling submission aborts its episode instead of running out the
+verify budget.
+
 Files too large for git (photo sets, document scans, meshes the agent receives) go to the
 benchmark's Hugging Face dataset and are fetched while the image builds, pinned by commit and
 sha256: [`task-assets.md`](task-assets.md). Hidden material never goes there.

@@ -371,6 +371,37 @@ def _lint_visible(task_dir: Path, rel: str) -> list[str]:
                     problems.append(
                         f"{rel}: practice grader {where} reports {what} — raw metric only, or "
                         f"one division recovers the hidden anchor")
+    problems += lint_setup_payload_mirror(task_dir)
+    return problems
+
+
+def lint_setup_payload_mirror(task_dir: Path) -> list[str]:
+    """A separate verifier never runs environment/setup/setup.sh, so a grader that needs the
+    agent's givens keeps its own copy in tests/setup_payload/ and stages it itself. That copy
+    must stay byte-identical to environment/setup/payload/, or the agent and the grader see
+    different givens. Checked only when tests/setup_payload/ exists."""
+    rel = task_dir.name
+    mirror = task_dir / "tests" / "setup_payload"
+    source = task_dir / "environment" / "setup" / "payload"
+    if not mirror.is_dir():
+        return []
+    if not source.is_dir():
+        return [f"{rel}: tests/setup_payload/ exists but environment/setup/payload/ does not"]
+
+    def files(root: Path) -> dict[str, Path]:
+        return {p.relative_to(root).as_posix(): p for p in root.rglob("*")
+                if p.is_file() and "__pycache__" not in p.parts}
+
+    a, b = files(source), files(mirror)
+    problems = []
+    for name in sorted(set(a) | set(b)):
+        if name not in b:
+            problems.append(f"{rel}: tests/setup_payload/ lacks {name} (in environment/setup/payload/)")
+        elif name not in a:
+            problems.append(f"{rel}: tests/setup_payload/{name} is not in environment/setup/payload/")
+        elif a[name].read_bytes() != b[name].read_bytes():
+            problems.append(f"{rel}: tests/setup_payload/{name} differs from environment/setup/payload/{name}"
+                            " — the grader's copy of the givens must stay byte-identical")
     return problems
 
 

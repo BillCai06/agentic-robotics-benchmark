@@ -110,9 +110,13 @@ Visuals and collision geometry come from the unscaled, licensed Menagerie Crazyf
 model (`/opt/visual_robotics/assets/bitcraze_crazyflie_2/`). The attitude servo and indoor course are benchmark components, not a claim
 of hardware-validated Crazyflie flight.
 
-The grader freezes your submission read-only before execution. Keep all runtime
-files inside it and write scratch data under /tmp. Symlinks, special files,
-non-agent-owned files, more than 4096 entries, depth >16, or >128 MiB are rejected.
+Your controller is verified in a fresh copy of this environment that receives only
+`/home/user/submission`: the rest of your home (`/home/user/robot` included), files
+in /tmp, the exploration service and any process you started are not there. The
+grader freezes your submission read-only before execution. Keep all runtime files
+inside it and write scratch data under /tmp. Only regular files and directories are
+copied (symlinks and special files are left out); more than 4096 entries, depth >16,
+or >128 MiB are rejected.
 Do not read protected scene files, modify the environment or forge logs. The
 root-owned simulator records authoritative actions and outcomes. Self-written
 success claims or example videos have no scoring authority.

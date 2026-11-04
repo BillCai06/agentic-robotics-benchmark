@@ -81,7 +81,8 @@ RUN python3 -c "import mujoco._render_filament as F, mujoco.experimental.studio.
 # (render/: the factory hall, the bench top's wood maps) live in the benchmark's Hugging Face asset repository
 # (tasks/arm/robotic_arm_full_assembly_so101_panda/payload/ there). They are fetched at the commit pinned in
 # assets.sha256 and checked file by file against the sha256 recorded there; environment/setup/setup.sh stages them into
-# the agent home and into the grader's root-owned copy next to environment/setup/payload/. fetch_assets.py is the
+# the agent home next to environment/setup/payload/, and the verify stage (tests/test.sh, in its separate verifier
+# sandbox started from this image) copies them into the grader's root-owned copy of the givens. fetch_assets.py is the
 # benchmark's canonical copy (shared/task_assets/) and the repository named in assets.sha256 is written from the
 # benchmark's task-assets.toml (scripts/task_assets.py sync; docs/task-assets.md).
 COPY fetch_assets.py assets.sha256 /opt/task-assets/

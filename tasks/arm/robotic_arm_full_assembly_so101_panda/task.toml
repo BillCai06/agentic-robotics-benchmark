@@ -49,10 +49,22 @@ cpus = 8
 memory_mb = 16384
 
 # [agent] timeout_sec: 6 h; [verifier] timeout_sec: the collision pieces once (~5 min) + 3 x (cell build ~10 s + program
-# <= 2400 s wall); the oracle's verify: 3 x the reference assembler (~500 s simulated, ~30-40 min wall each).
+# <= 2400 s wall); the oracle's verify: 3 x the reference assembler (~500 s simulated, ~30-40 min wall each). The
+# verifier sandbox's start and tests/test.sh's copy of the givens count against it too.
 [agent]
 timeout_sec = 21600
 network_mode = "no-network"
 
+# Separate verification: the grader runs as root in a fresh verifier sandbox from the task image that the agent never
+# touched, with only the declared artifact (the submission) restored into it, so nothing else the agent left (a file,
+# a process, a program planted on root's PATH) reaches it. environment/setup/setup.sh does not run there: tests/test.sh
+# builds the grader's root-owned copy of the givens itself. The agent's program runs during verify, so the verifier
+# gets the agent's resources (CPU rendering: no GPU).
 [verifier]
 timeout_sec = 14400
+environment_mode = "separate"
+
+[verifier.environment]
+cpus = 8
+memory_mb = 16384
+gpus = 0

@@ -50,6 +50,12 @@ beyond the engine's own specs, is in [`templates/README.md`](templates/README.md
 form of the whole path, including the anchor bootstrap, is
 [`docs/contributing-a-task.md`](docs/contributing-a-task.md).
 
+Keep the template's `[verifier] environment_mode = "separate"`: the grader then scores in a
+fresh sandbox the agent never touched, with only your declared `artifacts` restored, instead
+of as root beside the agent's files (where a program planted on root's PATH would run as root
+before the grader). Stage anything verify needs in `tests/` or an artifact — `setup.sh` does
+not run in a separate verifier.
+
 Gate it from `vendor/ale` until both lines are green:
 
 ```bash

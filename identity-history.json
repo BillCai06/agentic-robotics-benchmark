@@ -6,6 +6,12 @@
     "spec_hash": "sha256:81cc7d0d26fbb49b34a7db7ef108961fd788433cf63d2646a1368aa9b986e18b"
   },
   {
+    "content_digest": "sha256:eaafabdb3b41fd1ee87fa4b94842e47ef30cd89e3ad3123ecac539aa0ab5ffe6",
+    "since": "2026-11-04T10:13:10Z",
+    "slug": "arm_hidden_mechanism_box",
+    "spec_hash": "sha256:14f0700b58e0c0011ce67fbfb765b09d5f9c8f6adf5e8ae1eeab5cdf6f58f3f2"
+  },
+  {
     "content_digest": "sha256:eb750f1237e964cf9acfb69aa4ea2eebc93829cdd914d02d1431756d1a06835a",
     "since": "2026-11-03T21:39:57Z",
     "slug": "arm_hidden_mechanism_box",
@@ -16,6 +22,12 @@
     "since": "2026-10-29T17:32:38Z",
     "slug": "arm_hidden_mechanism_box",
     "spec_hash": "sha256:472d0e693dc5010a5d406716d9f5158cd1bcacc1493d3bad88e468e72ac6a5d5"
+  },
+  {
+    "content_digest": "sha256:6e96572478e441f637ccb8ccc3552cce57a20b97e677c7e2d5e7c52447a25442",
+    "since": "2026-11-04T10:13:10Z",
+    "slug": "dexhand_shape_sorter_all_pieces",
+    "spec_hash": "sha256:4dfdd073c1ead5a6a39e69c97c8d6909d3cdcae9f545e42c250030b1a2432c50"
   },
   {
     "content_digest": "sha256:366e0bfe403dc4b82e6af02549f77ec7d0129bd9633548bbf52448ab8644530f",
@@ -30,6 +42,18 @@
     "spec_hash": "sha256:6e5220c8e1f23619af7b813d0c474767decdddfcf79f2133b4d1c442f9b581a8"
   },
   {
+    "content_digest": "sha256:275d9550dcff9647dd6c7fba02c3b719a6af58b6e405770159c44146175c695c",
+    "since": "2026-11-04T12:34:19Z",
+    "slug": "fault_adaptive_spacecraft_docking",
+    "spec_hash": "sha256:9e8fd30edfeae0642fed9be959a84ad6f6c42fd90b1bd753a8807f733bb36430"
+  },
+  {
+    "content_digest": "sha256:9081b9f1a1a18f7ce409a8a35a6e5fa907fad03c1a2c738f68d0137fa608d2e7",
+    "since": "2026-11-04T10:13:10Z",
+    "slug": "fault_adaptive_spacecraft_docking",
+    "spec_hash": "sha256:01bd4692a5edf4861fa33143e38da4c8cc41285c66b8c0b3efe4e325664e3efc"
+  },
+  {
     "content_digest": "sha256:815315deea2dcf0f41dbe7cca713f2b096447aaacd76a5064e1ae92df831ae6f",
     "since": "2026-11-03T21:39:57Z",
     "slug": "fault_adaptive_spacecraft_docking",
@@ -40,6 +64,12 @@
     "since": "2026-10-15T15:24:22Z",
     "slug": "fault_adaptive_spacecraft_docking",
     "spec_hash": "sha256:95b824570ebf68cda4aa08382f7d95b3e4ee0110eefc03191a9cccd1eda8dc7e"
+  },
+  {
+    "content_digest": "sha256:b8bb82c9141ccc02e47ba3702d92aefee17c1106fdde3e1192ac49c3215fe072",
+    "since": "2026-11-04T10:13:10Z",
+    "slug": "hot3d_sharpa_retarget",
+    "spec_hash": "sha256:e7c5004e06b9a1b441f100a62eb6702ef92f23079396d79ae1f173bb93d130bb"
   },
   {
     "content_digest": "sha256:3c0df2f7af74e6f84782feb7facfa0fc71e9262ddd2e36ad5752a1d985d1d5b0",
@@ -54,6 +84,12 @@
     "spec_hash": "sha256:4e6ee4fd9027232b7798674798dd1711adfe51b9b8cb3fdeabd297eaf248b09d"
   },
   {
+    "content_digest": "sha256:2dede0606d90887e2c565aa46f845421e9966b4db66946d73b52d7b5ce72234e",
+    "since": "2026-11-04T10:13:10Z",
+    "slug": "robocasa_object_dynamics_from_video",
+    "spec_hash": "sha256:4f50ad3001d827c1eac7867d19a855938f1b3c888fea77b81f5425183cfb1c4f"
+  },
+  {
     "content_digest": "sha256:4f9836367de653833a319406623279f8eeddbe701772c4370cee27d409dfe7ae",
     "since": "2026-11-03T21:39:57Z",
     "slug": "robocasa_object_dynamics_from_video",
@@ -64,6 +100,18 @@
     "since": "2026-10-30T11:55:32Z",
     "slug": "robocasa_object_dynamics_from_video",
     "spec_hash": "sha256:731d35a62337ae85950a7f5d4af15848626bd52cb6692d1a878b6f502f51dbbe"
+  },
+  {
+    "content_digest": "sha256:2caf7f25046aad5b3b29eb8f69ae29b1537004665012c3b230011d63bfec16ce",
+    "since": "2026-11-04T12:34:19Z",
+    "slug": "robotic_arm_cad_design_from_photos",
+    "spec_hash": "sha256:76ca643aa8e8c1b3358cce67112a15edf51ddfed4bc746db7ee6b5ec94ebf8ab"
+  },
+  {
+    "content_digest": "sha256:d7dc11c417cec2c91d458fbae767ab1320bd55b3d0400ae5387784c1d9d91785",
+    "since": "2026-11-04T10:13:10Z",
+    "slug": "robotic_arm_cad_design_from_photos",
+    "spec_hash": "sha256:75c086f5100d9d3ab557d9066b44ae915fd260cfb410deaf90a9dba33f77a26a"
   },
   {
     "content_digest": "sha256:d86359a35b60631696f737a21d0ef3e8fc8a99bb6d14e3907af907ac83ed1928",
@@ -78,6 +126,18 @@
     "spec_hash": "sha256:10b7f2f5c18dabb35baf33d00b0a851c5d55253e35db11f705d28bd4fa1585d7"
   },
   {
+    "content_digest": "sha256:a05f58b602d754fd6747edfc763b78ee0649835e2d0bc00dc29319f10423095a",
+    "since": "2026-11-04T12:34:19Z",
+    "slug": "robotic_arm_full_assembly_so101_panda",
+    "spec_hash": "sha256:43a4d259751ed6be3bd598b84d0cbae04a391ffd12234553ec87eb2df8d08207"
+  },
+  {
+    "content_digest": "sha256:02bf5afb7757afefa5261e46f34d12b78da41e0a66acf23b1c7a9ee27a59e6c0",
+    "since": "2026-11-04T10:13:10Z",
+    "slug": "robotic_arm_full_assembly_so101_panda",
+    "spec_hash": "sha256:8d2f482e590b3c5cb6df76bc6b9d6cf65ff329c3ee57d3aeb914d96cf63a711b"
+  },
+  {
     "content_digest": "sha256:57a620019cd9873160778cfe548b473aa65837fe3b1019b98e526bad43f2c8cb",
     "since": "2026-11-03T21:39:57Z",
     "slug": "robotic_arm_full_assembly_so101_panda",
@@ -90,6 +150,18 @@
     "spec_hash": "sha256:d86b078a68c6455a35bb80ff3f80a622ab08e85391aadf161eb44517f7bc9e41"
   },
   {
+    "content_digest": "sha256:896cce1bd0778cf6bb02172c50bf7f46bf2b63e7c9f0a12af5fb3b482c8185cb",
+    "since": "2026-11-04T12:34:19Z",
+    "slug": "robotic_arm_requirements_replica_from_photos",
+    "spec_hash": "sha256:f82819e241ae27b77a08a95fc88c90278fa1c3cef57af62c6ab5f546dba83836"
+  },
+  {
+    "content_digest": "sha256:f67c271e3495237025dea4b2b12624deba29a32c61576998ab0c7aefb2c038cb",
+    "since": "2026-11-04T10:13:10Z",
+    "slug": "robotic_arm_requirements_replica_from_photos",
+    "spec_hash": "sha256:0273be135228a52c114e082806776cbcb5988a00952d00a25ec22adade56d3d6"
+  },
+  {
     "content_digest": "sha256:9d900f7178d6cbeebcb0b2741eb79ea299f2f8b078fabee4cdcd01c8cec59e2b",
     "since": "2026-11-03T21:39:57Z",
     "slug": "robotic_arm_requirements_replica_from_photos",
@@ -100,6 +172,18 @@
     "since": "2026-10-27T19:49:28Z",
     "slug": "robotic_arm_requirements_replica_from_photos",
     "spec_hash": "sha256:58d88f2534d367fe47af9c59fae8dc46e1fa52d56a5bed83dedc828b5e33ae89"
+  },
+  {
+    "content_digest": "sha256:a2d3c5b6a55990094fedbf8f9fe90f3a3e5e94b6a85407598f1746a238696800",
+    "since": "2026-11-04T12:34:19Z",
+    "slug": "visual_low_level_flight_control",
+    "spec_hash": "sha256:301a91a5fee60d49182c9832f99f4ec7d43788b5e408dc95433c0d6596ffa645"
+  },
+  {
+    "content_digest": "sha256:c95c49039bbff11de65d5c5e1f2f5382eb3dda04aad7b1a7e72bd1cb3bb7a9fb",
+    "since": "2026-11-04T10:13:10Z",
+    "slug": "visual_low_level_flight_control",
+    "spec_hash": "sha256:13246fdd5d4eef9d9af57edc917e107af77b84bd8578a60de62c46312b7b3aa1"
   },
   {
     "content_digest": "sha256:8918d531be044659d0d97ed3cef726268f3b584fea3d0fe4fad8ba3946018cc7",

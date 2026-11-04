@@ -1,10 +1,12 @@
-"""Evaluate an immutable image controller at the agent UID on fresh private scenes."""
+"""Evaluate an immutable image controller at the agent UID on fresh private scenes.
+
+Runs in a separate verifier sandbox (task.toml): a fresh one from the task image, holding only the restored
+/home/user/submission. setup.sh never ran here, so the exploration service, its ledger and its pid exist only in the
+agent's released sandbox; nothing here reads them, and the score never depended on them."""
 import json
 import math
-import os
 from pathlib import Path
 import secrets
-import signal
 import time
 
 import mujoco
@@ -12,7 +14,7 @@ import numpy as np
 
 from submission_snapshot import snapshot_submission
 from robotics_grader import (
-    Solver, SolverAborted, SolverMissing, ratio_rewards, read_anchor, require,
+    Solver, SolverAborted, SolverMissing, ratio_rewards, read_anchor,
     write_verdict, zero_verdict, ProbeLock, seed_rng, stage_config,
 )
 from world import World, png
@@ -96,21 +98,8 @@ def evaluate_controller(seeds, config):
 
 
 def main():
-    private = Path("/var/lib/visual_robotics")
-    require((private/"state.json").is_file(), "missing protected environment ledger")
-    pid = int((private/"pid").read_text())
-    try:
-        os.kill(pid, 0)
-        require(Path(f"/proc/{pid}/stat").read_text().split()[2] != "Z",
-                "world service crashed; environment failure, not agent failure")
-        os.kill(pid, signal.SIGTERM)
-    except ProcessLookupError:
-        require(False, "world service exited unexpectedly")
-    state = json.loads((private/"state.json").read_text())
-    require(state["kind"] == "flight", "wrong service episode")
     anchor, calibration = read_anchor()
-    print("[authoritative-journal] " + json.dumps(state, separators=(",", ":")), flush=True)
-    extra = {"trusted_requests": state["requests"]}
+    extra = {}
     try:
         snapshot = snapshot_submission("/home/user/submission", SUBMISSION)
         print("[frozen-submission] " + json.dumps(snapshot), flush=True)
