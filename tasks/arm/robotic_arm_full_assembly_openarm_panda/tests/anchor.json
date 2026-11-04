@@ -1,0 +1,8 @@
+{
+ "direction": "higher",
+ "full_at": 1.0,
+ "metric": "assembly_score",
+ "note": "assembly_score is the episode mean of the fastened mates' weight / 22 times the gates, already on [0, 1]; ratio = score / 1.0, reward = ratio",
+ "source": "the oracle's own measured assembly_score under ale validate: the privileged program fastens all 18 mates on every hidden episode",
+ "value": 1.0
+}

@@ -1,0 +1,6653 @@
+{
+ "schema": "openarm-pair-kit/1",
+ "robot": "OpenArm 2.0 (Enactic), a pair of 7-DoF arms on a gallows; this kit: the loose units of both arms (see NOTICE)",
+ "units_note": "metres, kilograms; every file in the unit's own frame (the arm frame's axes, its root body's origin)",
+ "units": [
+  {
+   "id": "l_L1",
+   "arm": "left",
+   "role": "J1 link: the bracket bolted onto J1's output flange; carries the J2 motor's yoke",
+   "mass_kg": 0.0823,
+   "com_in_unit_m": [
+    0.005255,
+    0.007292,
+    0.000255
+   ],
+   "part_file": "parts/l_L1.stl",
+   "collision_files": [
+    "collision/l_L1/l_L1_000.stl",
+    "collision/l_L1/l_L1_001.stl",
+    "collision/l_L1/l_L1_002.stl",
+    "collision/l_L1/l_L1_003.stl",
+    "collision/l_L1/l_L1_004.stl",
+    "collision/l_L1/l_L1_005.stl",
+    "collision/l_L1/l_L1_006.stl",
+    "collision/l_L1/l_L1_007.stl",
+    "collision/l_L1/l_L1_008.stl",
+    "collision/l_L1/l_L1_009.stl",
+    "collision/l_L1/l_L1_010.stl",
+    "collision/l_L1/l_L1_011.stl",
+    "collision/l_L1/l_L1_012.stl",
+    "collision/l_L1/l_L1_013.stl",
+    "collision/l_L1/l_L1_014.stl",
+    "collision/l_L1/l_L1_015.stl",
+    "collision/l_L1/l_L1_016.stl",
+    "collision/l_L1/l_L1_017.stl",
+    "collision/l_L1/l_L1_018.stl",
+    "collision/l_L1/l_L1_019.stl",
+    "collision/l_L1/l_L1_020.stl",
+    "collision/l_L1/l_L1_021.stl",
+    "collision/l_L1/l_L1_022.stl",
+    "collision/l_L1/l_L1_023.stl",
+    "collision/l_L1/l_L1_024.stl",
+    "collision/l_L1/l_L1_025.stl",
+    "collision/l_L1/l_L1_026.stl",
+    "collision/l_L1/l_L1_027.stl",
+    "collision/l_L1/l_L1_028.stl",
+    "collision/l_L1/l_L1_029.stl",
+    "collision/l_L1/l_L1_030.stl",
+    "collision/l_L1/l_L1_031.stl",
+    "collision/l_L1/l_L1_032.stl",
+    "collision/l_L1/l_L1_033.stl",
+    "collision/l_L1/l_L1_034.stl",
+    "collision/l_L1/l_L1_035.stl",
+    "collision/l_L1/l_L1_036.stl",
+    "collision/l_L1/l_L1_037.stl",
+    "collision/l_L1/l_L1_038.stl",
+    "collision/l_L1/l_L1_039.stl",
+    "collision/l_L1/l_L1_040.stl",
+    "collision/l_L1/l_L1_041.stl",
+    "collision/l_L1/l_L1_042.stl",
+    "collision/l_L1/l_L1_043.stl",
+    "collision/l_L1/l_L1_044.stl",
+    "collision/l_L1/l_L1_045.stl",
+    "collision/l_L1/l_L1_046.stl",
+    "collision/l_L1/l_L1_047.stl",
+    "collision/l_L1/l_L1_048.stl",
+    "collision/l_L1/l_L1_049.stl",
+    "collision/l_L1/l_L1_050.stl",
+    "collision/l_L1/l_L1_051.stl",
+    "collision/l_L1/l_L1_052.stl",
+    "collision/l_L1/l_L1_053.stl",
+    "collision/l_L1/l_L1_054.stl",
+    "collision/l_L1/l_L1_055.stl",
+    "collision/l_L1/l_L1_056.stl",
+    "collision/l_L1/l_L1_057.stl",
+    "collision/l_L1/l_L1_058.stl",
+    "collision/l_L1/l_L1_059.stl",
+    "collision/l_L1/l_L1_060.stl",
+    "collision/l_L1/l_L1_061.stl",
+    "collision/l_L1/l_L1_062.stl",
+    "collision/l_L1/l_L1_063.stl",
+    "collision/l_L1/l_L1_064.stl",
+    "collision/l_L1/l_L1_065.stl",
+    "collision/l_L1/l_L1_066.stl",
+    "collision/l_L1/l_L1_067.stl",
+    "collision/l_L1/l_L1_068.stl",
+    "collision/l_L1/l_L1_069.stl",
+    "collision/l_L1/l_L1_070.stl",
+    "collision/l_L1/l_L1_071.stl",
+    "collision/l_L1/l_L1_072.stl",
+    "collision/l_L1/l_L1_073.stl",
+    "collision/l_L1/l_L1_074.stl",
+    "collision/l_L1/l_L1_075.stl",
+    "collision/l_L1/l_L1_076.stl",
+    "collision/l_L1/l_L1_077.stl",
+    "collision/l_L1/l_L1_078.stl",
+    "collision/l_L1/l_L1_079.stl",
+    "collision/l_L1/l_L1_080.stl",
+    "collision/l_L1/l_L1_081.stl",
+    "collision/l_L1/l_L1_082.stl",
+    "collision/l_L1/l_L1_083.stl",
+    "collision/l_L1/l_L1_084.stl",
+    "collision/l_L1/l_L1_085.stl",
+    "collision/l_L1/l_L1_086.stl",
+    "collision/l_L1/l_L1_087.stl",
+    "collision/l_L1/l_L1_088.stl"
+   ],
+   "bodies": [
+    {
+     "name": "l_L1",
+     "parent": null,
+     "origin_in_unit_m": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    }
+   ]
+  },
+  {
+   "id": "l_M2",
+   "arm": "left",
+   "role": "J2 motor (DM-J8009P-2EC, 99 mm disc), with its output flange (rotor R2); seats in J1 link's yoke",
+   "mass_kg": 0.916,
+   "com_in_unit_m": [
+    -0.001666,
+    0.059501,
+    0.0005
+   ],
+   "part_file": "parts/l_M2.stl",
+   "collision_files": [
+    "collision/l_M2/l_M2_000.stl",
+    "collision/l_M2/l_M2_001.stl",
+    "collision/l_M2/l_M2_002.stl",
+    "collision/l_M2/l_M2_003.stl",
+    "collision/l_M2/l_M2_004.stl",
+    "collision/l_M2/l_M2_005.stl",
+    "collision/l_M2/l_M2_006.stl",
+    "collision/l_M2/l_M2_007.stl",
+    "collision/l_M2/l_M2_008.stl",
+    "collision/l_M2/l_M2_009.stl",
+    "collision/l_M2/l_M2_010.stl",
+    "collision/l_M2/l_M2_011.stl",
+    "collision/l_M2/l_M2_012.stl",
+    "collision/l_M2/l_M2_013.stl",
+    "collision/l_M2/l_M2_014.stl",
+    "collision/l_M2/l_M2_015.stl",
+    "collision/l_M2/l_M2_016.stl",
+    "collision/l_M2/l_M2_017.stl",
+    "collision/l_M2/l_M2_018.stl",
+    "collision/l_M2/l_M2_019.stl",
+    "collision/l_M2/l_M2_020.stl",
+    "collision/l_M2/l_M2_021.stl",
+    "collision/l_M2/l_M2_022.stl",
+    "collision/l_M2/l_M2_023.stl",
+    "collision/l_M2/l_M2_024.stl",
+    "collision/l_M2/l_M2_025.stl",
+    "collision/l_M2/l_M2_026.stl",
+    "collision/l_M2/l_M2_027.stl",
+    "collision/l_M2/l_M2_028.stl",
+    "collision/l_M2/l_M2_029.stl",
+    "collision/l_M2/l_M2_030.stl",
+    "collision/l_M2/l_M2_031.stl",
+    "collision/l_M2/l_M2_032.stl",
+    "collision/l_M2/l_M2_033.stl",
+    "collision/l_M2/l_M2_034.stl",
+    "collision/l_M2/l_M2_035.stl",
+    "collision/l_M2/l_M2_036.stl",
+    "collision/l_M2/l_M2_037.stl",
+    "collision/l_M2/l_M2_038.stl",
+    "collision/l_M2/l_M2_039.stl",
+    "collision/l_M2/l_M2_040.stl",
+    "collision/l_M2/l_M2_041.stl",
+    "collision/l_M2/l_M2_042.stl",
+    "collision/l_M2/l_M2_043.stl",
+    "collision/l_M2/l_M2_044.stl",
+    "collision/l_M2/l_M2_045.stl",
+    "collision/l_M2/l_M2_046.stl",
+    "collision/l_M2/l_M2_047.stl",
+    "collision/l_M2/l_M2_048.stl",
+    "collision/l_M2/l_M2_049.stl",
+    "collision/l_M2/l_M2_050.stl",
+    "collision/l_M2/l_M2_051.stl",
+    "collision/l_M2/l_M2_052.stl",
+    "collision/l_M2/l_M2_053.stl",
+    "collision/l_M2/l_M2_054.stl",
+    "collision/l_M2/l_M2_055.stl",
+    "collision/l_M2/l_M2_056.stl",
+    "collision/l_M2/l_M2_057.stl",
+    "collision/l_M2/l_M2_058.stl",
+    "collision/l_M2/l_M2_059.stl",
+    "collision/l_M2/l_M2_060.stl",
+    "collision/l_M2/l_M2_061.stl",
+    "collision/l_M2/l_M2_062.stl",
+    "collision/l_M2/l_M2_063.stl",
+    "collision/l_M2/l_M2_064.stl",
+    "collision/l_M2/l_M2_065.stl",
+    "collision/l_M2/l_M2_066.stl",
+    "collision/l_M2/l_M2_067.stl",
+    "collision/l_M2/l_M2_068.stl",
+    "collision/l_M2/l_M2_069.stl",
+    "collision/l_M2/l_M2_070.stl",
+    "collision/l_M2/l_M2_071.stl",
+    "collision/l_M2/l_M2_072.stl",
+    "collision/l_M2/l_M2_073.stl",
+    "collision/l_M2/l_M2_074.stl"
+   ],
+   "bodies": [
+    {
+     "name": "l_M2",
+     "parent": null,
+     "origin_in_unit_m": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "name": "l_R2",
+     "parent": "l_M2",
+     "origin_in_unit_m": [
+      0.0,
+      0.06,
+      0.0
+     ],
+     "hinge": {
+      "axis_in_unit": [
+       -1.0,
+       0.0,
+       0.0
+      ],
+      "point_in_unit_m": [
+       0.0,
+       0.06,
+       0.0
+      ],
+      "range_rad": [
+       -3.3161,
+       0.17453
+      ],
+      "joint": "l_j2"
+     },
+     "rotor_of": "DM-J8009P-2EC",
+     "flange_face_centre_in_unit_m": [
+      0.029319,
+      0.06,
+      0.0
+     ],
+     "index_mark_deg": 0.0
+    }
+   ]
+  },
+  {
+   "id": "l_L2",
+   "arm": "left",
+   "role": "J2 link: bolted onto J2's output flange; its other end is J3's output side",
+   "mass_kg": 0.1108,
+   "com_in_unit_m": [
+    0.017281,
+    -0.000197,
+    -0.04168
+   ],
+   "part_file": "parts/l_L2.stl",
+   "collision_files": [
+    "collision/l_L2/l_L2_000.stl",
+    "collision/l_L2/l_L2_001.stl",
+    "collision/l_L2/l_L2_002.stl",
+    "collision/l_L2/l_L2_003.stl",
+    "collision/l_L2/l_L2_004.stl",
+    "collision/l_L2/l_L2_005.stl",
+    "collision/l_L2/l_L2_006.stl",
+    "collision/l_L2/l_L2_007.stl",
+    "collision/l_L2/l_L2_008.stl",
+    "collision/l_L2/l_L2_009.stl",
+    "collision/l_L2/l_L2_010.stl",
+    "collision/l_L2/l_L2_011.stl",
+    "collision/l_L2/l_L2_012.stl",
+    "collision/l_L2/l_L2_013.stl",
+    "collision/l_L2/l_L2_014.stl",
+    "collision/l_L2/l_L2_015.stl",
+    "collision/l_L2/l_L2_016.stl",
+    "collision/l_L2/l_L2_017.stl",
+    "collision/l_L2/l_L2_018.stl",
+    "collision/l_L2/l_L2_019.stl",
+    "collision/l_L2/l_L2_020.stl",
+    "collision/l_L2/l_L2_021.stl",
+    "collision/l_L2/l_L2_022.stl",
+    "collision/l_L2/l_L2_023.stl",
+    "collision/l_L2/l_L2_024.stl",
+    "collision/l_L2/l_L2_025.stl",
+    "collision/l_L2/l_L2_026.stl",
+    "collision/l_L2/l_L2_027.stl",
+    "collision/l_L2/l_L2_028.stl",
+    "collision/l_L2/l_L2_029.stl",
+    "collision/l_L2/l_L2_030.stl",
+    "collision/l_L2/l_L2_031.stl",
+    "collision/l_L2/l_L2_032.stl",
+    "collision/l_L2/l_L2_033.stl",
+    "collision/l_L2/l_L2_034.stl",
+    "collision/l_L2/l_L2_035.stl",
+    "collision/l_L2/l_L2_036.stl",
+    "collision/l_L2/l_L2_037.stl",
+    "collision/l_L2/l_L2_038.stl",
+    "collision/l_L2/l_L2_039.stl",
+    "collision/l_L2/l_L2_040.stl",
+    "collision/l_L2/l_L2_041.stl",
+    "collision/l_L2/l_L2_042.stl",
+    "collision/l_L2/l_L2_043.stl",
+    "collision/l_L2/l_L2_044.stl",
+    "collision/l_L2/l_L2_045.stl",
+    "collision/l_L2/l_L2_046.stl",
+    "collision/l_L2/l_L2_047.stl",
+    "collision/l_L2/l_L2_048.stl",
+    "collision/l_L2/l_L2_049.stl"
+   ],
+   "bodies": [
+    {
+     "name": "l_L2",
+     "parent": null,
+     "origin_in_unit_m": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    }
+   ]
+  },
+  {
+   "id": "l_UA",
+   "arm": "left",
+   "role": "upper arm: J3 motor (its rotor R3 bolts onto J2 link), the J4 motor (rotor R4) and J4_D, the forearm's second support, free on a bearing (J4_B) on the far side",
+   "mass_kg": 0.9211,
+   "com_in_unit_m": [
+    -0.002515,
+    -0.001187,
+    -0.096714
+   ],
+   "part_file": "parts/l_UA.stl",
+   "collision_files": [
+    "collision/l_UA/l_UA_000.stl",
+    "collision/l_UA/l_UA_001.stl",
+    "collision/l_UA/l_UA_002.stl",
+    "collision/l_UA/l_UA_003.stl",
+    "collision/l_UA/l_UA_004.stl",
+    "collision/l_UA/l_UA_005.stl",
+    "collision/l_UA/l_UA_006.stl",
+    "collision/l_UA/l_UA_007.stl",
+    "collision/l_UA/l_UA_008.stl",
+    "collision/l_UA/l_UA_009.stl",
+    "collision/l_UA/l_UA_010.stl",
+    "collision/l_UA/l_UA_011.stl",
+    "collision/l_UA/l_UA_012.stl",
+    "collision/l_UA/l_UA_013.stl",
+    "collision/l_UA/l_UA_014.stl",
+    "collision/l_UA/l_UA_015.stl",
+    "collision/l_UA/l_UA_016.stl",
+    "collision/l_UA/l_UA_017.stl",
+    "collision/l_UA/l_UA_018.stl",
+    "collision/l_UA/l_UA_019.stl",
+    "collision/l_UA/l_UA_020.stl",
+    "collision/l_UA/l_UA_021.stl",
+    "collision/l_UA/l_UA_022.stl",
+    "collision/l_UA/l_UA_023.stl",
+    "collision/l_UA/l_UA_024.stl",
+    "collision/l_UA/l_UA_025.stl",
+    "collision/l_UA/l_UA_026.stl",
+    "collision/l_UA/l_UA_027.stl",
+    "collision/l_UA/l_UA_028.stl",
+    "collision/l_UA/l_UA_029.stl",
+    "collision/l_UA/l_UA_030.stl",
+    "collision/l_UA/l_UA_031.stl",
+    "collision/l_UA/l_UA_032.stl",
+    "collision/l_UA/l_UA_033.stl",
+    "collision/l_UA/l_UA_034.stl",
+    "collision/l_UA/l_UA_035.stl",
+    "collision/l_UA/l_UA_036.stl",
+    "collision/l_UA/l_UA_037.stl",
+    "collision/l_UA/l_UA_038.stl",
+    "collision/l_UA/l_UA_039.stl",
+    "collision/l_UA/l_UA_040.stl",
+    "collision/l_UA/l_UA_041.stl",
+    "collision/l_UA/l_UA_042.stl",
+    "collision/l_UA/l_UA_043.stl",
+    "collision/l_UA/l_UA_044.stl",
+    "collision/l_UA/l_UA_045.stl",
+    "collision/l_UA/l_UA_046.stl",
+    "collision/l_UA/l_UA_047.stl",
+    "collision/l_UA/l_UA_048.stl",
+    "collision/l_UA/l_UA_049.stl",
+    "collision/l_UA/l_UA_050.stl",
+    "collision/l_UA/l_UA_051.stl",
+    "collision/l_UA/l_UA_052.stl",
+    "collision/l_UA/l_UA_053.stl",
+    "collision/l_UA/l_UA_054.stl",
+    "collision/l_UA/l_UA_055.stl",
+    "collision/l_UA/l_UA_056.stl",
+    "collision/l_UA/l_UA_057.stl",
+    "collision/l_UA/l_UA_058.stl",
+    "collision/l_UA/l_UA_059.stl",
+    "collision/l_UA/l_UA_060.stl",
+    "collision/l_UA/l_UA_061.stl",
+    "collision/l_UA/l_UA_062.stl",
+    "collision/l_UA/l_UA_063.stl",
+    "collision/l_UA/l_UA_064.stl",
+    "collision/l_UA/l_UA_065.stl",
+    "collision/l_UA/l_UA_066.stl",
+    "collision/l_UA/l_UA_067.stl",
+    "collision/l_UA/l_UA_068.stl",
+    "collision/l_UA/l_UA_069.stl",
+    "collision/l_UA/l_UA_070.stl",
+    "collision/l_UA/l_UA_071.stl",
+    "collision/l_UA/l_UA_072.stl",
+    "collision/l_UA/l_UA_073.stl",
+    "collision/l_UA/l_UA_074.stl",
+    "collision/l_UA/l_UA_075.stl",
+    "collision/l_UA/l_UA_076.stl",
+    "collision/l_UA/l_UA_077.stl",
+    "collision/l_UA/l_UA_078.stl",
+    "collision/l_UA/l_UA_079.stl",
+    "collision/l_UA/l_UA_080.stl",
+    "collision/l_UA/l_UA_081.stl",
+    "collision/l_UA/l_UA_082.stl",
+    "collision/l_UA/l_UA_083.stl",
+    "collision/l_UA/l_UA_084.stl",
+    "collision/l_UA/l_UA_085.stl",
+    "collision/l_UA/l_UA_086.stl",
+    "collision/l_UA/l_UA_087.stl",
+    "collision/l_UA/l_UA_088.stl",
+    "collision/l_UA/l_UA_089.stl",
+    "collision/l_UA/l_UA_090.stl",
+    "collision/l_UA/l_UA_091.stl",
+    "collision/l_UA/l_UA_092.stl",
+    "collision/l_UA/l_UA_093.stl",
+    "collision/l_UA/l_UA_094.stl",
+    "collision/l_UA/l_UA_095.stl",
+    "collision/l_UA/l_UA_096.stl",
+    "collision/l_UA/l_UA_097.stl",
+    "collision/l_UA/l_UA_098.stl",
+    "collision/l_UA/l_UA_099.stl",
+    "collision/l_UA/l_UA_100.stl",
+    "collision/l_UA/l_UA_101.stl",
+    "collision/l_UA/l_UA_102.stl",
+    "collision/l_UA/l_UA_103.stl",
+    "collision/l_UA/l_UA_104.stl",
+    "collision/l_UA/l_UA_105.stl",
+    "collision/l_UA/l_UA_106.stl",
+    "collision/l_UA/l_UA_107.stl",
+    "collision/l_UA/l_UA_108.stl",
+    "collision/l_UA/l_UA_109.stl",
+    "collision/l_UA/l_UA_110.stl",
+    "collision/l_UA/l_UA_111.stl",
+    "collision/l_UA/l_UA_112.stl",
+    "collision/l_UA/l_UA_113.stl",
+    "collision/l_UA/l_UA_114.stl",
+    "collision/l_UA/l_UA_115.stl",
+    "collision/l_UA/l_UA_116.stl",
+    "collision/l_UA/l_UA_117.stl",
+    "collision/l_UA/l_UA_118.stl",
+    "collision/l_UA/l_UA_119.stl",
+    "collision/l_UA/l_UA_120.stl",
+    "collision/l_UA/l_UA_121.stl",
+    "collision/l_UA/l_UA_122.stl",
+    "collision/l_UA/l_UA_123.stl",
+    "collision/l_UA/l_UA_124.stl",
+    "collision/l_UA/l_UA_125.stl",
+    "collision/l_UA/l_UA_126.stl",
+    "collision/l_UA/l_UA_127.stl",
+    "collision/l_UA/l_UA_128.stl",
+    "collision/l_UA/l_UA_129.stl",
+    "collision/l_UA/l_UA_130.stl",
+    "collision/l_UA/l_UA_131.stl",
+    "collision/l_UA/l_UA_132.stl",
+    "collision/l_UA/l_UA_133.stl",
+    "collision/l_UA/l_UA_134.stl",
+    "collision/l_UA/l_UA_135.stl",
+    "collision/l_UA/l_UA_136.stl",
+    "collision/l_UA/l_UA_137.stl",
+    "collision/l_UA/l_UA_138.stl",
+    "collision/l_UA/l_UA_139.stl",
+    "collision/l_UA/l_UA_140.stl",
+    "collision/l_UA/l_UA_141.stl",
+    "collision/l_UA/l_UA_142.stl",
+    "collision/l_UA/l_UA_143.stl",
+    "collision/l_UA/l_UA_144.stl",
+    "collision/l_UA/l_UA_145.stl",
+    "collision/l_UA/l_UA_146.stl",
+    "collision/l_UA/l_J4D_000.stl",
+    "collision/l_UA/l_J4D_001.stl",
+    "collision/l_UA/l_J4D_002.stl",
+    "collision/l_UA/l_J4D_003.stl",
+    "collision/l_UA/l_J4D_004.stl",
+    "collision/l_UA/l_J4D_005.stl",
+    "collision/l_UA/l_J4D_006.stl",
+    "collision/l_UA/l_J4D_007.stl",
+    "collision/l_UA/l_J4D_008.stl",
+    "collision/l_UA/l_J4D_009.stl",
+    "collision/l_UA/l_J4D_010.stl",
+    "collision/l_UA/l_J4D_011.stl",
+    "collision/l_UA/l_J4D_012.stl",
+    "collision/l_UA/l_J4D_013.stl",
+    "collision/l_UA/l_J4D_014.stl",
+    "collision/l_UA/l_J4D_015.stl",
+    "collision/l_UA/l_J4D_016.stl",
+    "collision/l_UA/l_J4D_017.stl",
+    "collision/l_UA/l_J4D_018.stl",
+    "collision/l_UA/l_J4D_019.stl",
+    "collision/l_UA/l_J4D_020.stl",
+    "collision/l_UA/l_J4D_021.stl",
+    "collision/l_UA/l_J4D_022.stl",
+    "collision/l_UA/l_J4D_023.stl",
+    "collision/l_UA/l_J4D_024.stl",
+    "collision/l_UA/l_J4D_025.stl",
+    "collision/l_UA/l_J4D_026.stl",
+    "collision/l_UA/l_J4D_027.stl",
+    "collision/l_UA/l_J4D_028.stl",
+    "collision/l_UA/l_J4D_029.stl",
+    "collision/l_UA/l_J4D_030.stl",
+    "collision/l_UA/l_J4D_031.stl",
+    "collision/l_UA/l_J4D_032.stl",
+    "collision/l_UA/l_J4D_033.stl",
+    "collision/l_UA/l_J4D_034.stl",
+    "collision/l_UA/l_J4D_035.stl",
+    "collision/l_UA/l_J4D_036.stl",
+    "collision/l_UA/l_J4D_037.stl",
+    "collision/l_UA/l_J4D_038.stl",
+    "collision/l_UA/l_J4D_039.stl",
+    "collision/l_UA/l_J4D_040.stl",
+    "collision/l_UA/l_J4D_041.stl",
+    "collision/l_UA/l_J4D_042.stl",
+    "collision/l_UA/l_J4D_043.stl",
+    "collision/l_UA/l_J4D_044.stl",
+    "collision/l_UA/l_J4D_045.stl",
+    "collision/l_UA/l_J4D_046.stl",
+    "collision/l_UA/l_J4D_047.stl",
+    "collision/l_UA/l_J4D_048.stl",
+    "collision/l_UA/l_J4D_049.stl",
+    "collision/l_UA/l_J4D_050.stl",
+    "collision/l_UA/l_J4D_051.stl",
+    "collision/l_UA/l_J4D_052.stl",
+    "collision/l_UA/l_J4D_053.stl",
+    "collision/l_UA/l_J4D_054.stl",
+    "collision/l_UA/l_J4D_055.stl",
+    "collision/l_UA/l_J4D_056.stl",
+    "collision/l_UA/l_J4D_057.stl",
+    "collision/l_UA/l_J4D_058.stl",
+    "collision/l_UA/l_J4D_059.stl",
+    "collision/l_UA/l_J4D_060.stl",
+    "collision/l_UA/l_J4D_061.stl",
+    "collision/l_UA/l_J4D_062.stl",
+    "collision/l_UA/l_J4D_063.stl",
+    "collision/l_UA/l_J4D_064.stl",
+    "collision/l_UA/l_J4D_065.stl",
+    "collision/l_UA/l_J4D_066.stl",
+    "collision/l_UA/l_J4D_067.stl",
+    "collision/l_UA/l_J4D_068.stl",
+    "collision/l_UA/l_J4D_069.stl",
+    "collision/l_UA/l_J4D_070.stl",
+    "collision/l_UA/l_J4D_071.stl",
+    "collision/l_UA/l_J4D_072.stl",
+    "collision/l_UA/l_J4D_073.stl",
+    "collision/l_UA/l_J4D_074.stl",
+    "collision/l_UA/l_J4D_075.stl",
+    "collision/l_UA/l_J4D_076.stl",
+    "collision/l_UA/l_J4D_077.stl",
+    "collision/l_UA/l_J4D_078.stl",
+    "collision/l_UA/l_J4D_079.stl",
+    "collision/l_UA/l_J4D_080.stl",
+    "collision/l_UA/l_J4D_081.stl",
+    "collision/l_UA/l_J4D_082.stl",
+    "collision/l_UA/l_J4D_083.stl",
+    "collision/l_UA/l_J4D_084.stl",
+    "collision/l_UA/l_C3_000.stl",
+    "collision/l_UA/l_C3_001.stl",
+    "collision/l_UA/l_C3_002.stl",
+    "collision/l_UA/l_C3_003.stl",
+    "collision/l_UA/l_C3_004.stl",
+    "collision/l_UA/l_C3_005.stl",
+    "collision/l_UA/l_C3_006.stl",
+    "collision/l_UA/l_C3_007.stl",
+    "collision/l_UA/l_C3_008.stl",
+    "collision/l_UA/l_C3_009.stl",
+    "collision/l_UA/l_C3_010.stl",
+    "collision/l_UA/l_C3_011.stl",
+    "collision/l_UA/l_C3_012.stl",
+    "collision/l_UA/l_C3_013.stl",
+    "collision/l_UA/l_C3_014.stl",
+    "collision/l_UA/l_C3_015.stl",
+    "collision/l_UA/l_C4_000.stl",
+    "collision/l_UA/l_C4_001.stl",
+    "collision/l_UA/l_C4_002.stl",
+    "collision/l_UA/l_C4_003.stl",
+    "collision/l_UA/l_C4_004.stl",
+    "collision/l_UA/l_C4_005.stl",
+    "collision/l_UA/l_C4_006.stl",
+    "collision/l_UA/l_C4_007.stl",
+    "collision/l_UA/l_C4_008.stl",
+    "collision/l_UA/l_C4_009.stl",
+    "collision/l_UA/l_C4_010.stl",
+    "collision/l_UA/l_C4_011.stl",
+    "collision/l_UA/l_C4_012.stl",
+    "collision/l_UA/l_C4_013.stl",
+    "collision/l_UA/l_C4_014.stl",
+    "collision/l_UA/l_C4_015.stl",
+    "collision/l_UA/l_C4_016.stl",
+    "collision/l_UA/l_C4_017.stl",
+    "collision/l_UA/l_C4_018.stl",
+    "collision/l_UA/l_C4_019.stl",
+    "collision/l_UA/l_C4_020.stl",
+    "collision/l_UA/l_C4_021.stl",
+    "collision/l_UA/l_C4_022.stl",
+    "collision/l_UA/l_C4_023.stl",
+    "collision/l_UA/l_C4_024.stl",
+    "collision/l_UA/l_C4_025.stl",
+    "collision/l_UA/l_C4_026.stl",
+    "collision/l_UA/l_C4_027.stl",
+    "collision/l_UA/l_C4_028.stl",
+    "collision/l_UA/l_C4_029.stl",
+    "collision/l_UA/l_C4_030.stl",
+    "collision/l_UA/l_C4_031.stl",
+    "collision/l_UA/l_C4_032.stl",
+    "collision/l_UA/l_C4_033.stl",
+    "collision/l_UA/l_C4_034.stl",
+    "collision/l_UA/l_C4_035.stl",
+    "collision/l_UA/l_C4_036.stl",
+    "collision/l_UA/l_C4_037.stl",
+    "collision/l_UA/l_C4_038.stl",
+    "collision/l_UA/l_C4_039.stl",
+    "collision/l_UA/l_C4_040.stl",
+    "collision/l_UA/l_C4_041.stl",
+    "collision/l_UA/l_C4_042.stl",
+    "collision/l_UA/l_C4_043.stl",
+    "collision/l_UA/l_C4_044.stl",
+    "collision/l_UA/l_C4_045.stl",
+    "collision/l_UA/l_B4_000.stl",
+    "collision/l_UA/l_B4_001.stl",
+    "collision/l_UA/l_B4_002.stl",
+    "collision/l_UA/l_B4_003.stl",
+    "collision/l_UA/l_B4_004.stl",
+    "collision/l_UA/l_B4_005.stl",
+    "collision/l_UA/l_B4_006.stl",
+    "collision/l_UA/l_B4_007.stl",
+    "collision/l_UA/l_B4_008.stl",
+    "collision/l_UA/l_B4_009.stl",
+    "collision/l_UA/l_B4_010.stl",
+    "collision/l_UA/l_B4_011.stl",
+    "collision/l_UA/l_B4_012.stl",
+    "collision/l_UA/l_B4_013.stl",
+    "collision/l_UA/l_B4_014.stl",
+    "collision/l_UA/l_B4_015.stl",
+    "collision/l_UA/l_B4_016.stl"
+   ],
+   "bodies": [
+    {
+     "name": "l_UA",
+     "parent": null,
+     "origin_in_unit_m": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "name": "l_J4D",
+     "parent": "l_UA",
+     "origin_in_unit_m": [
+      0.0,
+      0.0,
+      -0.15375
+     ],
+     "hinge": {
+      "axis_in_unit": [
+       0.0,
+       -1.0,
+       0.0
+      ],
+      "point_in_unit_m": [
+       0.0,
+       0.0,
+       -0.15375
+      ],
+      "range_rad": [
+       0.0,
+       2.4435
+      ],
+      "joint": "l_j4b"
+     }
+    },
+    {
+     "name": "l_C3",
+     "parent": "l_UA",
+     "origin_in_unit_m": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "name": "l_C4",
+     "parent": "l_UA",
+     "origin_in_unit_m": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "name": "l_B4",
+     "parent": "l_UA",
+     "origin_in_unit_m": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "name": "l_R3",
+     "parent": "l_C3",
+     "origin_in_unit_m": [
+      0.0,
+      0.0,
+      0.06625
+     ],
+     "hinge": {
+      "axis_in_unit": [
+       0.0,
+       0.0,
+       -1.0
+      ],
+      "point_in_unit_m": [
+       0.0,
+       0.0,
+       0.0
+      ],
+      "range_rad": [
+       -1.5708,
+       1.5708
+      ],
+      "joint": "l_j3"
+     },
+     "rotor_of": "DM-J4340P-2EC",
+     "flange_face_centre_in_unit_m": [
+      0.0,
+      0.0,
+      0.000786
+     ],
+     "index_mark_deg": 0.0
+    },
+    {
+     "name": "l_R4",
+     "parent": "l_C4",
+     "origin_in_unit_m": [
+      0.0,
+      0.0,
+      -0.15375
+     ],
+     "hinge": {
+      "axis_in_unit": [
+       0.0,
+       -1.0,
+       0.0
+      ],
+      "point_in_unit_m": [
+       0.0,
+       0.0,
+       -0.15375
+      ],
+      "range_rad": [
+       0.0,
+       2.4435
+      ],
+      "joint": "l_j4"
+     },
+     "rotor_of": "DM-J4340-2EC",
+     "flange_face_centre_in_unit_m": [
+      0.0,
+      0.032131,
+      -0.15375
+     ],
+     "index_mark_deg": 0.0
+    }
+   ]
+  },
+  {
+   "id": "l_FA",
+   "arm": "left",
+   "role": "forearm: bolted onto J4's output flange and onto J4_D together; carries the J5 motor (rotor R5)",
+   "mass_kg": 0.4069,
+   "com_in_unit_m": [
+    -0.00037,
+    0.003306,
+    -0.06317
+   ],
+   "part_file": "parts/l_FA.stl",
+   "collision_files": [
+    "collision/l_FA/l_FA_000.stl",
+    "collision/l_FA/l_FA_001.stl",
+    "collision/l_FA/l_FA_002.stl",
+    "collision/l_FA/l_FA_003.stl",
+    "collision/l_FA/l_FA_004.stl",
+    "collision/l_FA/l_FA_005.stl",
+    "collision/l_FA/l_FA_006.stl",
+    "collision/l_FA/l_FA_007.stl",
+    "collision/l_FA/l_FA_008.stl",
+    "collision/l_FA/l_FA_009.stl",
+    "collision/l_FA/l_FA_010.stl",
+    "collision/l_FA/l_FA_011.stl",
+    "collision/l_FA/l_FA_012.stl",
+    "collision/l_FA/l_FA_013.stl",
+    "collision/l_FA/l_FA_014.stl",
+    "collision/l_FA/l_FA_015.stl",
+    "collision/l_FA/l_FA_016.stl",
+    "collision/l_FA/l_FA_017.stl",
+    "collision/l_FA/l_FA_018.stl",
+    "collision/l_FA/l_FA_019.stl",
+    "collision/l_FA/l_FA_020.stl",
+    "collision/l_FA/l_FA_021.stl",
+    "collision/l_FA/l_FA_022.stl",
+    "collision/l_FA/l_FA_023.stl",
+    "collision/l_FA/l_FA_024.stl",
+    "collision/l_FA/l_FA_025.stl",
+    "collision/l_FA/l_FA_026.stl",
+    "collision/l_FA/l_FA_027.stl",
+    "collision/l_FA/l_FA_028.stl",
+    "collision/l_FA/l_FA_029.stl",
+    "collision/l_FA/l_FA_030.stl",
+    "collision/l_FA/l_FA_031.stl",
+    "collision/l_FA/l_FA_032.stl",
+    "collision/l_FA/l_FA_033.stl",
+    "collision/l_FA/l_FA_034.stl",
+    "collision/l_FA/l_FA_035.stl",
+    "collision/l_FA/l_FA_036.stl",
+    "collision/l_FA/l_FA_037.stl",
+    "collision/l_FA/l_FA_038.stl",
+    "collision/l_FA/l_FA_039.stl",
+    "collision/l_FA/l_FA_040.stl",
+    "collision/l_FA/l_FA_041.stl",
+    "collision/l_FA/l_FA_042.stl",
+    "collision/l_FA/l_FA_043.stl",
+    "collision/l_FA/l_FA_044.stl",
+    "collision/l_FA/l_FA_045.stl",
+    "collision/l_FA/l_FA_046.stl",
+    "collision/l_FA/l_FA_047.stl",
+    "collision/l_FA/l_FA_048.stl",
+    "collision/l_FA/l_FA_049.stl",
+    "collision/l_FA/l_FA_050.stl",
+    "collision/l_FA/l_FA_051.stl",
+    "collision/l_FA/l_FA_052.stl",
+    "collision/l_FA/l_FA_053.stl",
+    "collision/l_FA/l_FA_054.stl",
+    "collision/l_FA/l_FA_055.stl",
+    "collision/l_FA/l_FA_056.stl",
+    "collision/l_FA/l_FA_057.stl",
+    "collision/l_FA/l_FA_058.stl",
+    "collision/l_FA/l_FA_059.stl",
+    "collision/l_FA/l_FA_060.stl",
+    "collision/l_FA/l_FA_061.stl",
+    "collision/l_FA/l_FA_062.stl",
+    "collision/l_FA/l_FA_063.stl",
+    "collision/l_FA/l_FA_064.stl",
+    "collision/l_FA/l_FA_065.stl",
+    "collision/l_FA/l_FA_066.stl",
+    "collision/l_FA/l_FA_067.stl",
+    "collision/l_FA/l_FA_068.stl",
+    "collision/l_FA/l_FA_069.stl",
+    "collision/l_FA/l_FA_070.stl",
+    "collision/l_FA/l_FA_071.stl",
+    "collision/l_FA/l_FA_072.stl",
+    "collision/l_FA/l_FA_073.stl",
+    "collision/l_FA/l_FA_074.stl",
+    "collision/l_FA/l_FA_075.stl",
+    "collision/l_FA/l_FA_076.stl",
+    "collision/l_FA/l_FA_077.stl",
+    "collision/l_FA/l_FA_078.stl",
+    "collision/l_FA/l_FA_079.stl",
+    "collision/l_FA/l_FA_080.stl",
+    "collision/l_FA/l_FA_081.stl",
+    "collision/l_FA/l_FA_082.stl",
+    "collision/l_FA/l_FA_083.stl",
+    "collision/l_FA/l_FA_084.stl",
+    "collision/l_FA/l_FA_085.stl",
+    "collision/l_FA/l_FA_086.stl",
+    "collision/l_FA/l_FA_087.stl",
+    "collision/l_FA/l_FA_088.stl",
+    "collision/l_FA/l_FA_089.stl",
+    "collision/l_FA/l_FA_090.stl",
+    "collision/l_FA/l_FA_091.stl",
+    "collision/l_FA/l_FA_092.stl",
+    "collision/l_FA/l_C5_000.stl",
+    "collision/l_FA/l_C5_001.stl",
+    "collision/l_FA/l_C5_002.stl",
+    "collision/l_FA/l_C5_003.stl",
+    "collision/l_FA/l_C5_004.stl",
+    "collision/l_FA/l_C5_005.stl",
+    "collision/l_FA/l_C5_006.stl",
+    "collision/l_FA/l_C5_007.stl",
+    "collision/l_FA/l_C5_008.stl",
+    "collision/l_FA/l_C5_009.stl",
+    "collision/l_FA/l_C5_010.stl",
+    "collision/l_FA/l_C5_011.stl",
+    "collision/l_FA/l_C5_012.stl",
+    "collision/l_FA/l_C5_013.stl",
+    "collision/l_FA/l_C5_014.stl",
+    "collision/l_FA/l_C5_015.stl",
+    "collision/l_FA/l_C5_016.stl",
+    "collision/l_FA/l_C5_017.stl",
+    "collision/l_FA/l_C5_018.stl",
+    "collision/l_FA/l_C5_019.stl",
+    "collision/l_FA/l_C5_020.stl",
+    "collision/l_FA/l_C5_021.stl",
+    "collision/l_FA/l_C5_022.stl",
+    "collision/l_FA/l_C5_023.stl",
+    "collision/l_FA/l_C5_024.stl",
+    "collision/l_FA/l_C5_025.stl",
+    "collision/l_FA/l_C5_026.stl",
+    "collision/l_FA/l_C5_027.stl",
+    "collision/l_FA/l_C5_028.stl",
+    "collision/l_FA/l_C5_029.stl",
+    "collision/l_FA/l_C5_030.stl",
+    "collision/l_FA/l_C5_031.stl",
+    "collision/l_FA/l_C5_032.stl",
+    "collision/l_FA/l_C5_033.stl",
+    "collision/l_FA/l_C5_034.stl",
+    "collision/l_FA/l_C5_035.stl",
+    "collision/l_FA/l_C5_036.stl",
+    "collision/l_FA/l_C5_037.stl",
+    "collision/l_FA/l_C5_038.stl",
+    "collision/l_FA/l_C5_039.stl",
+    "collision/l_FA/l_C5_040.stl",
+    "collision/l_FA/l_C5_041.stl",
+    "collision/l_FA/l_C5_042.stl",
+    "collision/l_FA/l_C5_043.stl",
+    "collision/l_FA/l_C5_044.stl",
+    "collision/l_FA/l_C5_045.stl",
+    "collision/l_FA/l_C5_046.stl",
+    "collision/l_FA/l_C5_047.stl",
+    "collision/l_FA/l_C5_048.stl",
+    "collision/l_FA/l_C5_049.stl",
+    "collision/l_FA/l_C5_050.stl",
+    "collision/l_FA/l_C5_051.stl",
+    "collision/l_FA/l_C5_052.stl",
+    "collision/l_FA/l_C5_053.stl",
+    "collision/l_FA/l_C5_054.stl",
+    "collision/l_FA/l_C5_055.stl",
+    "collision/l_FA/l_C5_056.stl",
+    "collision/l_FA/l_C5_057.stl",
+    "collision/l_FA/l_C5_058.stl"
+   ],
+   "bodies": [
+    {
+     "name": "l_FA",
+     "parent": null,
+     "origin_in_unit_m": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "name": "l_C5",
+     "parent": "l_FA",
+     "origin_in_unit_m": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "name": "l_R5",
+     "parent": "l_C5",
+     "origin_in_unit_m": [
+      0.0,
+      0.0,
+      -0.0955
+     ],
+     "hinge": {
+      "axis_in_unit": [
+       0.0,
+       0.0,
+       -1.0
+      ],
+      "point_in_unit_m": [
+       0.0,
+       0.0,
+       -0.0955
+      ],
+      "range_rad": [
+       -1.5708,
+       1.5708
+      ],
+      "joint": "l_j5"
+     },
+     "rotor_of": "DM-J4310-2EC",
+     "flange_face_centre_in_unit_m": [
+      0.0,
+      0.0,
+      -0.095706
+     ],
+     "index_mark_deg": 0.0
+    }
+   ]
+  },
+  {
+   "id": "l_HA",
+   "arm": "left",
+   "role": "J4 cable holder A: a plate over J4, seated on the forearm's J4_E side",
+   "mass_kg": 0.0285,
+   "com_in_unit_m": [
+    -0.002945,
+    0.03902,
+    -0.164318
+   ],
+   "part_file": "parts/l_HA.stl",
+   "collision_files": [
+    "collision/l_HA/l_HA_000.stl",
+    "collision/l_HA/l_HA_001.stl",
+    "collision/l_HA/l_HA_002.stl",
+    "collision/l_HA/l_HA_003.stl",
+    "collision/l_HA/l_HA_004.stl",
+    "collision/l_HA/l_HA_005.stl",
+    "collision/l_HA/l_HA_006.stl",
+    "collision/l_HA/l_HA_007.stl",
+    "collision/l_HA/l_HA_008.stl",
+    "collision/l_HA/l_HA_009.stl",
+    "collision/l_HA/l_HA_010.stl",
+    "collision/l_HA/l_HA_011.stl",
+    "collision/l_HA/l_HA_012.stl",
+    "collision/l_HA/l_HA_013.stl",
+    "collision/l_HA/l_HA_014.stl",
+    "collision/l_HA/l_HA_015.stl"
+   ],
+   "bodies": [
+    {
+     "name": "l_HA",
+     "parent": null,
+     "origin_in_unit_m": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    }
+   ]
+  },
+  {
+   "id": "l_HB",
+   "arm": "left",
+   "role": "J4 cable holder B: a plate over J4, seated on J4_D (the upper arm's bearing side)",
+   "mass_kg": 0.0285,
+   "com_in_unit_m": [
+    0.001898,
+    -0.039143,
+    -0.010656
+   ],
+   "part_file": "parts/l_HB.stl",
+   "collision_files": [
+    "collision/l_HB/l_HB_000.stl",
+    "collision/l_HB/l_HB_001.stl",
+    "collision/l_HB/l_HB_002.stl",
+    "collision/l_HB/l_HB_003.stl",
+    "collision/l_HB/l_HB_004.stl",
+    "collision/l_HB/l_HB_005.stl",
+    "collision/l_HB/l_HB_006.stl",
+    "collision/l_HB/l_HB_007.stl",
+    "collision/l_HB/l_HB_008.stl",
+    "collision/l_HB/l_HB_009.stl",
+    "collision/l_HB/l_HB_010.stl",
+    "collision/l_HB/l_HB_011.stl",
+    "collision/l_HB/l_HB_012.stl",
+    "collision/l_HB/l_HB_013.stl",
+    "collision/l_HB/l_HB_014.stl",
+    "collision/l_HB/l_HB_015.stl"
+   ],
+   "bodies": [
+    {
+     "name": "l_HB",
+     "parent": null,
+     "origin_in_unit_m": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    }
+   ]
+  },
+  {
+   "id": "l_W",
+   "arm": "left",
+   "role": "wrist: J5's output side with the J6 joint and the J7 motor (rotor R7)",
+   "mass_kg": 0.7618,
+   "com_in_unit_m": [
+    0.002132,
+    0.001488,
+    -0.080414
+   ],
+   "part_file": "parts/l_W.stl",
+   "collision_files": [
+    "collision/l_W/l_W_000.stl",
+    "collision/l_W/l_W_001.stl",
+    "collision/l_W/l_W_002.stl",
+    "collision/l_W/l_W_003.stl",
+    "collision/l_W/l_W_004.stl",
+    "collision/l_W/l_W_005.stl",
+    "collision/l_W/l_W_006.stl",
+    "collision/l_W/l_W_007.stl",
+    "collision/l_W/l_W_008.stl",
+    "collision/l_W/l_W_009.stl",
+    "collision/l_W/l_W_010.stl",
+    "collision/l_W/l_W_011.stl",
+    "collision/l_W/l_W_012.stl",
+    "collision/l_W/l_W_013.stl",
+    "collision/l_W/l_W_014.stl",
+    "collision/l_W/l_W_015.stl",
+    "collision/l_W/l_W_016.stl",
+    "collision/l_W/l_W_017.stl",
+    "collision/l_W/l_W_018.stl",
+    "collision/l_W/l_W_019.stl",
+    "collision/l_W/l_W_020.stl",
+    "collision/l_W/l_W_021.stl",
+    "collision/l_W/l_W_022.stl",
+    "collision/l_W/l_W_023.stl",
+    "collision/l_W/l_W_024.stl",
+    "collision/l_W/l_W_025.stl",
+    "collision/l_W/l_W_026.stl",
+    "collision/l_W/l_W_027.stl",
+    "collision/l_W/l_W_028.stl",
+    "collision/l_W/l_W_029.stl",
+    "collision/l_W/l_W_030.stl",
+    "collision/l_W/l_W_031.stl",
+    "collision/l_W/l_W_032.stl",
+    "collision/l_W/l_W_033.stl",
+    "collision/l_W/l_W_034.stl",
+    "collision/l_W/l_W_035.stl",
+    "collision/l_W/l_W_036.stl",
+    "collision/l_W/l_W_037.stl",
+    "collision/l_W/l_W_038.stl",
+    "collision/l_W/l_W_039.stl",
+    "collision/l_W/l_W_040.stl",
+    "collision/l_W/l_W_041.stl",
+    "collision/l_W/l_W_042.stl",
+    "collision/l_W/l_W_043.stl",
+    "collision/l_W/l_W_044.stl",
+    "collision/l_W/l_W_045.stl",
+    "collision/l_W/l_W_046.stl",
+    "collision/l_W/l_W_047.stl",
+    "collision/l_W/l_W_048.stl",
+    "collision/l_W/l_W_049.stl",
+    "collision/l_W/l_W_050.stl",
+    "collision/l_W/l_W_051.stl",
+    "collision/l_W/l_W_052.stl",
+    "collision/l_W/l_W_053.stl",
+    "collision/l_W/l_W_054.stl",
+    "collision/l_W/l_W_055.stl",
+    "collision/l_W/l_W_056.stl",
+    "collision/l_W/l_W_057.stl",
+    "collision/l_W/l_W_058.stl",
+    "collision/l_W/l_W_059.stl",
+    "collision/l_W/l_W_060.stl",
+    "collision/l_W/l_W_061.stl",
+    "collision/l_W/l_W_062.stl",
+    "collision/l_W/l_W_063.stl",
+    "collision/l_W/l_W_064.stl",
+    "collision/l_W/l_W_065.stl",
+    "collision/l_W/l_W_066.stl",
+    "collision/l_W/l_W_067.stl",
+    "collision/l_W/l_W_068.stl",
+    "collision/l_W/l_W_069.stl",
+    "collision/l_W/l_W_070.stl",
+    "collision/l_W/l_W_071.stl",
+    "collision/l_W/l_W_072.stl",
+    "collision/l_W/l_W_073.stl",
+    "collision/l_W/l_W_074.stl",
+    "collision/l_W/l_W_075.stl",
+    "collision/l_W/l_W_076.stl",
+    "collision/l_W/l_W_077.stl",
+    "collision/l_W/l_W_078.stl",
+    "collision/l_W/l_W_079.stl",
+    "collision/l_W/l_W_080.stl",
+    "collision/l_W/l_W_081.stl",
+    "collision/l_W/l_W_082.stl",
+    "collision/l_W/l_W_083.stl",
+    "collision/l_W/l_W_084.stl",
+    "collision/l_W/l_W_085.stl",
+    "collision/l_W/l_W_086.stl",
+    "collision/l_W/l_W_087.stl",
+    "collision/l_W/l_W_088.stl",
+    "collision/l_W/l_W_089.stl",
+    "collision/l_W/l_W_090.stl",
+    "collision/l_W/l_W_091.stl",
+    "collision/l_W/l_W_092.stl",
+    "collision/l_W/l_W_093.stl",
+    "collision/l_W/l_W_094.stl",
+    "collision/l_W/l_W_095.stl",
+    "collision/l_W/l_W_096.stl",
+    "collision/l_W/l_W_097.stl",
+    "collision/l_W/l_W_098.stl",
+    "collision/l_W/l_W_099.stl",
+    "collision/l_W/l_W_100.stl",
+    "collision/l_W/l_W_101.stl",
+    "collision/l_W/l_W_102.stl",
+    "collision/l_W/l_W_103.stl",
+    "collision/l_W/l_W_104.stl",
+    "collision/l_W/l_W_105.stl",
+    "collision/l_W/l_W_106.stl",
+    "collision/l_W/l_W_107.stl",
+    "collision/l_W/l_W_108.stl",
+    "collision/l_W/l_W_109.stl",
+    "collision/l_W/l_W_110.stl",
+    "collision/l_W/l_W_111.stl",
+    "collision/l_W/l_W_112.stl",
+    "collision/l_W/l_W_113.stl",
+    "collision/l_W/l_W_114.stl",
+    "collision/l_W/l_W_115.stl",
+    "collision/l_W/l_W_116.stl",
+    "collision/l_W/l_W_117.stl",
+    "collision/l_W/l_W_118.stl",
+    "collision/l_W/l_W_119.stl",
+    "collision/l_W/l_W_120.stl",
+    "collision/l_W/l_W_121.stl",
+    "collision/l_W/l_W6_000.stl",
+    "collision/l_W/l_W6_001.stl",
+    "collision/l_W/l_W6_002.stl",
+    "collision/l_W/l_W6_003.stl",
+    "collision/l_W/l_W6_004.stl",
+    "collision/l_W/l_W6_005.stl",
+    "collision/l_W/l_W6_006.stl",
+    "collision/l_W/l_W6_007.stl",
+    "collision/l_W/l_W6_008.stl",
+    "collision/l_W/l_W6_009.stl",
+    "collision/l_W/l_W6_010.stl",
+    "collision/l_W/l_W6_011.stl",
+    "collision/l_W/l_W6_012.stl",
+    "collision/l_W/l_W6_013.stl",
+    "collision/l_W/l_W6_014.stl",
+    "collision/l_W/l_W6_015.stl",
+    "collision/l_W/l_W6_016.stl",
+    "collision/l_W/l_W6_017.stl",
+    "collision/l_W/l_W6_018.stl",
+    "collision/l_W/l_W6_019.stl",
+    "collision/l_W/l_W6_020.stl",
+    "collision/l_W/l_W6_021.stl",
+    "collision/l_W/l_W6_022.stl",
+    "collision/l_W/l_W6_023.stl",
+    "collision/l_W/l_W6_024.stl",
+    "collision/l_W/l_W6_025.stl",
+    "collision/l_W/l_W6_026.stl",
+    "collision/l_W/l_W6_027.stl",
+    "collision/l_W/l_W6_028.stl",
+    "collision/l_W/l_W6_029.stl",
+    "collision/l_W/l_W6_030.stl",
+    "collision/l_W/l_W6_031.stl",
+    "collision/l_W/l_W6_032.stl",
+    "collision/l_W/l_W6_033.stl",
+    "collision/l_W/l_W6_034.stl",
+    "collision/l_W/l_W6_035.stl",
+    "collision/l_W/l_W6_036.stl",
+    "collision/l_W/l_W6_037.stl",
+    "collision/l_W/l_W6_038.stl",
+    "collision/l_W/l_W6_039.stl",
+    "collision/l_W/l_W6_040.stl",
+    "collision/l_W/l_W6_041.stl",
+    "collision/l_W/l_W6_042.stl",
+    "collision/l_W/l_W6_043.stl",
+    "collision/l_W/l_W6_044.stl",
+    "collision/l_W/l_W6_045.stl",
+    "collision/l_W/l_W6_046.stl",
+    "collision/l_W/l_W6_047.stl",
+    "collision/l_W/l_W6_048.stl",
+    "collision/l_W/l_W6_049.stl",
+    "collision/l_W/l_W6_050.stl",
+    "collision/l_W/l_W6_051.stl",
+    "collision/l_W/l_W6_052.stl",
+    "collision/l_W/l_W6_053.stl",
+    "collision/l_W/l_W6_054.stl",
+    "collision/l_W/l_W6_055.stl",
+    "collision/l_W/l_W6_056.stl",
+    "collision/l_W/l_W6_057.stl",
+    "collision/l_W/l_W6_058.stl",
+    "collision/l_W/l_W6_059.stl",
+    "collision/l_W/l_W6_060.stl",
+    "collision/l_W/l_W6_061.stl",
+    "collision/l_W/l_W6_062.stl",
+    "collision/l_W/l_W6_063.stl",
+    "collision/l_W/l_W6_064.stl",
+    "collision/l_W/l_W6_065.stl",
+    "collision/l_W/l_W6_066.stl",
+    "collision/l_W/l_W6_067.stl",
+    "collision/l_W/l_W6_068.stl",
+    "collision/l_W/l_W6_069.stl",
+    "collision/l_W/l_W6_070.stl",
+    "collision/l_W/l_W6_071.stl",
+    "collision/l_W/l_W6_072.stl",
+    "collision/l_W/l_W6_073.stl",
+    "collision/l_W/l_W6_074.stl",
+    "collision/l_W/l_W6_075.stl",
+    "collision/l_W/l_W6_076.stl",
+    "collision/l_W/l_W6_077.stl",
+    "collision/l_W/l_W6_078.stl",
+    "collision/l_W/l_W6_079.stl",
+    "collision/l_W/l_W6_080.stl",
+    "collision/l_W/l_W6_081.stl",
+    "collision/l_W/l_W6_082.stl",
+    "collision/l_W/l_W6_083.stl",
+    "collision/l_W/l_W6_084.stl",
+    "collision/l_W/l_W6_085.stl",
+    "collision/l_W/l_W6_086.stl",
+    "collision/l_W/l_W6_087.stl",
+    "collision/l_W/l_W6_088.stl",
+    "collision/l_W/l_W6_089.stl",
+    "collision/l_W/l_W6_090.stl",
+    "collision/l_W/l_W6_091.stl",
+    "collision/l_W/l_W6_092.stl",
+    "collision/l_W/l_W6_093.stl",
+    "collision/l_W/l_W6_094.stl",
+    "collision/l_W/l_W6_095.stl",
+    "collision/l_W/l_W6_096.stl",
+    "collision/l_W/l_W6_097.stl",
+    "collision/l_W/l_W6_098.stl",
+    "collision/l_W/l_W6_099.stl",
+    "collision/l_W/l_W6_100.stl",
+    "collision/l_W/l_W6_101.stl",
+    "collision/l_W/l_W6_102.stl",
+    "collision/l_W/l_W6_103.stl",
+    "collision/l_W/l_W6_104.stl",
+    "collision/l_W/l_W6_105.stl",
+    "collision/l_W/l_W6_106.stl",
+    "collision/l_W/l_W6_107.stl",
+    "collision/l_W/l_W6_108.stl",
+    "collision/l_W/l_W6_109.stl",
+    "collision/l_W/l_W6_110.stl",
+    "collision/l_W/l_W6_111.stl",
+    "collision/l_W/l_W6_112.stl",
+    "collision/l_W/l_W6_113.stl",
+    "collision/l_W/l_W6_114.stl",
+    "collision/l_W/l_W6_115.stl",
+    "collision/l_W/l_W6_116.stl",
+    "collision/l_W/l_W6_117.stl",
+    "collision/l_W/l_W6_118.stl",
+    "collision/l_W/l_W6_119.stl",
+    "collision/l_W/l_W6_120.stl",
+    "collision/l_W/l_W6_121.stl",
+    "collision/l_W/l_W6_122.stl",
+    "collision/l_W/l_W6_123.stl",
+    "collision/l_W/l_W6_124.stl",
+    "collision/l_W/l_W6_125.stl",
+    "collision/l_W/l_W6_126.stl",
+    "collision/l_W/l_W6_127.stl",
+    "collision/l_W/l_W6_128.stl",
+    "collision/l_W/l_W6_129.stl",
+    "collision/l_W/l_W6_130.stl",
+    "collision/l_W/l_W6_131.stl",
+    "collision/l_W/l_W6_132.stl",
+    "collision/l_W/l_W6_133.stl",
+    "collision/l_W/l_W6_134.stl",
+    "collision/l_W/l_W6_135.stl",
+    "collision/l_W/l_W6_136.stl",
+    "collision/l_W/l_W6_137.stl",
+    "collision/l_W/l_W6_138.stl",
+    "collision/l_W/l_W6_139.stl",
+    "collision/l_W/l_W6_140.stl",
+    "collision/l_W/l_W6_141.stl",
+    "collision/l_W/l_W6_142.stl",
+    "collision/l_W/l_W6_143.stl",
+    "collision/l_W/l_W6_144.stl",
+    "collision/l_W/l_W6_145.stl",
+    "collision/l_W/l_W6_146.stl",
+    "collision/l_W/l_W6_147.stl",
+    "collision/l_W/l_W6_148.stl",
+    "collision/l_W/l_W6_149.stl",
+    "collision/l_W/l_W6_150.stl",
+    "collision/l_W/l_W6_151.stl",
+    "collision/l_W/l_W6_152.stl",
+    "collision/l_W/l_W6_153.stl",
+    "collision/l_W/l_W6_154.stl",
+    "collision/l_W/l_W6_155.stl",
+    "collision/l_W/l_W6_156.stl",
+    "collision/l_W/l_W6_157.stl",
+    "collision/l_W/l_W6_158.stl",
+    "collision/l_W/l_W6_159.stl",
+    "collision/l_W/l_W6_160.stl",
+    "collision/l_W/l_W6_161.stl",
+    "collision/l_W/l_W6_162.stl",
+    "collision/l_W/l_W6_163.stl",
+    "collision/l_W/l_W6_164.stl",
+    "collision/l_W/l_W6_165.stl",
+    "collision/l_W/l_W6_166.stl",
+    "collision/l_W/l_W6_167.stl",
+    "collision/l_W/l_W6_168.stl",
+    "collision/l_W/l_W6_169.stl",
+    "collision/l_W/l_W6_170.stl",
+    "collision/l_W/l_W6_171.stl",
+    "collision/l_W/l_W6_172.stl",
+    "collision/l_W/l_W6_173.stl",
+    "collision/l_W/l_W6_174.stl",
+    "collision/l_W/l_W6_175.stl",
+    "collision/l_W/l_W6_176.stl",
+    "collision/l_W/l_W6_177.stl",
+    "collision/l_W/l_W6_178.stl",
+    "collision/l_W/l_W6_179.stl",
+    "collision/l_W/l_W6_180.stl",
+    "collision/l_W/l_W6_181.stl",
+    "collision/l_W/l_W6_182.stl",
+    "collision/l_W/l_W6_183.stl",
+    "collision/l_W/l_W6_184.stl",
+    "collision/l_W/l_W6_185.stl",
+    "collision/l_W/l_W6_186.stl",
+    "collision/l_W/l_W6_187.stl",
+    "collision/l_W/l_W6_188.stl",
+    "collision/l_W/l_W6_189.stl",
+    "collision/l_W/l_W6_190.stl",
+    "collision/l_W/l_W6_191.stl",
+    "collision/l_W/l_W6_192.stl",
+    "collision/l_W/l_W6_193.stl",
+    "collision/l_W/l_W6_194.stl",
+    "collision/l_W/l_W6_195.stl",
+    "collision/l_W/l_W6_196.stl",
+    "collision/l_W/l_W6_197.stl",
+    "collision/l_W/l_W6_198.stl",
+    "collision/l_W/l_W6_199.stl",
+    "collision/l_W/l_W6_200.stl",
+    "collision/l_W/l_W6_201.stl",
+    "collision/l_W/l_W6_202.stl",
+    "collision/l_W/l_W6_203.stl",
+    "collision/l_W/l_W6_204.stl",
+    "collision/l_W/l_W6_205.stl",
+    "collision/l_W/l_W6_206.stl",
+    "collision/l_W/l_W6_207.stl",
+    "collision/l_W/l_W6_208.stl",
+    "collision/l_W/l_W6_209.stl",
+    "collision/l_W/l_W6_210.stl",
+    "collision/l_W/l_W6_211.stl",
+    "collision/l_W/l_W6_212.stl",
+    "collision/l_W/l_W6_213.stl",
+    "collision/l_W/l_W6_214.stl",
+    "collision/l_W/l_W6_215.stl",
+    "collision/l_W/l_W6_216.stl",
+    "collision/l_W/l_W6_217.stl",
+    "collision/l_W/l_W6_218.stl",
+    "collision/l_W/l_W6_219.stl",
+    "collision/l_W/l_W6_220.stl",
+    "collision/l_W/l_W6_221.stl",
+    "collision/l_W/l_W6_222.stl",
+    "collision/l_W/l_W6_223.stl",
+    "collision/l_W/l_W6_224.stl",
+    "collision/l_W/l_W6_225.stl",
+    "collision/l_W/l_C6_000.stl",
+    "collision/l_W/l_C6_001.stl",
+    "collision/l_W/l_C6_002.stl",
+    "collision/l_W/l_C6_003.stl",
+    "collision/l_W/l_C6_004.stl",
+    "collision/l_W/l_C6_005.stl",
+    "collision/l_W/l_C6_006.stl",
+    "collision/l_W/l_C6_007.stl",
+    "collision/l_W/l_C6_008.stl",
+    "collision/l_W/l_C6_009.stl",
+    "collision/l_W/l_C6_010.stl",
+    "collision/l_W/l_C6_011.stl",
+    "collision/l_W/l_C6_012.stl",
+    "collision/l_W/l_C6_013.stl",
+    "collision/l_W/l_C6_014.stl",
+    "collision/l_W/l_C6_015.stl",
+    "collision/l_W/l_C6_016.stl",
+    "collision/l_W/l_C6_017.stl",
+    "collision/l_W/l_C6_018.stl",
+    "collision/l_W/l_C6_019.stl",
+    "collision/l_W/l_C6_020.stl",
+    "collision/l_W/l_C6_021.stl",
+    "collision/l_W/l_C6_022.stl",
+    "collision/l_W/l_C6_023.stl",
+    "collision/l_W/l_C7_000.stl",
+    "collision/l_W/l_C7_001.stl",
+    "collision/l_W/l_C7_002.stl",
+    "collision/l_W/l_C7_003.stl",
+    "collision/l_W/l_C7_004.stl",
+    "collision/l_W/l_C7_005.stl",
+    "collision/l_W/l_C7_006.stl",
+    "collision/l_W/l_C7_007.stl",
+    "collision/l_W/l_C7_008.stl",
+    "collision/l_W/l_C7_009.stl",
+    "collision/l_W/l_C7_010.stl",
+    "collision/l_W/l_C7_011.stl",
+    "collision/l_W/l_C7_012.stl",
+    "collision/l_W/l_C7_013.stl",
+    "collision/l_W/l_C7_014.stl",
+    "collision/l_W/l_C7_015.stl",
+    "collision/l_W/l_C7_016.stl",
+    "collision/l_W/l_C7_017.stl",
+    "collision/l_W/l_C7_018.stl",
+    "collision/l_W/l_C7_019.stl",
+    "collision/l_W/l_C7_020.stl",
+    "collision/l_W/l_C7_021.stl",
+    "collision/l_W/l_C7_022.stl",
+    "collision/l_W/l_C7_023.stl",
+    "collision/l_W/l_C7_024.stl",
+    "collision/l_W/l_C7_025.stl",
+    "collision/l_W/l_C7_026.stl",
+    "collision/l_W/l_C7_027.stl",
+    "collision/l_W/l_C7_028.stl",
+    "collision/l_W/l_C7_029.stl",
+    "collision/l_W/l_C7_030.stl",
+    "collision/l_W/l_C7_031.stl",
+    "collision/l_W/l_C7_032.stl",
+    "collision/l_W/l_C7_033.stl",
+    "collision/l_W/l_C7_034.stl",
+    "collision/l_W/l_C7_035.stl",
+    "collision/l_W/l_C7_036.stl",
+    "collision/l_W/l_C7_037.stl",
+    "collision/l_W/l_C7_038.stl",
+    "collision/l_W/l_C7_039.stl",
+    "collision/l_W/l_C7_040.stl",
+    "collision/l_W/l_C7_041.stl",
+    "collision/l_W/l_C7_042.stl",
+    "collision/l_W/l_C7_043.stl",
+    "collision/l_W/l_C7_044.stl",
+    "collision/l_W/l_C7_045.stl",
+    "collision/l_W/l_C7_046.stl",
+    "collision/l_W/l_C7_047.stl",
+    "collision/l_W/l_C7_048.stl",
+    "collision/l_W/l_C7_049.stl",
+    "collision/l_W/l_C7_050.stl",
+    "collision/l_W/l_C7_051.stl",
+    "collision/l_W/l_C7_052.stl",
+    "collision/l_W/l_C7_053.stl",
+    "collision/l_W/l_C7_054.stl",
+    "collision/l_W/l_C7_055.stl",
+    "collision/l_W/l_C7_056.stl",
+    "collision/l_W/l_C7_057.stl",
+    "collision/l_W/l_C7_058.stl",
+    "collision/l_W/l_C7_059.stl",
+    "collision/l_W/l_C7_060.stl",
+    "collision/l_W/l_C7_061.stl",
+    "collision/l_W/l_C7_062.stl",
+    "collision/l_W/l_C7_063.stl",
+    "collision/l_W/l_C7_064.stl"
+   ],
+   "bodies": [
+    {
+     "name": "l_W",
+     "parent": null,
+     "origin_in_unit_m": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "name": "l_W6",
+     "parent": "l_W",
+     "origin_in_unit_m": [
+      0.0,
+      0.0,
+      -0.1205
+     ],
+     "hinge": {
+      "axis_in_unit": [
+       0.0,
+       -1.0,
+       0.0
+      ],
+      "point_in_unit_m": [
+       0.0,
+       0.0,
+       -0.1205
+      ],
+      "range_rad": [
+       -0.7854,
+       0.7854
+      ],
+      "joint": "l_j6"
+     }
+    },
+    {
+     "name": "l_C6",
+     "parent": "l_W",
+     "origin_in_unit_m": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "name": "l_C7",
+     "parent": "l_W6",
+     "origin_in_unit_m": [
+      0.0,
+      0.0,
+      -0.1205
+     ]
+    },
+    {
+     "name": "l_R7",
+     "parent": "l_C7",
+     "origin_in_unit_m": [
+      0.0,
+      0.0,
+      -0.1205
+     ],
+     "hinge": {
+      "axis_in_unit": [
+       1.0,
+       0.0,
+       0.0
+      ],
+      "point_in_unit_m": [
+       0.0,
+       0.0,
+       -0.1205
+      ],
+      "range_rad": [
+       -1.5708,
+       1.5708
+      ],
+      "joint": "l_j7"
+     },
+     "rotor_of": "DM-J4310-2EC",
+     "flange_face_centre_in_unit_m": [
+      0.031457,
+      0.0,
+      -0.1205
+     ],
+     "index_mark_deg": 0.0
+    }
+   ]
+  },
+  {
+   "id": "l_EE",
+   "arm": "left",
+   "role": "end effector: the gripper (J7 adapter, its motor and two fingers); bolted onto J7's output flange",
+   "mass_kg": 0.6493,
+   "com_in_unit_m": [
+    0.005467,
+    -0.007365,
+    -0.075097
+   ],
+   "part_file": "parts/l_EE.stl",
+   "collision_files": [
+    "collision/l_EE/l_EE_000.stl",
+    "collision/l_EE/l_EE_001.stl",
+    "collision/l_EE/l_EE_002.stl",
+    "collision/l_EE/l_EE_003.stl",
+    "collision/l_EE/l_EE_004.stl",
+    "collision/l_EE/l_EE_005.stl",
+    "collision/l_EE/l_EE_006.stl",
+    "collision/l_EE/l_EE_007.stl",
+    "collision/l_EE/l_EE_008.stl",
+    "collision/l_EE/l_EE_009.stl",
+    "collision/l_EE/l_EE_010.stl",
+    "collision/l_EE/l_EE_011.stl",
+    "collision/l_EE/l_EE_012.stl",
+    "collision/l_EE/l_EE_013.stl",
+    "collision/l_EE/l_EE_014.stl",
+    "collision/l_EE/l_EE_015.stl",
+    "collision/l_EE/l_EE_016.stl",
+    "collision/l_EE/l_EE_017.stl",
+    "collision/l_EE/l_EE_018.stl",
+    "collision/l_EE/l_EE_019.stl",
+    "collision/l_EE/l_EE_020.stl",
+    "collision/l_EE/l_EE_021.stl",
+    "collision/l_EE/l_EE_022.stl",
+    "collision/l_EE/l_EE_023.stl",
+    "collision/l_EE/l_EE_024.stl",
+    "collision/l_EE/l_EE_025.stl",
+    "collision/l_EE/l_EE_026.stl",
+    "collision/l_EE/l_EE_027.stl",
+    "collision/l_EE/l_EE_028.stl",
+    "collision/l_EE/l_EE_029.stl",
+    "collision/l_EE/l_EE_030.stl",
+    "collision/l_EE/l_EE_031.stl",
+    "collision/l_EE/l_EE_032.stl",
+    "collision/l_EE/l_EE_033.stl",
+    "collision/l_EE/l_EE_034.stl",
+    "collision/l_EE/l_EE_035.stl",
+    "collision/l_EE/l_EE_036.stl",
+    "collision/l_EE/l_EE_037.stl",
+    "collision/l_EE/l_EE_038.stl",
+    "collision/l_EE/l_EE_039.stl",
+    "collision/l_EE/l_EE_040.stl",
+    "collision/l_EE/l_EE_041.stl",
+    "collision/l_EE/l_EE_042.stl",
+    "collision/l_EE/l_EE_043.stl",
+    "collision/l_EE/l_EE_044.stl",
+    "collision/l_EE/l_EE_045.stl",
+    "collision/l_EE/l_EE_046.stl",
+    "collision/l_EE/l_EE_047.stl",
+    "collision/l_EE/l_EE_048.stl",
+    "collision/l_EE/l_EE_049.stl",
+    "collision/l_EE/l_EE_050.stl",
+    "collision/l_EE/l_EE_051.stl",
+    "collision/l_EE/l_EE_052.stl",
+    "collision/l_EE/l_EE_053.stl",
+    "collision/l_EE/l_EE_054.stl",
+    "collision/l_EE/l_EE_055.stl",
+    "collision/l_EE/l_EE_056.stl",
+    "collision/l_EE/l_EE_057.stl",
+    "collision/l_EE/l_EE_058.stl",
+    "collision/l_EE/l_EE_059.stl",
+    "collision/l_EE/l_EE_060.stl",
+    "collision/l_EE/l_EE_061.stl",
+    "collision/l_EE/l_EE_062.stl",
+    "collision/l_EE/l_EE_063.stl",
+    "collision/l_EE/l_EE_064.stl",
+    "collision/l_EE/l_EE_065.stl",
+    "collision/l_EE/l_EE_066.stl",
+    "collision/l_EE/l_EE_067.stl",
+    "collision/l_EE/l_EE_068.stl",
+    "collision/l_EE/l_EE_069.stl",
+    "collision/l_EE/l_EE_070.stl",
+    "collision/l_EE/l_EE_071.stl",
+    "collision/l_EE/l_EE_072.stl",
+    "collision/l_EE/l_EE_073.stl",
+    "collision/l_EE/l_EE_074.stl",
+    "collision/l_EE/l_EE_075.stl",
+    "collision/l_EE/l_EE_076.stl",
+    "collision/l_EE/l_EE_077.stl",
+    "collision/l_EE/l_EE_078.stl",
+    "collision/l_EE/l_EE_079.stl",
+    "collision/l_EE/l_EE_080.stl",
+    "collision/l_EE/l_EE_081.stl",
+    "collision/l_EE/l_EE_082.stl",
+    "collision/l_EE/l_EE_083.stl",
+    "collision/l_EE/l_EE_084.stl",
+    "collision/l_EE/l_EE_085.stl",
+    "collision/l_EE/l_EE_086.stl",
+    "collision/l_EE/l_EE_087.stl",
+    "collision/l_EE/l_EE_088.stl",
+    "collision/l_EE/l_EE_089.stl",
+    "collision/l_EE/l_EE_090.stl",
+    "collision/l_EE/l_EE_091.stl",
+    "collision/l_EE/l_EE_092.stl",
+    "collision/l_EE/l_EE_093.stl",
+    "collision/l_EE/l_EE_094.stl",
+    "collision/l_EE/l_EE_095.stl",
+    "collision/l_EE/l_EE_096.stl",
+    "collision/l_EE/l_EE_097.stl",
+    "collision/l_EE/l_EE_098.stl",
+    "collision/l_EE/l_EE_099.stl",
+    "collision/l_EE/l_EE_100.stl",
+    "collision/l_EE/l_EE_101.stl",
+    "collision/l_EE/l_EE_102.stl",
+    "collision/l_EE/l_EE_103.stl",
+    "collision/l_EE/l_EE_104.stl",
+    "collision/l_EE/l_EE_105.stl",
+    "collision/l_EE/l_EE_106.stl",
+    "collision/l_EE/l_EE_107.stl",
+    "collision/l_EE/l_EE_108.stl",
+    "collision/l_EE/l_EE_109.stl",
+    "collision/l_EE/l_EE_110.stl",
+    "collision/l_EE/l_EE_111.stl",
+    "collision/l_EE/l_EE_112.stl",
+    "collision/l_EE/l_EE_113.stl",
+    "collision/l_EE/l_EE_114.stl",
+    "collision/l_EE/l_EE_115.stl",
+    "collision/l_EE/l_EE_116.stl",
+    "collision/l_EE/l_EE_117.stl",
+    "collision/l_EE/l_EE_118.stl",
+    "collision/l_EE/l_EE_119.stl",
+    "collision/l_EE/l_EE_120.stl",
+    "collision/l_EE/l_EE_121.stl",
+    "collision/l_EE/l_EE_122.stl",
+    "collision/l_EE/l_EE_123.stl",
+    "collision/l_EE/l_EE_124.stl",
+    "collision/l_EE/l_EE_125.stl",
+    "collision/l_EE/l_EE_126.stl",
+    "collision/l_EE/l_EE_127.stl",
+    "collision/l_EE/l_EE_128.stl",
+    "collision/l_EE/l_EE_129.stl",
+    "collision/l_EE/l_EE_130.stl",
+    "collision/l_EE/l_EE_131.stl",
+    "collision/l_EE/l_EE_132.stl",
+    "collision/l_EE/l_EE_133.stl",
+    "collision/l_EE/l_EE_134.stl",
+    "collision/l_EE/l_EE_135.stl",
+    "collision/l_EE/l_EE_136.stl",
+    "collision/l_EE/l_EE_137.stl",
+    "collision/l_EE/l_EE_138.stl",
+    "collision/l_EE/l_EE_139.stl",
+    "collision/l_EE/l_EE_140.stl",
+    "collision/l_EE/l_EE_141.stl",
+    "collision/l_EE/l_EE_142.stl",
+    "collision/l_EE/l_EE_143.stl",
+    "collision/l_EE/l_EE_144.stl",
+    "collision/l_EE/l_EE_145.stl",
+    "collision/l_EE/l_EE_146.stl",
+    "collision/l_EE/l_EE_147.stl",
+    "collision/l_EE/l_EE_148.stl",
+    "collision/l_EE/l_EE_149.stl",
+    "collision/l_EE/l_EE_150.stl",
+    "collision/l_EE/l_EE_151.stl",
+    "collision/l_EE/l_EE_152.stl",
+    "collision/l_EE/l_EE_153.stl",
+    "collision/l_EE/l_EE_154.stl",
+    "collision/l_EE/l_EE_155.stl",
+    "collision/l_EE/l_EE_156.stl",
+    "collision/l_EE/l_EE_157.stl",
+    "collision/l_EE/l_EE_158.stl",
+    "collision/l_EE/l_EE_159.stl",
+    "collision/l_EE/l_EE_160.stl",
+    "collision/l_EE/l_EE_161.stl",
+    "collision/l_EE/l_EE_162.stl",
+    "collision/l_EE/l_EE_163.stl",
+    "collision/l_EE/l_EE_164.stl",
+    "collision/l_EE/l_EE_165.stl",
+    "collision/l_EE/l_EE_166.stl",
+    "collision/l_EE/l_EE_167.stl",
+    "collision/l_EE/l_EE_168.stl",
+    "collision/l_EE/l_EE_169.stl",
+    "collision/l_EE/l_EE_170.stl",
+    "collision/l_EE/l_EE_171.stl",
+    "collision/l_EE/l_EE_172.stl",
+    "collision/l_EE/l_EE_173.stl",
+    "collision/l_EE/l_EE_174.stl",
+    "collision/l_EE/l_EE_175.stl",
+    "collision/l_EE/l_EE_176.stl",
+    "collision/l_EE/l_EE_177.stl",
+    "collision/l_EE/l_EE_178.stl",
+    "collision/l_EE/l_EE_179.stl",
+    "collision/l_EE/l_EE_180.stl",
+    "collision/l_EE/l_EE_181.stl",
+    "collision/l_EE/l_EE_182.stl",
+    "collision/l_EE/l_EE_183.stl",
+    "collision/l_EE/l_EE_184.stl",
+    "collision/l_EE/l_EE_185.stl",
+    "collision/l_EE/l_EE_186.stl",
+    "collision/l_EE/l_EE_187.stl",
+    "collision/l_EE/l_EE_188.stl",
+    "collision/l_EE/l_EE_189.stl",
+    "collision/l_EE/l_EE_190.stl",
+    "collision/l_EE/l_EE_191.stl",
+    "collision/l_EE/l_EE_192.stl",
+    "collision/l_EE/l_EE_193.stl",
+    "collision/l_EE/l_EE_194.stl",
+    "collision/l_EE/l_EE_195.stl",
+    "collision/l_EE/l_EE_196.stl",
+    "collision/l_EE/l_EE_197.stl",
+    "collision/l_EE/l_EE_198.stl",
+    "collision/l_EE/l_EE_199.stl",
+    "collision/l_EE/l_EE_200.stl",
+    "collision/l_EE/l_EE_201.stl",
+    "collision/l_EE/l_EE_202.stl",
+    "collision/l_EE/l_EE_203.stl",
+    "collision/l_EE/l_EE_204.stl",
+    "collision/l_EE/l_EE_205.stl",
+    "collision/l_EE/l_EE_206.stl",
+    "collision/l_EE/l_EE_207.stl",
+    "collision/l_EE/l_EE_208.stl",
+    "collision/l_EE/l_EE_209.stl",
+    "collision/l_EE/l_EE_210.stl",
+    "collision/l_EE/l_EE_211.stl",
+    "collision/l_EE/l_EE_212.stl",
+    "collision/l_EE/l_EE_213.stl",
+    "collision/l_EE/l_EE_214.stl",
+    "collision/l_EE/l_EE_215.stl",
+    "collision/l_EE/l_EE_216.stl",
+    "collision/l_EE/l_EE_217.stl",
+    "collision/l_EE/l_EE_218.stl",
+    "collision/l_EE/l_EE_219.stl",
+    "collision/l_EE/l_EE_220.stl",
+    "collision/l_EE/l_EE_221.stl",
+    "collision/l_EE/l_EE_222.stl",
+    "collision/l_EE/l_EE_223.stl",
+    "collision/l_EE/l_EE_224.stl",
+    "collision/l_EE/l_EE_225.stl",
+    "collision/l_EE/l_EE_226.stl",
+    "collision/l_EE/l_EE_227.stl",
+    "collision/l_EE/l_EE_228.stl",
+    "collision/l_EE/l_EE_229.stl",
+    "collision/l_EE/l_EE_230.stl",
+    "collision/l_EE/l_EE_231.stl",
+    "collision/l_EE/l_EE_232.stl",
+    "collision/l_EE/l_EE_233.stl",
+    "collision/l_EE/l_EE_234.stl",
+    "collision/l_EE/l_EE_235.stl",
+    "collision/l_EE/l_EE_236.stl",
+    "collision/l_EE/l_EE_237.stl",
+    "collision/l_EE/l_C8_000.stl",
+    "collision/l_EE/l_C8_001.stl",
+    "collision/l_EE/l_C8_002.stl",
+    "collision/l_EE/l_C8_003.stl",
+    "collision/l_EE/l_C8_004.stl",
+    "collision/l_EE/l_C8_005.stl",
+    "collision/l_EE/l_C8_006.stl",
+    "collision/l_EE/l_C8_007.stl",
+    "collision/l_EE/l_C8_008.stl",
+    "collision/l_EE/l_C8_009.stl",
+    "collision/l_EE/l_C8_010.stl",
+    "collision/l_EE/l_C8_011.stl",
+    "collision/l_EE/l_C8_012.stl",
+    "collision/l_EE/l_C8_013.stl",
+    "collision/l_EE/l_C8_014.stl",
+    "collision/l_EE/l_C8_015.stl"
+   ],
+   "bodies": [
+    {
+     "name": "l_EE",
+     "parent": null,
+     "origin_in_unit_m": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "name": "l_C8",
+     "parent": "l_EE",
+     "origin_in_unit_m": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    }
+   ]
+  },
+  {
+   "id": "r_L1",
+   "arm": "right",
+   "role": "J1 link: the bracket bolted onto J1's output flange; carries the J2 motor's yoke",
+   "mass_kg": 0.0823,
+   "com_in_unit_m": [
+    0.00558,
+    -0.007645,
+    0.00012
+   ],
+   "part_file": "parts/r_L1.stl",
+   "collision_files": [
+    "collision/r_L1/r_L1_000.stl",
+    "collision/r_L1/r_L1_001.stl",
+    "collision/r_L1/r_L1_002.stl",
+    "collision/r_L1/r_L1_003.stl",
+    "collision/r_L1/r_L1_004.stl",
+    "collision/r_L1/r_L1_005.stl",
+    "collision/r_L1/r_L1_006.stl",
+    "collision/r_L1/r_L1_007.stl",
+    "collision/r_L1/r_L1_008.stl",
+    "collision/r_L1/r_L1_009.stl",
+    "collision/r_L1/r_L1_010.stl",
+    "collision/r_L1/r_L1_011.stl",
+    "collision/r_L1/r_L1_012.stl",
+    "collision/r_L1/r_L1_013.stl",
+    "collision/r_L1/r_L1_014.stl",
+    "collision/r_L1/r_L1_015.stl",
+    "collision/r_L1/r_L1_016.stl",
+    "collision/r_L1/r_L1_017.stl",
+    "collision/r_L1/r_L1_018.stl",
+    "collision/r_L1/r_L1_019.stl",
+    "collision/r_L1/r_L1_020.stl",
+    "collision/r_L1/r_L1_021.stl",
+    "collision/r_L1/r_L1_022.stl",
+    "collision/r_L1/r_L1_023.stl",
+    "collision/r_L1/r_L1_024.stl",
+    "collision/r_L1/r_L1_025.stl",
+    "collision/r_L1/r_L1_026.stl",
+    "collision/r_L1/r_L1_027.stl",
+    "collision/r_L1/r_L1_028.stl",
+    "collision/r_L1/r_L1_029.stl",
+    "collision/r_L1/r_L1_030.stl",
+    "collision/r_L1/r_L1_031.stl",
+    "collision/r_L1/r_L1_032.stl",
+    "collision/r_L1/r_L1_033.stl",
+    "collision/r_L1/r_L1_034.stl",
+    "collision/r_L1/r_L1_035.stl",
+    "collision/r_L1/r_L1_036.stl",
+    "collision/r_L1/r_L1_037.stl",
+    "collision/r_L1/r_L1_038.stl",
+    "collision/r_L1/r_L1_039.stl",
+    "collision/r_L1/r_L1_040.stl",
+    "collision/r_L1/r_L1_041.stl",
+    "collision/r_L1/r_L1_042.stl",
+    "collision/r_L1/r_L1_043.stl",
+    "collision/r_L1/r_L1_044.stl",
+    "collision/r_L1/r_L1_045.stl",
+    "collision/r_L1/r_L1_046.stl",
+    "collision/r_L1/r_L1_047.stl",
+    "collision/r_L1/r_L1_048.stl",
+    "collision/r_L1/r_L1_049.stl",
+    "collision/r_L1/r_L1_050.stl",
+    "collision/r_L1/r_L1_051.stl",
+    "collision/r_L1/r_L1_052.stl",
+    "collision/r_L1/r_L1_053.stl",
+    "collision/r_L1/r_L1_054.stl",
+    "collision/r_L1/r_L1_055.stl",
+    "collision/r_L1/r_L1_056.stl",
+    "collision/r_L1/r_L1_057.stl",
+    "collision/r_L1/r_L1_058.stl",
+    "collision/r_L1/r_L1_059.stl",
+    "collision/r_L1/r_L1_060.stl",
+    "collision/r_L1/r_L1_061.stl",
+    "collision/r_L1/r_L1_062.stl",
+    "collision/r_L1/r_L1_063.stl",
+    "collision/r_L1/r_L1_064.stl",
+    "collision/r_L1/r_L1_065.stl",
+    "collision/r_L1/r_L1_066.stl",
+    "collision/r_L1/r_L1_067.stl",
+    "collision/r_L1/r_L1_068.stl",
+    "collision/r_L1/r_L1_069.stl",
+    "collision/r_L1/r_L1_070.stl",
+    "collision/r_L1/r_L1_071.stl",
+    "collision/r_L1/r_L1_072.stl",
+    "collision/r_L1/r_L1_073.stl",
+    "collision/r_L1/r_L1_074.stl",
+    "collision/r_L1/r_L1_075.stl",
+    "collision/r_L1/r_L1_076.stl",
+    "collision/r_L1/r_L1_077.stl",
+    "collision/r_L1/r_L1_078.stl",
+    "collision/r_L1/r_L1_079.stl",
+    "collision/r_L1/r_L1_080.stl",
+    "collision/r_L1/r_L1_081.stl",
+    "collision/r_L1/r_L1_082.stl",
+    "collision/r_L1/r_L1_083.stl"
+   ],
+   "bodies": [
+    {
+     "name": "r_L1",
+     "parent": null,
+     "origin_in_unit_m": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    }
+   ]
+  },
+  {
+   "id": "r_M2",
+   "arm": "right",
+   "role": "J2 motor (DM-J8009P-2EC, 99 mm disc), with its output flange (rotor R2); seats in J1 link's yoke",
+   "mass_kg": 0.916,
+   "com_in_unit_m": [
+    -0.001393,
+    -0.059838,
+    0.00057
+   ],
+   "part_file": "parts/r_M2.stl",
+   "collision_files": [
+    "collision/r_M2/r_M2_000.stl",
+    "collision/r_M2/r_M2_001.stl",
+    "collision/r_M2/r_M2_002.stl",
+    "collision/r_M2/r_M2_003.stl",
+    "collision/r_M2/r_M2_004.stl",
+    "collision/r_M2/r_M2_005.stl",
+    "collision/r_M2/r_M2_006.stl",
+    "collision/r_M2/r_M2_007.stl",
+    "collision/r_M2/r_M2_008.stl",
+    "collision/r_M2/r_M2_009.stl",
+    "collision/r_M2/r_M2_010.stl",
+    "collision/r_M2/r_M2_011.stl",
+    "collision/r_M2/r_M2_012.stl",
+    "collision/r_M2/r_M2_013.stl",
+    "collision/r_M2/r_M2_014.stl",
+    "collision/r_M2/r_M2_015.stl",
+    "collision/r_M2/r_M2_016.stl",
+    "collision/r_M2/r_M2_017.stl",
+    "collision/r_M2/r_M2_018.stl",
+    "collision/r_M2/r_M2_019.stl",
+    "collision/r_M2/r_M2_020.stl",
+    "collision/r_M2/r_M2_021.stl",
+    "collision/r_M2/r_M2_022.stl",
+    "collision/r_M2/r_M2_023.stl",
+    "collision/r_M2/r_M2_024.stl",
+    "collision/r_M2/r_M2_025.stl",
+    "collision/r_M2/r_M2_026.stl",
+    "collision/r_M2/r_M2_027.stl",
+    "collision/r_M2/r_M2_028.stl",
+    "collision/r_M2/r_M2_029.stl",
+    "collision/r_M2/r_M2_030.stl",
+    "collision/r_M2/r_M2_031.stl",
+    "collision/r_M2/r_M2_032.stl",
+    "collision/r_M2/r_M2_033.stl",
+    "collision/r_M2/r_M2_034.stl",
+    "collision/r_M2/r_M2_035.stl",
+    "collision/r_M2/r_M2_036.stl",
+    "collision/r_M2/r_M2_037.stl",
+    "collision/r_M2/r_M2_038.stl",
+    "collision/r_M2/r_M2_039.stl",
+    "collision/r_M2/r_M2_040.stl",
+    "collision/r_M2/r_M2_041.stl",
+    "collision/r_M2/r_M2_042.stl",
+    "collision/r_M2/r_M2_043.stl",
+    "collision/r_M2/r_M2_044.stl",
+    "collision/r_M2/r_M2_045.stl",
+    "collision/r_M2/r_M2_046.stl",
+    "collision/r_M2/r_M2_047.stl",
+    "collision/r_M2/r_M2_048.stl",
+    "collision/r_M2/r_M2_049.stl",
+    "collision/r_M2/r_M2_050.stl",
+    "collision/r_M2/r_M2_051.stl",
+    "collision/r_M2/r_M2_052.stl",
+    "collision/r_M2/r_M2_053.stl",
+    "collision/r_M2/r_M2_054.stl",
+    "collision/r_M2/r_M2_055.stl",
+    "collision/r_M2/r_M2_056.stl",
+    "collision/r_M2/r_M2_057.stl",
+    "collision/r_M2/r_M2_058.stl",
+    "collision/r_M2/r_M2_059.stl",
+    "collision/r_M2/r_M2_060.stl",
+    "collision/r_M2/r_M2_061.stl",
+    "collision/r_M2/r_M2_062.stl",
+    "collision/r_M2/r_M2_063.stl",
+    "collision/r_M2/r_M2_064.stl",
+    "collision/r_M2/r_M2_065.stl",
+    "collision/r_M2/r_M2_066.stl",
+    "collision/r_M2/r_M2_067.stl",
+    "collision/r_M2/r_M2_068.stl",
+    "collision/r_M2/r_M2_069.stl",
+    "collision/r_M2/r_M2_070.stl",
+    "collision/r_M2/r_M2_071.stl",
+    "collision/r_M2/r_M2_072.stl",
+    "collision/r_M2/r_M2_073.stl",
+    "collision/r_M2/r_M2_074.stl",
+    "collision/r_M2/r_M2_075.stl",
+    "collision/r_M2/r_M2_076.stl",
+    "collision/r_M2/r_M2_077.stl",
+    "collision/r_M2/r_M2_078.stl",
+    "collision/r_M2/r_M2_079.stl",
+    "collision/r_M2/r_M2_080.stl",
+    "collision/r_M2/r_M2_081.stl",
+    "collision/r_M2/r_M2_082.stl",
+    "collision/r_M2/r_M2_083.stl",
+    "collision/r_M2/r_M2_084.stl",
+    "collision/r_M2/r_M2_085.stl",
+    "collision/r_M2/r_M2_086.stl",
+    "collision/r_M2/r_M2_087.stl",
+    "collision/r_M2/r_M2_088.stl",
+    "collision/r_M2/r_M2_089.stl",
+    "collision/r_M2/r_M2_090.stl",
+    "collision/r_M2/r_M2_091.stl",
+    "collision/r_M2/r_M2_092.stl",
+    "collision/r_M2/r_M2_093.stl",
+    "collision/r_M2/r_M2_094.stl",
+    "collision/r_M2/r_M2_095.stl",
+    "collision/r_M2/r_M2_096.stl",
+    "collision/r_M2/r_M2_097.stl",
+    "collision/r_M2/r_M2_098.stl",
+    "collision/r_M2/r_M2_099.stl",
+    "collision/r_M2/r_M2_100.stl",
+    "collision/r_M2/r_M2_101.stl",
+    "collision/r_M2/r_M2_102.stl",
+    "collision/r_M2/r_M2_103.stl",
+    "collision/r_M2/r_M2_104.stl",
+    "collision/r_M2/r_M2_105.stl",
+    "collision/r_M2/r_M2_106.stl",
+    "collision/r_M2/r_M2_107.stl",
+    "collision/r_M2/r_M2_108.stl",
+    "collision/r_M2/r_M2_109.stl",
+    "collision/r_M2/r_M2_110.stl",
+    "collision/r_M2/r_M2_111.stl",
+    "collision/r_M2/r_M2_112.stl",
+    "collision/r_M2/r_M2_113.stl",
+    "collision/r_M2/r_M2_114.stl",
+    "collision/r_M2/r_M2_115.stl",
+    "collision/r_M2/r_M2_116.stl",
+    "collision/r_M2/r_M2_117.stl",
+    "collision/r_M2/r_M2_118.stl",
+    "collision/r_M2/r_M2_119.stl",
+    "collision/r_M2/r_M2_120.stl",
+    "collision/r_M2/r_M2_121.stl",
+    "collision/r_M2/r_M2_122.stl",
+    "collision/r_M2/r_M2_123.stl",
+    "collision/r_M2/r_M2_124.stl",
+    "collision/r_M2/r_M2_125.stl",
+    "collision/r_M2/r_M2_126.stl"
+   ],
+   "bodies": [
+    {
+     "name": "r_M2",
+     "parent": null,
+     "origin_in_unit_m": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "name": "r_R2",
+     "parent": "r_M2",
+     "origin_in_unit_m": [
+      0.0,
+      -0.06,
+      0.0
+     ],
+     "hinge": {
+      "axis_in_unit": [
+       -1.0,
+       0.0,
+       0.0
+      ],
+      "point_in_unit_m": [
+       0.0,
+       -0.06,
+       0.0
+      ],
+      "range_rad": [
+       -0.17453,
+       3.3161
+      ],
+      "joint": "r_j2"
+     },
+     "rotor_of": "DM-J8009P-2EC",
+     "flange_face_centre_in_unit_m": [
+      0.029626,
+      -0.06,
+      0.0
+     ],
+     "index_mark_deg": 0.0
+    }
+   ]
+  },
+  {
+   "id": "r_L2",
+   "arm": "right",
+   "role": "J2 link: bolted onto J2's output flange; its other end is J3's output side",
+   "mass_kg": 0.1108,
+   "com_in_unit_m": [
+    0.017493,
+    -0.000136,
+    -0.041636
+   ],
+   "part_file": "parts/r_L2.stl",
+   "collision_files": [
+    "collision/r_L2/r_L2_000.stl",
+    "collision/r_L2/r_L2_001.stl",
+    "collision/r_L2/r_L2_002.stl",
+    "collision/r_L2/r_L2_003.stl",
+    "collision/r_L2/r_L2_004.stl",
+    "collision/r_L2/r_L2_005.stl",
+    "collision/r_L2/r_L2_006.stl",
+    "collision/r_L2/r_L2_007.stl",
+    "collision/r_L2/r_L2_008.stl",
+    "collision/r_L2/r_L2_009.stl",
+    "collision/r_L2/r_L2_010.stl",
+    "collision/r_L2/r_L2_011.stl",
+    "collision/r_L2/r_L2_012.stl",
+    "collision/r_L2/r_L2_013.stl",
+    "collision/r_L2/r_L2_014.stl",
+    "collision/r_L2/r_L2_015.stl",
+    "collision/r_L2/r_L2_016.stl",
+    "collision/r_L2/r_L2_017.stl",
+    "collision/r_L2/r_L2_018.stl",
+    "collision/r_L2/r_L2_019.stl",
+    "collision/r_L2/r_L2_020.stl",
+    "collision/r_L2/r_L2_021.stl",
+    "collision/r_L2/r_L2_022.stl",
+    "collision/r_L2/r_L2_023.stl",
+    "collision/r_L2/r_L2_024.stl",
+    "collision/r_L2/r_L2_025.stl",
+    "collision/r_L2/r_L2_026.stl",
+    "collision/r_L2/r_L2_027.stl",
+    "collision/r_L2/r_L2_028.stl",
+    "collision/r_L2/r_L2_029.stl",
+    "collision/r_L2/r_L2_030.stl",
+    "collision/r_L2/r_L2_031.stl",
+    "collision/r_L2/r_L2_032.stl",
+    "collision/r_L2/r_L2_033.stl",
+    "collision/r_L2/r_L2_034.stl",
+    "collision/r_L2/r_L2_035.stl",
+    "collision/r_L2/r_L2_036.stl",
+    "collision/r_L2/r_L2_037.stl",
+    "collision/r_L2/r_L2_038.stl",
+    "collision/r_L2/r_L2_039.stl",
+    "collision/r_L2/r_L2_040.stl",
+    "collision/r_L2/r_L2_041.stl",
+    "collision/r_L2/r_L2_042.stl",
+    "collision/r_L2/r_L2_043.stl",
+    "collision/r_L2/r_L2_044.stl",
+    "collision/r_L2/r_L2_045.stl",
+    "collision/r_L2/r_L2_046.stl",
+    "collision/r_L2/r_L2_047.stl",
+    "collision/r_L2/r_L2_048.stl",
+    "collision/r_L2/r_L2_049.stl",
+    "collision/r_L2/r_L2_050.stl"
+   ],
+   "bodies": [
+    {
+     "name": "r_L2",
+     "parent": null,
+     "origin_in_unit_m": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    }
+   ]
+  },
+  {
+   "id": "r_UA",
+   "arm": "right",
+   "role": "upper arm: J3 motor (its rotor R3 bolts onto J2 link), the J4 motor (rotor R4) and J4_D, the forearm's second support, free on a bearing (J4_B) on the far side",
+   "mass_kg": 0.9211,
+   "com_in_unit_m": [
+    -0.002594,
+    -0.00087,
+    -0.096641
+   ],
+   "part_file": "parts/r_UA.stl",
+   "collision_files": [
+    "collision/r_UA/r_UA_000.stl",
+    "collision/r_UA/r_UA_001.stl",
+    "collision/r_UA/r_UA_002.stl",
+    "collision/r_UA/r_UA_003.stl",
+    "collision/r_UA/r_UA_004.stl",
+    "collision/r_UA/r_UA_005.stl",
+    "collision/r_UA/r_UA_006.stl",
+    "collision/r_UA/r_UA_007.stl",
+    "collision/r_UA/r_UA_008.stl",
+    "collision/r_UA/r_UA_009.stl",
+    "collision/r_UA/r_UA_010.stl",
+    "collision/r_UA/r_UA_011.stl",
+    "collision/r_UA/r_UA_012.stl",
+    "collision/r_UA/r_UA_013.stl",
+    "collision/r_UA/r_UA_014.stl",
+    "collision/r_UA/r_UA_015.stl",
+    "collision/r_UA/r_UA_016.stl",
+    "collision/r_UA/r_UA_017.stl",
+    "collision/r_UA/r_UA_018.stl",
+    "collision/r_UA/r_UA_019.stl",
+    "collision/r_UA/r_UA_020.stl",
+    "collision/r_UA/r_UA_021.stl",
+    "collision/r_UA/r_UA_022.stl",
+    "collision/r_UA/r_UA_023.stl",
+    "collision/r_UA/r_UA_024.stl",
+    "collision/r_UA/r_UA_025.stl",
+    "collision/r_UA/r_UA_026.stl",
+    "collision/r_UA/r_UA_027.stl",
+    "collision/r_UA/r_UA_028.stl",
+    "collision/r_UA/r_UA_029.stl",
+    "collision/r_UA/r_UA_030.stl",
+    "collision/r_UA/r_UA_031.stl",
+    "collision/r_UA/r_UA_032.stl",
+    "collision/r_UA/r_UA_033.stl",
+    "collision/r_UA/r_UA_034.stl",
+    "collision/r_UA/r_UA_035.stl",
+    "collision/r_UA/r_UA_036.stl",
+    "collision/r_UA/r_UA_037.stl",
+    "collision/r_UA/r_UA_038.stl",
+    "collision/r_UA/r_UA_039.stl",
+    "collision/r_UA/r_UA_040.stl",
+    "collision/r_UA/r_UA_041.stl",
+    "collision/r_UA/r_UA_042.stl",
+    "collision/r_UA/r_UA_043.stl",
+    "collision/r_UA/r_UA_044.stl",
+    "collision/r_UA/r_UA_045.stl",
+    "collision/r_UA/r_UA_046.stl",
+    "collision/r_UA/r_UA_047.stl",
+    "collision/r_UA/r_UA_048.stl",
+    "collision/r_UA/r_UA_049.stl",
+    "collision/r_UA/r_UA_050.stl",
+    "collision/r_UA/r_UA_051.stl",
+    "collision/r_UA/r_UA_052.stl",
+    "collision/r_UA/r_UA_053.stl",
+    "collision/r_UA/r_UA_054.stl",
+    "collision/r_UA/r_UA_055.stl",
+    "collision/r_UA/r_UA_056.stl",
+    "collision/r_UA/r_UA_057.stl",
+    "collision/r_UA/r_UA_058.stl",
+    "collision/r_UA/r_UA_059.stl",
+    "collision/r_UA/r_UA_060.stl",
+    "collision/r_UA/r_UA_061.stl",
+    "collision/r_UA/r_UA_062.stl",
+    "collision/r_UA/r_UA_063.stl",
+    "collision/r_UA/r_UA_064.stl",
+    "collision/r_UA/r_UA_065.stl",
+    "collision/r_UA/r_UA_066.stl",
+    "collision/r_UA/r_UA_067.stl",
+    "collision/r_UA/r_UA_068.stl",
+    "collision/r_UA/r_UA_069.stl",
+    "collision/r_UA/r_UA_070.stl",
+    "collision/r_UA/r_UA_071.stl",
+    "collision/r_UA/r_UA_072.stl",
+    "collision/r_UA/r_UA_073.stl",
+    "collision/r_UA/r_UA_074.stl",
+    "collision/r_UA/r_UA_075.stl",
+    "collision/r_UA/r_UA_076.stl",
+    "collision/r_UA/r_UA_077.stl",
+    "collision/r_UA/r_UA_078.stl",
+    "collision/r_UA/r_UA_079.stl",
+    "collision/r_UA/r_UA_080.stl",
+    "collision/r_UA/r_UA_081.stl",
+    "collision/r_UA/r_UA_082.stl",
+    "collision/r_UA/r_UA_083.stl",
+    "collision/r_UA/r_UA_084.stl",
+    "collision/r_UA/r_UA_085.stl",
+    "collision/r_UA/r_UA_086.stl",
+    "collision/r_UA/r_UA_087.stl",
+    "collision/r_UA/r_UA_088.stl",
+    "collision/r_UA/r_UA_089.stl",
+    "collision/r_UA/r_UA_090.stl",
+    "collision/r_UA/r_UA_091.stl",
+    "collision/r_UA/r_UA_092.stl",
+    "collision/r_UA/r_UA_093.stl",
+    "collision/r_UA/r_UA_094.stl",
+    "collision/r_UA/r_UA_095.stl",
+    "collision/r_UA/r_UA_096.stl",
+    "collision/r_UA/r_UA_097.stl",
+    "collision/r_UA/r_UA_098.stl",
+    "collision/r_UA/r_UA_099.stl",
+    "collision/r_UA/r_UA_100.stl",
+    "collision/r_UA/r_UA_101.stl",
+    "collision/r_UA/r_UA_102.stl",
+    "collision/r_UA/r_UA_103.stl",
+    "collision/r_UA/r_UA_104.stl",
+    "collision/r_UA/r_UA_105.stl",
+    "collision/r_UA/r_UA_106.stl",
+    "collision/r_UA/r_UA_107.stl",
+    "collision/r_UA/r_UA_108.stl",
+    "collision/r_UA/r_UA_109.stl",
+    "collision/r_UA/r_UA_110.stl",
+    "collision/r_UA/r_UA_111.stl",
+    "collision/r_UA/r_UA_112.stl",
+    "collision/r_UA/r_UA_113.stl",
+    "collision/r_UA/r_UA_114.stl",
+    "collision/r_UA/r_UA_115.stl",
+    "collision/r_UA/r_UA_116.stl",
+    "collision/r_UA/r_UA_117.stl",
+    "collision/r_UA/r_UA_118.stl",
+    "collision/r_UA/r_UA_119.stl",
+    "collision/r_UA/r_UA_120.stl",
+    "collision/r_UA/r_UA_121.stl",
+    "collision/r_UA/r_UA_122.stl",
+    "collision/r_UA/r_UA_123.stl",
+    "collision/r_UA/r_UA_124.stl",
+    "collision/r_UA/r_UA_125.stl",
+    "collision/r_UA/r_UA_126.stl",
+    "collision/r_UA/r_UA_127.stl",
+    "collision/r_UA/r_UA_128.stl",
+    "collision/r_UA/r_UA_129.stl",
+    "collision/r_UA/r_UA_130.stl",
+    "collision/r_UA/r_UA_131.stl",
+    "collision/r_UA/r_UA_132.stl",
+    "collision/r_UA/r_UA_133.stl",
+    "collision/r_UA/r_UA_134.stl",
+    "collision/r_UA/r_UA_135.stl",
+    "collision/r_UA/r_UA_136.stl",
+    "collision/r_UA/r_UA_137.stl",
+    "collision/r_UA/r_UA_138.stl",
+    "collision/r_UA/r_UA_139.stl",
+    "collision/r_UA/r_UA_140.stl",
+    "collision/r_UA/r_UA_141.stl",
+    "collision/r_UA/r_UA_142.stl",
+    "collision/r_UA/r_UA_143.stl",
+    "collision/r_UA/r_UA_144.stl",
+    "collision/r_UA/r_UA_145.stl",
+    "collision/r_UA/r_UA_146.stl",
+    "collision/r_UA/r_UA_147.stl",
+    "collision/r_UA/r_UA_148.stl",
+    "collision/r_UA/r_UA_149.stl",
+    "collision/r_UA/r_UA_150.stl",
+    "collision/r_UA/r_UA_151.stl",
+    "collision/r_UA/r_UA_152.stl",
+    "collision/r_UA/r_UA_153.stl",
+    "collision/r_UA/r_UA_154.stl",
+    "collision/r_UA/r_J4D_000.stl",
+    "collision/r_UA/r_J4D_001.stl",
+    "collision/r_UA/r_J4D_002.stl",
+    "collision/r_UA/r_J4D_003.stl",
+    "collision/r_UA/r_J4D_004.stl",
+    "collision/r_UA/r_J4D_005.stl",
+    "collision/r_UA/r_J4D_006.stl",
+    "collision/r_UA/r_J4D_007.stl",
+    "collision/r_UA/r_J4D_008.stl",
+    "collision/r_UA/r_J4D_009.stl",
+    "collision/r_UA/r_J4D_010.stl",
+    "collision/r_UA/r_J4D_011.stl",
+    "collision/r_UA/r_J4D_012.stl",
+    "collision/r_UA/r_J4D_013.stl",
+    "collision/r_UA/r_J4D_014.stl",
+    "collision/r_UA/r_J4D_015.stl",
+    "collision/r_UA/r_J4D_016.stl",
+    "collision/r_UA/r_J4D_017.stl",
+    "collision/r_UA/r_J4D_018.stl",
+    "collision/r_UA/r_J4D_019.stl",
+    "collision/r_UA/r_J4D_020.stl",
+    "collision/r_UA/r_J4D_021.stl",
+    "collision/r_UA/r_J4D_022.stl",
+    "collision/r_UA/r_J4D_023.stl",
+    "collision/r_UA/r_J4D_024.stl",
+    "collision/r_UA/r_J4D_025.stl",
+    "collision/r_UA/r_J4D_026.stl",
+    "collision/r_UA/r_J4D_027.stl",
+    "collision/r_UA/r_J4D_028.stl",
+    "collision/r_UA/r_J4D_029.stl",
+    "collision/r_UA/r_J4D_030.stl",
+    "collision/r_UA/r_J4D_031.stl",
+    "collision/r_UA/r_J4D_032.stl",
+    "collision/r_UA/r_J4D_033.stl",
+    "collision/r_UA/r_J4D_034.stl",
+    "collision/r_UA/r_J4D_035.stl",
+    "collision/r_UA/r_J4D_036.stl",
+    "collision/r_UA/r_J4D_037.stl",
+    "collision/r_UA/r_J4D_038.stl",
+    "collision/r_UA/r_J4D_039.stl",
+    "collision/r_UA/r_J4D_040.stl",
+    "collision/r_UA/r_J4D_041.stl",
+    "collision/r_UA/r_J4D_042.stl",
+    "collision/r_UA/r_J4D_043.stl",
+    "collision/r_UA/r_J4D_044.stl",
+    "collision/r_UA/r_J4D_045.stl",
+    "collision/r_UA/r_J4D_046.stl",
+    "collision/r_UA/r_J4D_047.stl",
+    "collision/r_UA/r_J4D_048.stl",
+    "collision/r_UA/r_J4D_049.stl",
+    "collision/r_UA/r_J4D_050.stl",
+    "collision/r_UA/r_J4D_051.stl",
+    "collision/r_UA/r_J4D_052.stl",
+    "collision/r_UA/r_J4D_053.stl",
+    "collision/r_UA/r_J4D_054.stl",
+    "collision/r_UA/r_J4D_055.stl",
+    "collision/r_UA/r_J4D_056.stl",
+    "collision/r_UA/r_J4D_057.stl",
+    "collision/r_UA/r_J4D_058.stl",
+    "collision/r_UA/r_J4D_059.stl",
+    "collision/r_UA/r_J4D_060.stl",
+    "collision/r_UA/r_J4D_061.stl",
+    "collision/r_UA/r_J4D_062.stl",
+    "collision/r_UA/r_J4D_063.stl",
+    "collision/r_UA/r_J4D_064.stl",
+    "collision/r_UA/r_J4D_065.stl",
+    "collision/r_UA/r_J4D_066.stl",
+    "collision/r_UA/r_J4D_067.stl",
+    "collision/r_UA/r_J4D_068.stl",
+    "collision/r_UA/r_J4D_069.stl",
+    "collision/r_UA/r_J4D_070.stl",
+    "collision/r_UA/r_J4D_071.stl",
+    "collision/r_UA/r_J4D_072.stl",
+    "collision/r_UA/r_J4D_073.stl",
+    "collision/r_UA/r_J4D_074.stl",
+    "collision/r_UA/r_J4D_075.stl",
+    "collision/r_UA/r_J4D_076.stl",
+    "collision/r_UA/r_J4D_077.stl",
+    "collision/r_UA/r_C3_000.stl",
+    "collision/r_UA/r_C3_001.stl",
+    "collision/r_UA/r_C3_002.stl",
+    "collision/r_UA/r_C3_003.stl",
+    "collision/r_UA/r_C3_004.stl",
+    "collision/r_UA/r_C3_005.stl",
+    "collision/r_UA/r_C3_006.stl",
+    "collision/r_UA/r_C3_007.stl",
+    "collision/r_UA/r_C3_008.stl",
+    "collision/r_UA/r_C3_009.stl",
+    "collision/r_UA/r_C3_010.stl",
+    "collision/r_UA/r_C3_011.stl",
+    "collision/r_UA/r_C3_012.stl",
+    "collision/r_UA/r_C3_013.stl",
+    "collision/r_UA/r_C3_014.stl",
+    "collision/r_UA/r_C3_015.stl",
+    "collision/r_UA/r_C4_000.stl",
+    "collision/r_UA/r_C4_001.stl",
+    "collision/r_UA/r_C4_002.stl",
+    "collision/r_UA/r_C4_003.stl",
+    "collision/r_UA/r_C4_004.stl",
+    "collision/r_UA/r_C4_005.stl",
+    "collision/r_UA/r_C4_006.stl",
+    "collision/r_UA/r_C4_007.stl",
+    "collision/r_UA/r_C4_008.stl",
+    "collision/r_UA/r_C4_009.stl",
+    "collision/r_UA/r_C4_010.stl",
+    "collision/r_UA/r_C4_011.stl",
+    "collision/r_UA/r_C4_012.stl",
+    "collision/r_UA/r_C4_013.stl",
+    "collision/r_UA/r_C4_014.stl",
+    "collision/r_UA/r_C4_015.stl",
+    "collision/r_UA/r_C4_016.stl",
+    "collision/r_UA/r_C4_017.stl",
+    "collision/r_UA/r_C4_018.stl",
+    "collision/r_UA/r_C4_019.stl",
+    "collision/r_UA/r_C4_020.stl",
+    "collision/r_UA/r_C4_021.stl",
+    "collision/r_UA/r_C4_022.stl",
+    "collision/r_UA/r_C4_023.stl",
+    "collision/r_UA/r_C4_024.stl",
+    "collision/r_UA/r_C4_025.stl",
+    "collision/r_UA/r_C4_026.stl",
+    "collision/r_UA/r_C4_027.stl",
+    "collision/r_UA/r_C4_028.stl",
+    "collision/r_UA/r_C4_029.stl",
+    "collision/r_UA/r_C4_030.stl",
+    "collision/r_UA/r_C4_031.stl",
+    "collision/r_UA/r_C4_032.stl",
+    "collision/r_UA/r_C4_033.stl",
+    "collision/r_UA/r_C4_034.stl",
+    "collision/r_UA/r_C4_035.stl",
+    "collision/r_UA/r_C4_036.stl",
+    "collision/r_UA/r_C4_037.stl",
+    "collision/r_UA/r_C4_038.stl",
+    "collision/r_UA/r_C4_039.stl",
+    "collision/r_UA/r_C4_040.stl",
+    "collision/r_UA/r_C4_041.stl",
+    "collision/r_UA/r_C4_042.stl",
+    "collision/r_UA/r_C4_043.stl",
+    "collision/r_UA/r_C4_044.stl",
+    "collision/r_UA/r_C4_045.stl",
+    "collision/r_UA/r_C4_046.stl",
+    "collision/r_UA/r_B4_000.stl",
+    "collision/r_UA/r_B4_001.stl",
+    "collision/r_UA/r_B4_002.stl",
+    "collision/r_UA/r_B4_003.stl",
+    "collision/r_UA/r_B4_004.stl",
+    "collision/r_UA/r_B4_005.stl",
+    "collision/r_UA/r_B4_006.stl",
+    "collision/r_UA/r_B4_007.stl",
+    "collision/r_UA/r_B4_008.stl",
+    "collision/r_UA/r_B4_009.stl",
+    "collision/r_UA/r_B4_010.stl",
+    "collision/r_UA/r_B4_011.stl",
+    "collision/r_UA/r_B4_012.stl",
+    "collision/r_UA/r_B4_013.stl",
+    "collision/r_UA/r_B4_014.stl",
+    "collision/r_UA/r_B4_015.stl",
+    "collision/r_UA/r_B4_016.stl",
+    "collision/r_UA/r_B4_017.stl"
+   ],
+   "bodies": [
+    {
+     "name": "r_UA",
+     "parent": null,
+     "origin_in_unit_m": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "name": "r_J4D",
+     "parent": "r_UA",
+     "origin_in_unit_m": [
+      0.0,
+      0.0,
+      -0.15375
+     ],
+     "hinge": {
+      "axis_in_unit": [
+       0.0,
+       -1.0,
+       0.0
+      ],
+      "point_in_unit_m": [
+       0.0,
+       0.0,
+       -0.15375
+      ],
+      "range_rad": [
+       0.0,
+       2.4435
+      ],
+      "joint": "r_j4b"
+     }
+    },
+    {
+     "name": "r_C3",
+     "parent": "r_UA",
+     "origin_in_unit_m": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "name": "r_C4",
+     "parent": "r_UA",
+     "origin_in_unit_m": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "name": "r_B4",
+     "parent": "r_UA",
+     "origin_in_unit_m": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "name": "r_R3",
+     "parent": "r_C3",
+     "origin_in_unit_m": [
+      0.0,
+      0.0,
+      0.06625
+     ],
+     "hinge": {
+      "axis_in_unit": [
+       0.0,
+       0.0,
+       -1.0
+      ],
+      "point_in_unit_m": [
+       0.0,
+       0.0,
+       0.0
+      ],
+      "range_rad": [
+       -1.5708,
+       1.5708
+      ],
+      "joint": "r_j3"
+     },
+     "rotor_of": "DM-J4340P-2EC",
+     "flange_face_centre_in_unit_m": [
+      0.0,
+      0.0,
+      0.000884
+     ],
+     "index_mark_deg": 0.0
+    },
+    {
+     "name": "r_R4",
+     "parent": "r_C4",
+     "origin_in_unit_m": [
+      0.0,
+      0.0,
+      -0.15375
+     ],
+     "hinge": {
+      "axis_in_unit": [
+       0.0,
+       -1.0,
+       0.0
+      ],
+      "point_in_unit_m": [
+       0.0,
+       0.0,
+       -0.15375
+      ],
+      "range_rad": [
+       0.0,
+       2.4435
+      ],
+      "joint": "r_j4"
+     },
+     "rotor_of": "DM-J4340-2EC",
+     "flange_face_centre_in_unit_m": [
+      0.0,
+      0.031977,
+      -0.15375
+     ],
+     "index_mark_deg": 0.0
+    }
+   ]
+  },
+  {
+   "id": "r_FA",
+   "arm": "right",
+   "role": "forearm: bolted onto J4's output flange and onto J4_D together; carries the J5 motor (rotor R5)",
+   "mass_kg": 0.4069,
+   "com_in_unit_m": [
+    -0.000254,
+    0.003266,
+    -0.0631
+   ],
+   "part_file": "parts/r_FA.stl",
+   "collision_files": [
+    "collision/r_FA/r_FA_000.stl",
+    "collision/r_FA/r_FA_001.stl",
+    "collision/r_FA/r_FA_002.stl",
+    "collision/r_FA/r_FA_003.stl",
+    "collision/r_FA/r_FA_004.stl",
+    "collision/r_FA/r_FA_005.stl",
+    "collision/r_FA/r_FA_006.stl",
+    "collision/r_FA/r_FA_007.stl",
+    "collision/r_FA/r_FA_008.stl",
+    "collision/r_FA/r_FA_009.stl",
+    "collision/r_FA/r_FA_010.stl",
+    "collision/r_FA/r_FA_011.stl",
+    "collision/r_FA/r_FA_012.stl",
+    "collision/r_FA/r_FA_013.stl",
+    "collision/r_FA/r_FA_014.stl",
+    "collision/r_FA/r_FA_015.stl",
+    "collision/r_FA/r_FA_016.stl",
+    "collision/r_FA/r_FA_017.stl",
+    "collision/r_FA/r_FA_018.stl",
+    "collision/r_FA/r_FA_019.stl",
+    "collision/r_FA/r_FA_020.stl",
+    "collision/r_FA/r_FA_021.stl",
+    "collision/r_FA/r_FA_022.stl",
+    "collision/r_FA/r_FA_023.stl",
+    "collision/r_FA/r_FA_024.stl",
+    "collision/r_FA/r_FA_025.stl",
+    "collision/r_FA/r_FA_026.stl",
+    "collision/r_FA/r_FA_027.stl",
+    "collision/r_FA/r_FA_028.stl",
+    "collision/r_FA/r_FA_029.stl",
+    "collision/r_FA/r_FA_030.stl",
+    "collision/r_FA/r_FA_031.stl",
+    "collision/r_FA/r_FA_032.stl",
+    "collision/r_FA/r_FA_033.stl",
+    "collision/r_FA/r_FA_034.stl",
+    "collision/r_FA/r_FA_035.stl",
+    "collision/r_FA/r_FA_036.stl",
+    "collision/r_FA/r_FA_037.stl",
+    "collision/r_FA/r_FA_038.stl",
+    "collision/r_FA/r_FA_039.stl",
+    "collision/r_FA/r_FA_040.stl",
+    "collision/r_FA/r_FA_041.stl",
+    "collision/r_FA/r_FA_042.stl",
+    "collision/r_FA/r_FA_043.stl",
+    "collision/r_FA/r_FA_044.stl",
+    "collision/r_FA/r_FA_045.stl",
+    "collision/r_FA/r_FA_046.stl",
+    "collision/r_FA/r_FA_047.stl",
+    "collision/r_FA/r_FA_048.stl",
+    "collision/r_FA/r_FA_049.stl",
+    "collision/r_FA/r_FA_050.stl",
+    "collision/r_FA/r_FA_051.stl",
+    "collision/r_FA/r_FA_052.stl",
+    "collision/r_FA/r_FA_053.stl",
+    "collision/r_FA/r_FA_054.stl",
+    "collision/r_FA/r_FA_055.stl",
+    "collision/r_FA/r_FA_056.stl",
+    "collision/r_FA/r_FA_057.stl",
+    "collision/r_FA/r_FA_058.stl",
+    "collision/r_FA/r_FA_059.stl",
+    "collision/r_FA/r_FA_060.stl",
+    "collision/r_FA/r_FA_061.stl",
+    "collision/r_FA/r_FA_062.stl",
+    "collision/r_FA/r_FA_063.stl",
+    "collision/r_FA/r_FA_064.stl",
+    "collision/r_FA/r_FA_065.stl",
+    "collision/r_FA/r_FA_066.stl",
+    "collision/r_FA/r_FA_067.stl",
+    "collision/r_FA/r_FA_068.stl",
+    "collision/r_FA/r_FA_069.stl",
+    "collision/r_FA/r_FA_070.stl",
+    "collision/r_FA/r_FA_071.stl",
+    "collision/r_FA/r_FA_072.stl",
+    "collision/r_FA/r_FA_073.stl",
+    "collision/r_FA/r_FA_074.stl",
+    "collision/r_FA/r_FA_075.stl",
+    "collision/r_FA/r_FA_076.stl",
+    "collision/r_FA/r_FA_077.stl",
+    "collision/r_FA/r_FA_078.stl",
+    "collision/r_FA/r_FA_079.stl",
+    "collision/r_FA/r_FA_080.stl",
+    "collision/r_FA/r_FA_081.stl",
+    "collision/r_FA/r_FA_082.stl",
+    "collision/r_FA/r_FA_083.stl",
+    "collision/r_FA/r_FA_084.stl",
+    "collision/r_FA/r_FA_085.stl",
+    "collision/r_FA/r_FA_086.stl",
+    "collision/r_FA/r_FA_087.stl",
+    "collision/r_FA/r_FA_088.stl",
+    "collision/r_FA/r_FA_089.stl",
+    "collision/r_FA/r_FA_090.stl",
+    "collision/r_FA/r_FA_091.stl",
+    "collision/r_FA/r_FA_092.stl",
+    "collision/r_FA/r_FA_093.stl",
+    "collision/r_FA/r_C5_000.stl",
+    "collision/r_FA/r_C5_001.stl",
+    "collision/r_FA/r_C5_002.stl",
+    "collision/r_FA/r_C5_003.stl",
+    "collision/r_FA/r_C5_004.stl",
+    "collision/r_FA/r_C5_005.stl",
+    "collision/r_FA/r_C5_006.stl",
+    "collision/r_FA/r_C5_007.stl",
+    "collision/r_FA/r_C5_008.stl",
+    "collision/r_FA/r_C5_009.stl",
+    "collision/r_FA/r_C5_010.stl",
+    "collision/r_FA/r_C5_011.stl",
+    "collision/r_FA/r_C5_012.stl",
+    "collision/r_FA/r_C5_013.stl",
+    "collision/r_FA/r_C5_014.stl",
+    "collision/r_FA/r_C5_015.stl",
+    "collision/r_FA/r_C5_016.stl",
+    "collision/r_FA/r_C5_017.stl",
+    "collision/r_FA/r_C5_018.stl",
+    "collision/r_FA/r_C5_019.stl",
+    "collision/r_FA/r_C5_020.stl",
+    "collision/r_FA/r_C5_021.stl",
+    "collision/r_FA/r_C5_022.stl",
+    "collision/r_FA/r_C5_023.stl",
+    "collision/r_FA/r_C5_024.stl",
+    "collision/r_FA/r_C5_025.stl",
+    "collision/r_FA/r_C5_026.stl",
+    "collision/r_FA/r_C5_027.stl",
+    "collision/r_FA/r_C5_028.stl",
+    "collision/r_FA/r_C5_029.stl",
+    "collision/r_FA/r_C5_030.stl",
+    "collision/r_FA/r_C5_031.stl",
+    "collision/r_FA/r_C5_032.stl",
+    "collision/r_FA/r_C5_033.stl",
+    "collision/r_FA/r_C5_034.stl",
+    "collision/r_FA/r_C5_035.stl",
+    "collision/r_FA/r_C5_036.stl",
+    "collision/r_FA/r_C5_037.stl",
+    "collision/r_FA/r_C5_038.stl",
+    "collision/r_FA/r_C5_039.stl",
+    "collision/r_FA/r_C5_040.stl",
+    "collision/r_FA/r_C5_041.stl",
+    "collision/r_FA/r_C5_042.stl",
+    "collision/r_FA/r_C5_043.stl",
+    "collision/r_FA/r_C5_044.stl",
+    "collision/r_FA/r_C5_045.stl",
+    "collision/r_FA/r_C5_046.stl",
+    "collision/r_FA/r_C5_047.stl",
+    "collision/r_FA/r_C5_048.stl",
+    "collision/r_FA/r_C5_049.stl",
+    "collision/r_FA/r_C5_050.stl",
+    "collision/r_FA/r_C5_051.stl",
+    "collision/r_FA/r_C5_052.stl",
+    "collision/r_FA/r_C5_053.stl",
+    "collision/r_FA/r_C5_054.stl",
+    "collision/r_FA/r_C5_055.stl",
+    "collision/r_FA/r_C5_056.stl",
+    "collision/r_FA/r_C5_057.stl",
+    "collision/r_FA/r_C5_058.stl",
+    "collision/r_FA/r_C5_059.stl",
+    "collision/r_FA/r_C5_060.stl",
+    "collision/r_FA/r_C5_061.stl",
+    "collision/r_FA/r_C5_062.stl",
+    "collision/r_FA/r_C5_063.stl",
+    "collision/r_FA/r_C5_064.stl",
+    "collision/r_FA/r_C5_065.stl",
+    "collision/r_FA/r_C5_066.stl",
+    "collision/r_FA/r_C5_067.stl",
+    "collision/r_FA/r_C5_068.stl",
+    "collision/r_FA/r_C5_069.stl",
+    "collision/r_FA/r_C5_070.stl"
+   ],
+   "bodies": [
+    {
+     "name": "r_FA",
+     "parent": null,
+     "origin_in_unit_m": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "name": "r_C5",
+     "parent": "r_FA",
+     "origin_in_unit_m": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "name": "r_R5",
+     "parent": "r_C5",
+     "origin_in_unit_m": [
+      0.0,
+      0.0,
+      -0.0955
+     ],
+     "hinge": {
+      "axis_in_unit": [
+       0.0,
+       0.0,
+       -1.0
+      ],
+      "point_in_unit_m": [
+       0.0,
+       0.0,
+       -0.0955
+      ],
+      "range_rad": [
+       -1.5708,
+       1.5708
+      ],
+      "joint": "r_j5"
+     },
+     "rotor_of": "DM-J4310-2EC",
+     "flange_face_centre_in_unit_m": [
+      0.0,
+      0.0,
+      -0.095604
+     ],
+     "index_mark_deg": 0.0
+    }
+   ]
+  },
+  {
+   "id": "r_HA",
+   "arm": "right",
+   "role": "J4 cable holder A: a plate over J4, seated on the forearm's J4_E side",
+   "mass_kg": 0.0285,
+   "com_in_unit_m": [
+    0.000266,
+    0.039,
+    -0.164384
+   ],
+   "part_file": "parts/r_HA.stl",
+   "collision_files": [
+    "collision/r_HA/r_HA_000.stl",
+    "collision/r_HA/r_HA_001.stl",
+    "collision/r_HA/r_HA_002.stl",
+    "collision/r_HA/r_HA_003.stl",
+    "collision/r_HA/r_HA_004.stl",
+    "collision/r_HA/r_HA_005.stl",
+    "collision/r_HA/r_HA_006.stl",
+    "collision/r_HA/r_HA_007.stl",
+    "collision/r_HA/r_HA_008.stl",
+    "collision/r_HA/r_HA_009.stl",
+    "collision/r_HA/r_HA_010.stl",
+    "collision/r_HA/r_HA_011.stl",
+    "collision/r_HA/r_HA_012.stl",
+    "collision/r_HA/r_HA_013.stl",
+    "collision/r_HA/r_HA_014.stl",
+    "collision/r_HA/r_HA_015.stl"
+   ],
+   "bodies": [
+    {
+     "name": "r_HA",
+     "parent": null,
+     "origin_in_unit_m": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    }
+   ]
+  },
+  {
+   "id": "r_HB",
+   "arm": "right",
+   "role": "J4 cable holder B: a plate over J4, seated on J4_D (the upper arm's bearing side)",
+   "mass_kg": 0.0285,
+   "com_in_unit_m": [
+    -0.001458,
+    -0.039253,
+    -0.010608
+   ],
+   "part_file": "parts/r_HB.stl",
+   "collision_files": [
+    "collision/r_HB/r_HB_000.stl",
+    "collision/r_HB/r_HB_001.stl",
+    "collision/r_HB/r_HB_002.stl",
+    "collision/r_HB/r_HB_003.stl",
+    "collision/r_HB/r_HB_004.stl",
+    "collision/r_HB/r_HB_005.stl",
+    "collision/r_HB/r_HB_006.stl",
+    "collision/r_HB/r_HB_007.stl",
+    "collision/r_HB/r_HB_008.stl",
+    "collision/r_HB/r_HB_009.stl",
+    "collision/r_HB/r_HB_010.stl",
+    "collision/r_HB/r_HB_011.stl",
+    "collision/r_HB/r_HB_012.stl",
+    "collision/r_HB/r_HB_013.stl",
+    "collision/r_HB/r_HB_014.stl",
+    "collision/r_HB/r_HB_015.stl"
+   ],
+   "bodies": [
+    {
+     "name": "r_HB",
+     "parent": null,
+     "origin_in_unit_m": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    }
+   ]
+  },
+  {
+   "id": "r_W",
+   "arm": "right",
+   "role": "wrist: J5's output side with the J6 joint and the J7 motor (rotor R7)",
+   "mass_kg": 0.7618,
+   "com_in_unit_m": [
+    0.001673,
+    -0.001815,
+    -0.080341
+   ],
+   "part_file": "parts/r_W.stl",
+   "collision_files": [
+    "collision/r_W/r_W_000.stl",
+    "collision/r_W/r_W_001.stl",
+    "collision/r_W/r_W_002.stl",
+    "collision/r_W/r_W_003.stl",
+    "collision/r_W/r_W_004.stl",
+    "collision/r_W/r_W_005.stl",
+    "collision/r_W/r_W_006.stl",
+    "collision/r_W/r_W_007.stl",
+    "collision/r_W/r_W_008.stl",
+    "collision/r_W/r_W_009.stl",
+    "collision/r_W/r_W_010.stl",
+    "collision/r_W/r_W_011.stl",
+    "collision/r_W/r_W_012.stl",
+    "collision/r_W/r_W_013.stl",
+    "collision/r_W/r_W_014.stl",
+    "collision/r_W/r_W_015.stl",
+    "collision/r_W/r_W_016.stl",
+    "collision/r_W/r_W_017.stl",
+    "collision/r_W/r_W_018.stl",
+    "collision/r_W/r_W_019.stl",
+    "collision/r_W/r_W_020.stl",
+    "collision/r_W/r_W_021.stl",
+    "collision/r_W/r_W_022.stl",
+    "collision/r_W/r_W_023.stl",
+    "collision/r_W/r_W_024.stl",
+    "collision/r_W/r_W_025.stl",
+    "collision/r_W/r_W_026.stl",
+    "collision/r_W/r_W_027.stl",
+    "collision/r_W/r_W_028.stl",
+    "collision/r_W/r_W_029.stl",
+    "collision/r_W/r_W_030.stl",
+    "collision/r_W/r_W_031.stl",
+    "collision/r_W/r_W_032.stl",
+    "collision/r_W/r_W_033.stl",
+    "collision/r_W/r_W_034.stl",
+    "collision/r_W/r_W_035.stl",
+    "collision/r_W/r_W_036.stl",
+    "collision/r_W/r_W_037.stl",
+    "collision/r_W/r_W_038.stl",
+    "collision/r_W/r_W_039.stl",
+    "collision/r_W/r_W_040.stl",
+    "collision/r_W/r_W_041.stl",
+    "collision/r_W/r_W_042.stl",
+    "collision/r_W/r_W_043.stl",
+    "collision/r_W/r_W_044.stl",
+    "collision/r_W/r_W_045.stl",
+    "collision/r_W/r_W_046.stl",
+    "collision/r_W/r_W_047.stl",
+    "collision/r_W/r_W_048.stl",
+    "collision/r_W/r_W_049.stl",
+    "collision/r_W/r_W_050.stl",
+    "collision/r_W/r_W_051.stl",
+    "collision/r_W/r_W_052.stl",
+    "collision/r_W/r_W_053.stl",
+    "collision/r_W/r_W_054.stl",
+    "collision/r_W/r_W_055.stl",
+    "collision/r_W/r_W_056.stl",
+    "collision/r_W/r_W_057.stl",
+    "collision/r_W/r_W_058.stl",
+    "collision/r_W/r_W_059.stl",
+    "collision/r_W/r_W_060.stl",
+    "collision/r_W/r_W_061.stl",
+    "collision/r_W/r_W_062.stl",
+    "collision/r_W/r_W_063.stl",
+    "collision/r_W/r_W_064.stl",
+    "collision/r_W/r_W_065.stl",
+    "collision/r_W/r_W_066.stl",
+    "collision/r_W/r_W_067.stl",
+    "collision/r_W/r_W_068.stl",
+    "collision/r_W/r_W_069.stl",
+    "collision/r_W/r_W_070.stl",
+    "collision/r_W/r_W_071.stl",
+    "collision/r_W/r_W_072.stl",
+    "collision/r_W/r_W_073.stl",
+    "collision/r_W/r_W_074.stl",
+    "collision/r_W/r_W_075.stl",
+    "collision/r_W/r_W_076.stl",
+    "collision/r_W/r_W_077.stl",
+    "collision/r_W/r_W_078.stl",
+    "collision/r_W/r_W_079.stl",
+    "collision/r_W/r_W_080.stl",
+    "collision/r_W/r_W_081.stl",
+    "collision/r_W/r_W_082.stl",
+    "collision/r_W/r_W_083.stl",
+    "collision/r_W/r_W_084.stl",
+    "collision/r_W/r_W_085.stl",
+    "collision/r_W/r_W_086.stl",
+    "collision/r_W/r_W_087.stl",
+    "collision/r_W/r_W_088.stl",
+    "collision/r_W/r_W_089.stl",
+    "collision/r_W/r_W_090.stl",
+    "collision/r_W/r_W_091.stl",
+    "collision/r_W/r_W6_000.stl",
+    "collision/r_W/r_W6_001.stl",
+    "collision/r_W/r_W6_002.stl",
+    "collision/r_W/r_W6_003.stl",
+    "collision/r_W/r_W6_004.stl",
+    "collision/r_W/r_W6_005.stl",
+    "collision/r_W/r_W6_006.stl",
+    "collision/r_W/r_W6_007.stl",
+    "collision/r_W/r_W6_008.stl",
+    "collision/r_W/r_W6_009.stl",
+    "collision/r_W/r_W6_010.stl",
+    "collision/r_W/r_W6_011.stl",
+    "collision/r_W/r_W6_012.stl",
+    "collision/r_W/r_W6_013.stl",
+    "collision/r_W/r_W6_014.stl",
+    "collision/r_W/r_W6_015.stl",
+    "collision/r_W/r_W6_016.stl",
+    "collision/r_W/r_W6_017.stl",
+    "collision/r_W/r_W6_018.stl",
+    "collision/r_W/r_W6_019.stl",
+    "collision/r_W/r_W6_020.stl",
+    "collision/r_W/r_W6_021.stl",
+    "collision/r_W/r_W6_022.stl",
+    "collision/r_W/r_W6_023.stl",
+    "collision/r_W/r_W6_024.stl",
+    "collision/r_W/r_W6_025.stl",
+    "collision/r_W/r_W6_026.stl",
+    "collision/r_W/r_W6_027.stl",
+    "collision/r_W/r_W6_028.stl",
+    "collision/r_W/r_W6_029.stl",
+    "collision/r_W/r_W6_030.stl",
+    "collision/r_W/r_W6_031.stl",
+    "collision/r_W/r_W6_032.stl",
+    "collision/r_W/r_W6_033.stl",
+    "collision/r_W/r_W6_034.stl",
+    "collision/r_W/r_W6_035.stl",
+    "collision/r_W/r_W6_036.stl",
+    "collision/r_W/r_W6_037.stl",
+    "collision/r_W/r_W6_038.stl",
+    "collision/r_W/r_W6_039.stl",
+    "collision/r_W/r_W6_040.stl",
+    "collision/r_W/r_W6_041.stl",
+    "collision/r_W/r_W6_042.stl",
+    "collision/r_W/r_W6_043.stl",
+    "collision/r_W/r_W6_044.stl",
+    "collision/r_W/r_W6_045.stl",
+    "collision/r_W/r_W6_046.stl",
+    "collision/r_W/r_W6_047.stl",
+    "collision/r_W/r_W6_048.stl",
+    "collision/r_W/r_W6_049.stl",
+    "collision/r_W/r_W6_050.stl",
+    "collision/r_W/r_W6_051.stl",
+    "collision/r_W/r_W6_052.stl",
+    "collision/r_W/r_W6_053.stl",
+    "collision/r_W/r_W6_054.stl",
+    "collision/r_W/r_W6_055.stl",
+    "collision/r_W/r_W6_056.stl",
+    "collision/r_W/r_W6_057.stl",
+    "collision/r_W/r_W6_058.stl",
+    "collision/r_W/r_W6_059.stl",
+    "collision/r_W/r_W6_060.stl",
+    "collision/r_W/r_W6_061.stl",
+    "collision/r_W/r_W6_062.stl",
+    "collision/r_W/r_W6_063.stl",
+    "collision/r_W/r_W6_064.stl",
+    "collision/r_W/r_W6_065.stl",
+    "collision/r_W/r_W6_066.stl",
+    "collision/r_W/r_W6_067.stl",
+    "collision/r_W/r_W6_068.stl",
+    "collision/r_W/r_W6_069.stl",
+    "collision/r_W/r_W6_070.stl",
+    "collision/r_W/r_W6_071.stl",
+    "collision/r_W/r_W6_072.stl",
+    "collision/r_W/r_W6_073.stl",
+    "collision/r_W/r_W6_074.stl",
+    "collision/r_W/r_W6_075.stl",
+    "collision/r_W/r_W6_076.stl",
+    "collision/r_W/r_W6_077.stl",
+    "collision/r_W/r_W6_078.stl",
+    "collision/r_W/r_W6_079.stl",
+    "collision/r_W/r_W6_080.stl",
+    "collision/r_W/r_W6_081.stl",
+    "collision/r_W/r_W6_082.stl",
+    "collision/r_W/r_W6_083.stl",
+    "collision/r_W/r_W6_084.stl",
+    "collision/r_W/r_W6_085.stl",
+    "collision/r_W/r_W6_086.stl",
+    "collision/r_W/r_W6_087.stl",
+    "collision/r_W/r_W6_088.stl",
+    "collision/r_W/r_W6_089.stl",
+    "collision/r_W/r_W6_090.stl",
+    "collision/r_W/r_W6_091.stl",
+    "collision/r_W/r_W6_092.stl",
+    "collision/r_W/r_W6_093.stl",
+    "collision/r_W/r_W6_094.stl",
+    "collision/r_W/r_W6_095.stl",
+    "collision/r_W/r_W6_096.stl",
+    "collision/r_W/r_W6_097.stl",
+    "collision/r_W/r_W6_098.stl",
+    "collision/r_W/r_W6_099.stl",
+    "collision/r_W/r_W6_100.stl",
+    "collision/r_W/r_W6_101.stl",
+    "collision/r_W/r_W6_102.stl",
+    "collision/r_W/r_W6_103.stl",
+    "collision/r_W/r_W6_104.stl",
+    "collision/r_W/r_W6_105.stl",
+    "collision/r_W/r_W6_106.stl",
+    "collision/r_W/r_W6_107.stl",
+    "collision/r_W/r_W6_108.stl",
+    "collision/r_W/r_W6_109.stl",
+    "collision/r_W/r_W6_110.stl",
+    "collision/r_W/r_W6_111.stl",
+    "collision/r_W/r_W6_112.stl",
+    "collision/r_W/r_W6_113.stl",
+    "collision/r_W/r_W6_114.stl",
+    "collision/r_W/r_W6_115.stl",
+    "collision/r_W/r_W6_116.stl",
+    "collision/r_W/r_W6_117.stl",
+    "collision/r_W/r_W6_118.stl",
+    "collision/r_W/r_W6_119.stl",
+    "collision/r_W/r_W6_120.stl",
+    "collision/r_W/r_W6_121.stl",
+    "collision/r_W/r_W6_122.stl",
+    "collision/r_W/r_W6_123.stl",
+    "collision/r_W/r_W6_124.stl",
+    "collision/r_W/r_W6_125.stl",
+    "collision/r_W/r_W6_126.stl",
+    "collision/r_W/r_W6_127.stl",
+    "collision/r_W/r_W6_128.stl",
+    "collision/r_W/r_W6_129.stl",
+    "collision/r_W/r_W6_130.stl",
+    "collision/r_W/r_W6_131.stl",
+    "collision/r_W/r_W6_132.stl",
+    "collision/r_W/r_W6_133.stl",
+    "collision/r_W/r_W6_134.stl",
+    "collision/r_W/r_W6_135.stl",
+    "collision/r_W/r_W6_136.stl",
+    "collision/r_W/r_W6_137.stl",
+    "collision/r_W/r_W6_138.stl",
+    "collision/r_W/r_W6_139.stl",
+    "collision/r_W/r_W6_140.stl",
+    "collision/r_W/r_W6_141.stl",
+    "collision/r_W/r_W6_142.stl",
+    "collision/r_W/r_W6_143.stl",
+    "collision/r_W/r_W6_144.stl",
+    "collision/r_W/r_W6_145.stl",
+    "collision/r_W/r_W6_146.stl",
+    "collision/r_W/r_W6_147.stl",
+    "collision/r_W/r_W6_148.stl",
+    "collision/r_W/r_W6_149.stl",
+    "collision/r_W/r_W6_150.stl",
+    "collision/r_W/r_W6_151.stl",
+    "collision/r_W/r_W6_152.stl",
+    "collision/r_W/r_W6_153.stl",
+    "collision/r_W/r_W6_154.stl",
+    "collision/r_W/r_W6_155.stl",
+    "collision/r_W/r_W6_156.stl",
+    "collision/r_W/r_W6_157.stl",
+    "collision/r_W/r_W6_158.stl",
+    "collision/r_W/r_W6_159.stl",
+    "collision/r_W/r_W6_160.stl",
+    "collision/r_W/r_W6_161.stl",
+    "collision/r_W/r_W6_162.stl",
+    "collision/r_W/r_W6_163.stl",
+    "collision/r_W/r_W6_164.stl",
+    "collision/r_W/r_W6_165.stl",
+    "collision/r_W/r_W6_166.stl",
+    "collision/r_W/r_W6_167.stl",
+    "collision/r_W/r_W6_168.stl",
+    "collision/r_W/r_W6_169.stl",
+    "collision/r_W/r_W6_170.stl",
+    "collision/r_W/r_W6_171.stl",
+    "collision/r_W/r_W6_172.stl",
+    "collision/r_W/r_W6_173.stl",
+    "collision/r_W/r_W6_174.stl",
+    "collision/r_W/r_W6_175.stl",
+    "collision/r_W/r_W6_176.stl",
+    "collision/r_W/r_W6_177.stl",
+    "collision/r_W/r_W6_178.stl",
+    "collision/r_W/r_W6_179.stl",
+    "collision/r_W/r_W6_180.stl",
+    "collision/r_W/r_W6_181.stl",
+    "collision/r_W/r_W6_182.stl",
+    "collision/r_W/r_W6_183.stl",
+    "collision/r_W/r_W6_184.stl",
+    "collision/r_W/r_W6_185.stl",
+    "collision/r_W/r_W6_186.stl",
+    "collision/r_W/r_W6_187.stl",
+    "collision/r_W/r_W6_188.stl",
+    "collision/r_W/r_W6_189.stl",
+    "collision/r_W/r_W6_190.stl",
+    "collision/r_W/r_W6_191.stl",
+    "collision/r_W/r_W6_192.stl",
+    "collision/r_W/r_W6_193.stl",
+    "collision/r_W/r_W6_194.stl",
+    "collision/r_W/r_W6_195.stl",
+    "collision/r_W/r_W6_196.stl",
+    "collision/r_W/r_W6_197.stl",
+    "collision/r_W/r_W6_198.stl",
+    "collision/r_W/r_W6_199.stl",
+    "collision/r_W/r_W6_200.stl",
+    "collision/r_W/r_W6_201.stl",
+    "collision/r_W/r_W6_202.stl",
+    "collision/r_W/r_W6_203.stl",
+    "collision/r_W/r_W6_204.stl",
+    "collision/r_W/r_W6_205.stl",
+    "collision/r_W/r_W6_206.stl",
+    "collision/r_W/r_W6_207.stl",
+    "collision/r_W/r_W6_208.stl",
+    "collision/r_W/r_W6_209.stl",
+    "collision/r_W/r_W6_210.stl",
+    "collision/r_W/r_W6_211.stl",
+    "collision/r_W/r_W6_212.stl",
+    "collision/r_W/r_W6_213.stl",
+    "collision/r_W/r_W6_214.stl",
+    "collision/r_W/r_W6_215.stl",
+    "collision/r_W/r_W6_216.stl",
+    "collision/r_W/r_W6_217.stl",
+    "collision/r_W/r_W6_218.stl",
+    "collision/r_W/r_W6_219.stl",
+    "collision/r_W/r_W6_220.stl",
+    "collision/r_W/r_W6_221.stl",
+    "collision/r_W/r_W6_222.stl",
+    "collision/r_W/r_W6_223.stl",
+    "collision/r_W/r_W6_224.stl",
+    "collision/r_W/r_W6_225.stl",
+    "collision/r_W/r_W6_226.stl",
+    "collision/r_W/r_W6_227.stl",
+    "collision/r_W/r_W6_228.stl",
+    "collision/r_W/r_W6_229.stl",
+    "collision/r_W/r_W6_230.stl",
+    "collision/r_W/r_W6_231.stl",
+    "collision/r_W/r_C6_000.stl",
+    "collision/r_W/r_C6_001.stl",
+    "collision/r_W/r_C6_002.stl",
+    "collision/r_W/r_C6_003.stl",
+    "collision/r_W/r_C6_004.stl",
+    "collision/r_W/r_C6_005.stl",
+    "collision/r_W/r_C6_006.stl",
+    "collision/r_W/r_C6_007.stl",
+    "collision/r_W/r_C6_008.stl",
+    "collision/r_W/r_C6_009.stl",
+    "collision/r_W/r_C6_010.stl",
+    "collision/r_W/r_C6_011.stl",
+    "collision/r_W/r_C6_012.stl",
+    "collision/r_W/r_C6_013.stl",
+    "collision/r_W/r_C6_014.stl",
+    "collision/r_W/r_C6_015.stl",
+    "collision/r_W/r_C6_016.stl",
+    "collision/r_W/r_C6_017.stl",
+    "collision/r_W/r_C6_018.stl",
+    "collision/r_W/r_C6_019.stl",
+    "collision/r_W/r_C6_020.stl",
+    "collision/r_W/r_C6_021.stl",
+    "collision/r_W/r_C6_022.stl",
+    "collision/r_W/r_C6_023.stl",
+    "collision/r_W/r_C6_024.stl",
+    "collision/r_W/r_C6_025.stl",
+    "collision/r_W/r_C6_026.stl",
+    "collision/r_W/r_C6_027.stl",
+    "collision/r_W/r_C6_028.stl",
+    "collision/r_W/r_C6_029.stl",
+    "collision/r_W/r_C6_030.stl",
+    "collision/r_W/r_C6_031.stl",
+    "collision/r_W/r_C6_032.stl",
+    "collision/r_W/r_C6_033.stl",
+    "collision/r_W/r_C6_034.stl",
+    "collision/r_W/r_C7_000.stl",
+    "collision/r_W/r_C7_001.stl",
+    "collision/r_W/r_C7_002.stl",
+    "collision/r_W/r_C7_003.stl",
+    "collision/r_W/r_C7_004.stl",
+    "collision/r_W/r_C7_005.stl",
+    "collision/r_W/r_C7_006.stl",
+    "collision/r_W/r_C7_007.stl",
+    "collision/r_W/r_C7_008.stl",
+    "collision/r_W/r_C7_009.stl",
+    "collision/r_W/r_C7_010.stl",
+    "collision/r_W/r_C7_011.stl",
+    "collision/r_W/r_C7_012.stl",
+    "collision/r_W/r_C7_013.stl",
+    "collision/r_W/r_C7_014.stl",
+    "collision/r_W/r_C7_015.stl",
+    "collision/r_W/r_C7_016.stl",
+    "collision/r_W/r_C7_017.stl",
+    "collision/r_W/r_C7_018.stl",
+    "collision/r_W/r_C7_019.stl",
+    "collision/r_W/r_C7_020.stl",
+    "collision/r_W/r_C7_021.stl",
+    "collision/r_W/r_C7_022.stl",
+    "collision/r_W/r_C7_023.stl",
+    "collision/r_W/r_C7_024.stl",
+    "collision/r_W/r_C7_025.stl",
+    "collision/r_W/r_C7_026.stl",
+    "collision/r_W/r_C7_027.stl",
+    "collision/r_W/r_C7_028.stl",
+    "collision/r_W/r_C7_029.stl",
+    "collision/r_W/r_C7_030.stl",
+    "collision/r_W/r_C7_031.stl",
+    "collision/r_W/r_C7_032.stl",
+    "collision/r_W/r_C7_033.stl",
+    "collision/r_W/r_C7_034.stl",
+    "collision/r_W/r_C7_035.stl",
+    "collision/r_W/r_C7_036.stl",
+    "collision/r_W/r_C7_037.stl",
+    "collision/r_W/r_C7_038.stl",
+    "collision/r_W/r_C7_039.stl",
+    "collision/r_W/r_C7_040.stl",
+    "collision/r_W/r_C7_041.stl",
+    "collision/r_W/r_C7_042.stl",
+    "collision/r_W/r_C7_043.stl",
+    "collision/r_W/r_C7_044.stl",
+    "collision/r_W/r_C7_045.stl",
+    "collision/r_W/r_C7_046.stl",
+    "collision/r_W/r_C7_047.stl",
+    "collision/r_W/r_C7_048.stl",
+    "collision/r_W/r_C7_049.stl",
+    "collision/r_W/r_C7_050.stl",
+    "collision/r_W/r_C7_051.stl",
+    "collision/r_W/r_C7_052.stl",
+    "collision/r_W/r_C7_053.stl",
+    "collision/r_W/r_C7_054.stl",
+    "collision/r_W/r_C7_055.stl",
+    "collision/r_W/r_C7_056.stl",
+    "collision/r_W/r_C7_057.stl",
+    "collision/r_W/r_C7_058.stl",
+    "collision/r_W/r_C7_059.stl",
+    "collision/r_W/r_C7_060.stl",
+    "collision/r_W/r_C7_061.stl",
+    "collision/r_W/r_C7_062.stl",
+    "collision/r_W/r_C7_063.stl",
+    "collision/r_W/r_C7_064.stl",
+    "collision/r_W/r_C7_065.stl",
+    "collision/r_W/r_C7_066.stl",
+    "collision/r_W/r_C7_067.stl",
+    "collision/r_W/r_C7_068.stl",
+    "collision/r_W/r_C7_069.stl",
+    "collision/r_W/r_C7_070.stl",
+    "collision/r_W/r_C7_071.stl",
+    "collision/r_W/r_C7_072.stl",
+    "collision/r_W/r_C7_073.stl",
+    "collision/r_W/r_C7_074.stl",
+    "collision/r_W/r_C7_075.stl",
+    "collision/r_W/r_C7_076.stl",
+    "collision/r_W/r_C7_077.stl",
+    "collision/r_W/r_C7_078.stl",
+    "collision/r_W/r_C7_079.stl",
+    "collision/r_W/r_C7_080.stl",
+    "collision/r_W/r_C7_081.stl",
+    "collision/r_W/r_C7_082.stl",
+    "collision/r_W/r_C7_083.stl",
+    "collision/r_W/r_C7_084.stl",
+    "collision/r_W/r_C7_085.stl",
+    "collision/r_W/r_C7_086.stl",
+    "collision/r_W/r_C7_087.stl",
+    "collision/r_W/r_C7_088.stl",
+    "collision/r_W/r_C7_089.stl",
+    "collision/r_W/r_C7_090.stl",
+    "collision/r_W/r_C7_091.stl",
+    "collision/r_W/r_C7_092.stl",
+    "collision/r_W/r_C7_093.stl",
+    "collision/r_W/r_C7_094.stl",
+    "collision/r_W/r_C7_095.stl",
+    "collision/r_W/r_C7_096.stl",
+    "collision/r_W/r_C7_097.stl",
+    "collision/r_W/r_C7_098.stl",
+    "collision/r_W/r_C7_099.stl",
+    "collision/r_W/r_C7_100.stl",
+    "collision/r_W/r_C7_101.stl",
+    "collision/r_W/r_C7_102.stl",
+    "collision/r_W/r_C7_103.stl",
+    "collision/r_W/r_C7_104.stl",
+    "collision/r_W/r_C7_105.stl",
+    "collision/r_W/r_C7_106.stl",
+    "collision/r_W/r_C7_107.stl",
+    "collision/r_W/r_C7_108.stl",
+    "collision/r_W/r_C7_109.stl",
+    "collision/r_W/r_C7_110.stl",
+    "collision/r_W/r_C7_111.stl",
+    "collision/r_W/r_C7_112.stl",
+    "collision/r_W/r_C7_113.stl",
+    "collision/r_W/r_C7_114.stl",
+    "collision/r_W/r_C7_115.stl",
+    "collision/r_W/r_C7_116.stl",
+    "collision/r_W/r_C7_117.stl",
+    "collision/r_W/r_C7_118.stl",
+    "collision/r_W/r_C7_119.stl",
+    "collision/r_W/r_C7_120.stl",
+    "collision/r_W/r_C7_121.stl",
+    "collision/r_W/r_C7_122.stl",
+    "collision/r_W/r_C7_123.stl",
+    "collision/r_W/r_C7_124.stl",
+    "collision/r_W/r_C7_125.stl",
+    "collision/r_W/r_C7_126.stl",
+    "collision/r_W/r_C7_127.stl",
+    "collision/r_W/r_C7_128.stl",
+    "collision/r_W/r_C7_129.stl",
+    "collision/r_W/r_C7_130.stl",
+    "collision/r_W/r_C7_131.stl",
+    "collision/r_W/r_C7_132.stl",
+    "collision/r_W/r_C7_133.stl",
+    "collision/r_W/r_C7_134.stl",
+    "collision/r_W/r_C7_135.stl",
+    "collision/r_W/r_C7_136.stl"
+   ],
+   "bodies": [
+    {
+     "name": "r_W",
+     "parent": null,
+     "origin_in_unit_m": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "name": "r_W6",
+     "parent": "r_W",
+     "origin_in_unit_m": [
+      0.0,
+      0.0,
+      -0.1205
+     ],
+     "hinge": {
+      "axis_in_unit": [
+       0.0,
+       1.0,
+       0.0
+      ],
+      "point_in_unit_m": [
+       0.0,
+       0.0,
+       -0.1205
+      ],
+      "range_rad": [
+       -0.7854,
+       0.7854
+      ],
+      "joint": "r_j6"
+     }
+    },
+    {
+     "name": "r_C6",
+     "parent": "r_W",
+     "origin_in_unit_m": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "name": "r_C7",
+     "parent": "r_W6",
+     "origin_in_unit_m": [
+      0.0,
+      0.0,
+      -0.1205
+     ]
+    },
+    {
+     "name": "r_R7",
+     "parent": "r_C7",
+     "origin_in_unit_m": [
+      0.0,
+      0.0,
+      -0.1205
+     ],
+     "hinge": {
+      "axis_in_unit": [
+       1.0,
+       0.0,
+       0.0
+      ],
+      "point_in_unit_m": [
+       0.0,
+       0.0,
+       -0.1205
+      ],
+      "range_rad": [
+       -1.5708,
+       1.5708
+      ],
+      "joint": "r_j7"
+     },
+     "rotor_of": "DM-J4310-2EC",
+     "flange_face_centre_in_unit_m": [
+      0.031399,
+      0.0,
+      -0.1205
+     ],
+     "index_mark_deg": 0.0
+    }
+   ]
+  },
+  {
+   "id": "r_EE",
+   "arm": "right",
+   "role": "end effector: the gripper (J7 adapter, its motor and two fingers); bolted onto J7's output flange",
+   "mass_kg": 0.6493,
+   "com_in_unit_m": [
+    0.00596,
+    0.007395,
+    -0.074659
+   ],
+   "part_file": "parts/r_EE.stl",
+   "collision_files": [
+    "collision/r_EE/r_EE_000.stl",
+    "collision/r_EE/r_EE_001.stl",
+    "collision/r_EE/r_EE_002.stl",
+    "collision/r_EE/r_EE_003.stl",
+    "collision/r_EE/r_EE_004.stl",
+    "collision/r_EE/r_EE_005.stl",
+    "collision/r_EE/r_EE_006.stl",
+    "collision/r_EE/r_EE_007.stl",
+    "collision/r_EE/r_EE_008.stl",
+    "collision/r_EE/r_EE_009.stl",
+    "collision/r_EE/r_EE_010.stl",
+    "collision/r_EE/r_EE_011.stl",
+    "collision/r_EE/r_EE_012.stl",
+    "collision/r_EE/r_EE_013.stl",
+    "collision/r_EE/r_EE_014.stl",
+    "collision/r_EE/r_EE_015.stl",
+    "collision/r_EE/r_EE_016.stl",
+    "collision/r_EE/r_EE_017.stl",
+    "collision/r_EE/r_EE_018.stl",
+    "collision/r_EE/r_EE_019.stl",
+    "collision/r_EE/r_EE_020.stl",
+    "collision/r_EE/r_EE_021.stl",
+    "collision/r_EE/r_EE_022.stl",
+    "collision/r_EE/r_EE_023.stl",
+    "collision/r_EE/r_EE_024.stl",
+    "collision/r_EE/r_EE_025.stl",
+    "collision/r_EE/r_EE_026.stl",
+    "collision/r_EE/r_EE_027.stl",
+    "collision/r_EE/r_EE_028.stl",
+    "collision/r_EE/r_EE_029.stl",
+    "collision/r_EE/r_EE_030.stl",
+    "collision/r_EE/r_EE_031.stl",
+    "collision/r_EE/r_EE_032.stl",
+    "collision/r_EE/r_EE_033.stl",
+    "collision/r_EE/r_EE_034.stl",
+    "collision/r_EE/r_EE_035.stl",
+    "collision/r_EE/r_EE_036.stl",
+    "collision/r_EE/r_EE_037.stl",
+    "collision/r_EE/r_EE_038.stl",
+    "collision/r_EE/r_EE_039.stl",
+    "collision/r_EE/r_EE_040.stl",
+    "collision/r_EE/r_EE_041.stl",
+    "collision/r_EE/r_EE_042.stl",
+    "collision/r_EE/r_EE_043.stl",
+    "collision/r_EE/r_EE_044.stl",
+    "collision/r_EE/r_EE_045.stl",
+    "collision/r_EE/r_EE_046.stl",
+    "collision/r_EE/r_EE_047.stl",
+    "collision/r_EE/r_EE_048.stl",
+    "collision/r_EE/r_EE_049.stl",
+    "collision/r_EE/r_EE_050.stl",
+    "collision/r_EE/r_EE_051.stl",
+    "collision/r_EE/r_EE_052.stl",
+    "collision/r_EE/r_EE_053.stl",
+    "collision/r_EE/r_EE_054.stl",
+    "collision/r_EE/r_EE_055.stl",
+    "collision/r_EE/r_EE_056.stl",
+    "collision/r_EE/r_EE_057.stl",
+    "collision/r_EE/r_EE_058.stl",
+    "collision/r_EE/r_EE_059.stl",
+    "collision/r_EE/r_EE_060.stl",
+    "collision/r_EE/r_EE_061.stl",
+    "collision/r_EE/r_EE_062.stl",
+    "collision/r_EE/r_EE_063.stl",
+    "collision/r_EE/r_EE_064.stl",
+    "collision/r_EE/r_EE_065.stl",
+    "collision/r_EE/r_EE_066.stl",
+    "collision/r_EE/r_EE_067.stl",
+    "collision/r_EE/r_EE_068.stl",
+    "collision/r_EE/r_EE_069.stl",
+    "collision/r_EE/r_EE_070.stl",
+    "collision/r_EE/r_EE_071.stl",
+    "collision/r_EE/r_EE_072.stl",
+    "collision/r_EE/r_EE_073.stl",
+    "collision/r_EE/r_EE_074.stl",
+    "collision/r_EE/r_EE_075.stl",
+    "collision/r_EE/r_EE_076.stl",
+    "collision/r_EE/r_EE_077.stl",
+    "collision/r_EE/r_EE_078.stl",
+    "collision/r_EE/r_EE_079.stl",
+    "collision/r_EE/r_EE_080.stl",
+    "collision/r_EE/r_EE_081.stl",
+    "collision/r_EE/r_EE_082.stl",
+    "collision/r_EE/r_EE_083.stl",
+    "collision/r_EE/r_EE_084.stl",
+    "collision/r_EE/r_EE_085.stl",
+    "collision/r_EE/r_EE_086.stl",
+    "collision/r_EE/r_EE_087.stl",
+    "collision/r_EE/r_EE_088.stl",
+    "collision/r_EE/r_EE_089.stl",
+    "collision/r_EE/r_EE_090.stl",
+    "collision/r_EE/r_EE_091.stl",
+    "collision/r_EE/r_EE_092.stl",
+    "collision/r_EE/r_EE_093.stl",
+    "collision/r_EE/r_EE_094.stl",
+    "collision/r_EE/r_EE_095.stl",
+    "collision/r_EE/r_EE_096.stl",
+    "collision/r_EE/r_EE_097.stl",
+    "collision/r_EE/r_EE_098.stl",
+    "collision/r_EE/r_EE_099.stl",
+    "collision/r_EE/r_EE_100.stl",
+    "collision/r_EE/r_EE_101.stl",
+    "collision/r_EE/r_EE_102.stl",
+    "collision/r_EE/r_EE_103.stl",
+    "collision/r_EE/r_EE_104.stl",
+    "collision/r_EE/r_EE_105.stl",
+    "collision/r_EE/r_EE_106.stl",
+    "collision/r_EE/r_EE_107.stl",
+    "collision/r_EE/r_EE_108.stl",
+    "collision/r_EE/r_EE_109.stl",
+    "collision/r_EE/r_EE_110.stl",
+    "collision/r_EE/r_EE_111.stl",
+    "collision/r_EE/r_EE_112.stl",
+    "collision/r_EE/r_EE_113.stl",
+    "collision/r_EE/r_EE_114.stl",
+    "collision/r_EE/r_EE_115.stl",
+    "collision/r_EE/r_EE_116.stl",
+    "collision/r_EE/r_EE_117.stl",
+    "collision/r_EE/r_EE_118.stl",
+    "collision/r_EE/r_EE_119.stl",
+    "collision/r_EE/r_EE_120.stl",
+    "collision/r_EE/r_EE_121.stl",
+    "collision/r_EE/r_EE_122.stl",
+    "collision/r_EE/r_EE_123.stl",
+    "collision/r_EE/r_EE_124.stl",
+    "collision/r_EE/r_EE_125.stl",
+    "collision/r_EE/r_EE_126.stl",
+    "collision/r_EE/r_EE_127.stl",
+    "collision/r_EE/r_EE_128.stl",
+    "collision/r_EE/r_EE_129.stl",
+    "collision/r_EE/r_EE_130.stl",
+    "collision/r_EE/r_EE_131.stl",
+    "collision/r_EE/r_EE_132.stl",
+    "collision/r_EE/r_EE_133.stl",
+    "collision/r_EE/r_EE_134.stl",
+    "collision/r_EE/r_EE_135.stl",
+    "collision/r_EE/r_EE_136.stl",
+    "collision/r_EE/r_EE_137.stl",
+    "collision/r_EE/r_EE_138.stl",
+    "collision/r_EE/r_EE_139.stl",
+    "collision/r_EE/r_EE_140.stl",
+    "collision/r_EE/r_EE_141.stl",
+    "collision/r_EE/r_EE_142.stl",
+    "collision/r_EE/r_EE_143.stl",
+    "collision/r_EE/r_EE_144.stl",
+    "collision/r_EE/r_EE_145.stl",
+    "collision/r_EE/r_EE_146.stl",
+    "collision/r_EE/r_EE_147.stl",
+    "collision/r_EE/r_EE_148.stl",
+    "collision/r_EE/r_EE_149.stl",
+    "collision/r_EE/r_EE_150.stl",
+    "collision/r_EE/r_EE_151.stl",
+    "collision/r_EE/r_EE_152.stl",
+    "collision/r_EE/r_EE_153.stl",
+    "collision/r_EE/r_EE_154.stl",
+    "collision/r_EE/r_EE_155.stl",
+    "collision/r_EE/r_EE_156.stl",
+    "collision/r_EE/r_EE_157.stl",
+    "collision/r_EE/r_EE_158.stl",
+    "collision/r_EE/r_EE_159.stl",
+    "collision/r_EE/r_EE_160.stl",
+    "collision/r_EE/r_EE_161.stl",
+    "collision/r_EE/r_EE_162.stl",
+    "collision/r_EE/r_EE_163.stl",
+    "collision/r_EE/r_EE_164.stl",
+    "collision/r_EE/r_EE_165.stl",
+    "collision/r_EE/r_EE_166.stl",
+    "collision/r_EE/r_EE_167.stl",
+    "collision/r_EE/r_EE_168.stl",
+    "collision/r_EE/r_EE_169.stl",
+    "collision/r_EE/r_EE_170.stl",
+    "collision/r_EE/r_EE_171.stl",
+    "collision/r_EE/r_EE_172.stl",
+    "collision/r_EE/r_EE_173.stl",
+    "collision/r_EE/r_EE_174.stl",
+    "collision/r_EE/r_EE_175.stl",
+    "collision/r_EE/r_EE_176.stl",
+    "collision/r_EE/r_EE_177.stl",
+    "collision/r_EE/r_EE_178.stl",
+    "collision/r_EE/r_EE_179.stl",
+    "collision/r_EE/r_EE_180.stl",
+    "collision/r_EE/r_EE_181.stl",
+    "collision/r_EE/r_EE_182.stl",
+    "collision/r_EE/r_EE_183.stl",
+    "collision/r_EE/r_EE_184.stl",
+    "collision/r_EE/r_EE_185.stl",
+    "collision/r_EE/r_EE_186.stl",
+    "collision/r_EE/r_EE_187.stl",
+    "collision/r_EE/r_EE_188.stl",
+    "collision/r_EE/r_EE_189.stl",
+    "collision/r_EE/r_EE_190.stl",
+    "collision/r_EE/r_EE_191.stl",
+    "collision/r_EE/r_EE_192.stl",
+    "collision/r_EE/r_EE_193.stl",
+    "collision/r_EE/r_EE_194.stl",
+    "collision/r_EE/r_EE_195.stl",
+    "collision/r_EE/r_EE_196.stl",
+    "collision/r_EE/r_EE_197.stl",
+    "collision/r_EE/r_EE_198.stl",
+    "collision/r_EE/r_EE_199.stl",
+    "collision/r_EE/r_EE_200.stl",
+    "collision/r_EE/r_EE_201.stl",
+    "collision/r_EE/r_EE_202.stl",
+    "collision/r_EE/r_EE_203.stl",
+    "collision/r_EE/r_EE_204.stl",
+    "collision/r_EE/r_EE_205.stl",
+    "collision/r_EE/r_EE_206.stl",
+    "collision/r_EE/r_EE_207.stl",
+    "collision/r_EE/r_EE_208.stl",
+    "collision/r_EE/r_EE_209.stl",
+    "collision/r_EE/r_EE_210.stl",
+    "collision/r_EE/r_EE_211.stl",
+    "collision/r_EE/r_EE_212.stl",
+    "collision/r_EE/r_EE_213.stl",
+    "collision/r_EE/r_EE_214.stl",
+    "collision/r_EE/r_EE_215.stl",
+    "collision/r_EE/r_EE_216.stl",
+    "collision/r_EE/r_EE_217.stl",
+    "collision/r_EE/r_EE_218.stl",
+    "collision/r_EE/r_EE_219.stl",
+    "collision/r_EE/r_EE_220.stl",
+    "collision/r_EE/r_EE_221.stl",
+    "collision/r_EE/r_EE_222.stl",
+    "collision/r_EE/r_EE_223.stl",
+    "collision/r_EE/r_EE_224.stl",
+    "collision/r_EE/r_EE_225.stl",
+    "collision/r_EE/r_EE_226.stl",
+    "collision/r_EE/r_EE_227.stl",
+    "collision/r_EE/r_EE_228.stl",
+    "collision/r_EE/r_EE_229.stl",
+    "collision/r_EE/r_EE_230.stl",
+    "collision/r_EE/r_EE_231.stl",
+    "collision/r_EE/r_EE_232.stl",
+    "collision/r_EE/r_EE_233.stl",
+    "collision/r_EE/r_EE_234.stl",
+    "collision/r_EE/r_EE_235.stl",
+    "collision/r_EE/r_EE_236.stl",
+    "collision/r_EE/r_EE_237.stl",
+    "collision/r_EE/r_EE_238.stl",
+    "collision/r_EE/r_C8_000.stl",
+    "collision/r_EE/r_C8_001.stl",
+    "collision/r_EE/r_C8_002.stl",
+    "collision/r_EE/r_C8_003.stl",
+    "collision/r_EE/r_C8_004.stl",
+    "collision/r_EE/r_C8_005.stl",
+    "collision/r_EE/r_C8_006.stl",
+    "collision/r_EE/r_C8_007.stl",
+    "collision/r_EE/r_C8_008.stl",
+    "collision/r_EE/r_C8_009.stl",
+    "collision/r_EE/r_C8_010.stl",
+    "collision/r_EE/r_C8_011.stl",
+    "collision/r_EE/r_C8_012.stl",
+    "collision/r_EE/r_C8_013.stl",
+    "collision/r_EE/r_C8_014.stl",
+    "collision/r_EE/r_C8_015.stl"
+   ],
+   "bodies": [
+    {
+     "name": "r_EE",
+     "parent": null,
+     "origin_in_unit_m": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "name": "r_C8",
+     "parent": "r_EE",
+     "origin_in_unit_m": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    }
+   ]
+  }
+ ],
+ "joints": {
+  "l_j1": {
+   "arm": "left",
+   "axis_in_pair": [
+    0.0,
+    1.0,
+    0.0
+   ],
+   "point_in_pair_m": [
+    0.0,
+    0.0925,
+    0.0
+   ],
+   "range_rad": [
+    -3.4907,
+    1.3963
+   ],
+   "motor": "DM-J8009P-2EC",
+   "unpowered": {
+    "frictionloss_Nm": 0.2,
+    "damping_Nms": 0.13,
+    "armature_kgm2": 0.016
+   },
+   "links": [
+    "l_base",
+    "l_L1"
+   ]
+  },
+  "l_j2": {
+   "arm": "left",
+   "axis_in_pair": [
+    -1.0,
+    0.0,
+    0.0
+   ],
+   "point_in_pair_m": [
+    0.0,
+    0.1525,
+    0.0
+   ],
+   "range_rad": [
+    -3.3161,
+    0.17453
+   ],
+   "motor": "DM-J8009P-2EC",
+   "unpowered": {
+    "frictionloss_Nm": 0.2,
+    "damping_Nms": 0.13,
+    "armature_kgm2": 0.016
+   },
+   "links": [
+    "l_L1",
+    "l_L2"
+   ]
+  },
+  "l_j3": {
+   "arm": "left",
+   "axis_in_pair": [
+    0.0,
+    0.0,
+    -1.0
+   ],
+   "point_in_pair_m": [
+    0.0,
+    0.1525,
+    -0.06625
+   ],
+   "range_rad": [
+    -1.5708,
+    1.5708
+   ],
+   "motor": "DM-J4340P-2EC",
+   "unpowered": {
+    "frictionloss_Nm": 0.1,
+    "damping_Nms": 0.33,
+    "armature_kgm2": 0.03
+   },
+   "links": [
+    "l_L2",
+    "l_UA"
+   ]
+  },
+  "l_j4": {
+   "arm": "left",
+   "axis_in_pair": [
+    0.0,
+    -1.0,
+    0.0
+   ],
+   "point_in_pair_m": [
+    0.0,
+    0.1525,
+    -0.22
+   ],
+   "range_rad": [
+    0.0,
+    2.4435
+   ],
+   "motor": "DM-J4340-2EC",
+   "unpowered": {
+    "frictionloss_Nm": 0.1,
+    "damping_Nms": 0.33,
+    "armature_kgm2": 0.03
+   },
+   "links": [
+    "l_UA",
+    "l_FA"
+   ]
+  },
+  "l_j5": {
+   "arm": "left",
+   "axis_in_pair": [
+    0.0,
+    0.0,
+    -1.0
+   ],
+   "point_in_pair_m": [
+    0.0,
+    0.1525,
+    -0.3155
+   ],
+   "range_rad": [
+    -1.5708,
+    1.5708
+   ],
+   "motor": "DM-J4310-2EC",
+   "unpowered": {
+    "frictionloss_Nm": 0.04,
+    "damping_Nms": 0.03,
+    "armature_kgm2": 0.002
+   },
+   "links": [
+    "l_FA",
+    "l_W"
+   ]
+  },
+  "l_j6": {
+   "arm": "left",
+   "axis_in_pair": [
+    0.0,
+    -1.0,
+    0.0
+   ],
+   "point_in_pair_m": [
+    0.0,
+    0.1525,
+    -0.436
+   ],
+   "range_rad": [
+    -0.7854,
+    0.7854
+   ],
+   "motor": "DM-J4310-2EC",
+   "unpowered": {
+    "frictionloss_Nm": 0.04,
+    "damping_Nms": 0.03,
+    "armature_kgm2": 0.002
+   },
+   "links": [
+    "l_W",
+    "l_W6"
+   ]
+  },
+  "l_j7": {
+   "arm": "left",
+   "axis_in_pair": [
+    1.0,
+    0.0,
+    0.0
+   ],
+   "point_in_pair_m": [
+    0.0,
+    0.1525,
+    -0.436
+   ],
+   "range_rad": [
+    -1.5708,
+    1.5708
+   ],
+   "motor": "DM-J4310-2EC",
+   "unpowered": {
+    "frictionloss_Nm": 0.04,
+    "damping_Nms": 0.03,
+    "armature_kgm2": 0.002
+   },
+   "links": [
+    "l_W6",
+    "l_EE"
+   ]
+  },
+  "r_j1": {
+   "arm": "right",
+   "axis_in_pair": [
+    0.0,
+    -1.0,
+    0.0
+   ],
+   "point_in_pair_m": [
+    0.0,
+    -0.0925,
+    0.0
+   ],
+   "range_rad": [
+    -1.3963,
+    3.4907
+   ],
+   "motor": "DM-J8009P-2EC",
+   "unpowered": {
+    "frictionloss_Nm": 0.2,
+    "damping_Nms": 0.13,
+    "armature_kgm2": 0.016
+   },
+   "links": [
+    "r_base",
+    "r_L1"
+   ]
+  },
+  "r_j2": {
+   "arm": "right",
+   "axis_in_pair": [
+    -1.0,
+    0.0,
+    0.0
+   ],
+   "point_in_pair_m": [
+    0.0,
+    -0.1525,
+    0.0
+   ],
+   "range_rad": [
+    -0.17453,
+    3.3161
+   ],
+   "motor": "DM-J8009P-2EC",
+   "unpowered": {
+    "frictionloss_Nm": 0.2,
+    "damping_Nms": 0.13,
+    "armature_kgm2": 0.016
+   },
+   "links": [
+    "r_L1",
+    "r_L2"
+   ]
+  },
+  "r_j3": {
+   "arm": "right",
+   "axis_in_pair": [
+    0.0,
+    0.0,
+    -1.0
+   ],
+   "point_in_pair_m": [
+    0.0,
+    -0.1525,
+    -0.06625
+   ],
+   "range_rad": [
+    -1.5708,
+    1.5708
+   ],
+   "motor": "DM-J4340P-2EC",
+   "unpowered": {
+    "frictionloss_Nm": 0.1,
+    "damping_Nms": 0.33,
+    "armature_kgm2": 0.03
+   },
+   "links": [
+    "r_L2",
+    "r_UA"
+   ]
+  },
+  "r_j4": {
+   "arm": "right",
+   "axis_in_pair": [
+    0.0,
+    -1.0,
+    0.0
+   ],
+   "point_in_pair_m": [
+    0.0,
+    -0.1525,
+    -0.22
+   ],
+   "range_rad": [
+    0.0,
+    2.4435
+   ],
+   "motor": "DM-J4340-2EC",
+   "unpowered": {
+    "frictionloss_Nm": 0.1,
+    "damping_Nms": 0.33,
+    "armature_kgm2": 0.03
+   },
+   "links": [
+    "r_UA",
+    "r_FA"
+   ]
+  },
+  "r_j5": {
+   "arm": "right",
+   "axis_in_pair": [
+    0.0,
+    0.0,
+    -1.0
+   ],
+   "point_in_pair_m": [
+    0.0,
+    -0.1525,
+    -0.3155
+   ],
+   "range_rad": [
+    -1.5708,
+    1.5708
+   ],
+   "motor": "DM-J4310-2EC",
+   "unpowered": {
+    "frictionloss_Nm": 0.04,
+    "damping_Nms": 0.03,
+    "armature_kgm2": 0.002
+   },
+   "links": [
+    "r_FA",
+    "r_W"
+   ]
+  },
+  "r_j6": {
+   "arm": "right",
+   "axis_in_pair": [
+    0.0,
+    1.0,
+    0.0
+   ],
+   "point_in_pair_m": [
+    0.0,
+    -0.1525,
+    -0.436
+   ],
+   "range_rad": [
+    -0.7854,
+    0.7854
+   ],
+   "motor": "DM-J4310-2EC",
+   "unpowered": {
+    "frictionloss_Nm": 0.04,
+    "damping_Nms": 0.03,
+    "armature_kgm2": 0.002
+   },
+   "links": [
+    "r_W",
+    "r_W6"
+   ]
+  },
+  "r_j7": {
+   "arm": "right",
+   "axis_in_pair": [
+    1.0,
+    0.0,
+    0.0
+   ],
+   "point_in_pair_m": [
+    0.0,
+    -0.1525,
+    -0.436
+   ],
+   "range_rad": [
+    -1.5708,
+    1.5708
+   ],
+   "motor": "DM-J4310-2EC",
+   "unpowered": {
+    "frictionloss_Nm": 0.04,
+    "damping_Nms": 0.03,
+    "armature_kgm2": 0.002
+   },
+   "links": [
+    "r_W6",
+    "r_EE"
+   ]
+  },
+  "l_j4b": {
+   "arm": "left",
+   "axis_in_pair": [
+    0.0,
+    -1.0,
+    0.0
+   ],
+   "point_in_pair_m": [
+    0.0,
+    0.1525,
+    -0.22
+   ],
+   "range_rad": null,
+   "bearing": "J4_D on the FL6803ZZ bearing in J4_B",
+   "unpowered": {
+    "frictionloss_Nm": 0.02,
+    "damping_Nms": 0.001
+   }
+  },
+  "r_j4b": {
+   "arm": "right",
+   "axis_in_pair": [
+    0.0,
+    -1.0,
+    0.0
+   ],
+   "point_in_pair_m": [
+    0.0,
+    -0.1525,
+    -0.22
+   ],
+   "range_rad": null,
+   "bearing": "J4_D on the FL6803ZZ bearing in J4_B",
+   "unpowered": {
+    "frictionloss_Nm": 0.02,
+    "damping_Nms": 0.001
+   }
+  }
+ },
+ "design": {
+  "T_world_pair_nominal": [
+   [
+    -1.0,
+    -0.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    -1.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    1.0,
+    0.698
+   ],
+   [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  ],
+  "note": "the pair frame (the arms' common root, 0.697 m above the gallows' base plate) in the cell frame with the gallows at its nominal place; each episode shifts the gallows by up to 10 mm. Unit poses are in the pair frame at the zero posture (every joint at 0).",
+  "unit_pose_in_pair": {
+   "l_L1": [
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     0.0925
+    ],
+    [
+     0.0,
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "l_M2": [
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     0.0925
+    ],
+    [
+     0.0,
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "l_L2": [
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     0.1525
+    ],
+    [
+     0.0,
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "l_UA": [
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     0.1525
+    ],
+    [
+     0.0,
+     0.0,
+     1.0,
+     -0.06625
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "l_FA": [
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     0.1525
+    ],
+    [
+     0.0,
+     0.0,
+     1.0,
+     -0.22
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "l_HA": [
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     0.1525
+    ],
+    [
+     0.0,
+     0.0,
+     1.0,
+     -0.06625
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "l_HB": [
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     0.1525
+    ],
+    [
+     0.0,
+     0.0,
+     1.0,
+     -0.22
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "l_W": [
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     0.1525
+    ],
+    [
+     0.0,
+     0.0,
+     1.0,
+     -0.3155
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "l_EE": [
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     0.1525
+    ],
+    [
+     0.0,
+     0.0,
+     1.0,
+     -0.436
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "r_L1": [
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     -0.0925
+    ],
+    [
+     0.0,
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "r_M2": [
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     -0.0925
+    ],
+    [
+     0.0,
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "r_L2": [
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     -0.1525
+    ],
+    [
+     0.0,
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "r_UA": [
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     -0.1525
+    ],
+    [
+     0.0,
+     0.0,
+     1.0,
+     -0.06625
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "r_FA": [
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     -0.1525
+    ],
+    [
+     0.0,
+     0.0,
+     1.0,
+     -0.22
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "r_HA": [
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     -0.1525
+    ],
+    [
+     0.0,
+     0.0,
+     1.0,
+     -0.06625
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "r_HB": [
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     -0.1525
+    ],
+    [
+     0.0,
+     0.0,
+     1.0,
+     -0.22
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "r_W": [
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     -0.1525
+    ],
+    [
+     0.0,
+     0.0,
+     1.0,
+     -0.3155
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "r_EE": [
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     -0.1525
+    ],
+    [
+     0.0,
+     0.0,
+     1.0,
+     -0.436
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ]
+  },
+  "base_bodies_in_pair": {
+   "base": [
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "l_base": [
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     0.03
+    ],
+    [
+     0.0,
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "l_C1": [
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     0.03
+    ],
+    [
+     0.0,
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "l_R1": [
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     0.0925
+    ],
+    [
+     0.0,
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "r_base": [
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     -0.03
+    ],
+    [
+     0.0,
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "r_C1": [
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     -0.03
+    ],
+    [
+     0.0,
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "r_R1": [
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     -0.0925
+    ],
+    [
+     0.0,
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ]
+  }
+ },
+ "mates": [
+  {
+   "id": "l_flange_j1",
+   "kind": "flange",
+   "arm": "left",
+   "unit": "l_L1",
+   "carrier_body": "l_R1",
+   "carrier_unit": "base",
+   "part_body": "l_L1",
+   "weight": 1.5,
+   "requires": [],
+   "part_pose_in_carrier": [
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "insertion_in_carrier": [
+    1.3e-05,
+    -1.0,
+    0.0
+   ],
+   "tolerance": {
+    "pos_mm": 1.5,
+    "ang_deg": 3.0
+   },
+   "face_frame_in_carrier": [
+    [
+     -1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0,
+     -0.000255
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "face_frame_in_part": [
+    [
+     -1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0,
+     -0.000255
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "rotor": "l_R1",
+   "joint": "l_j1",
+   "bolt_pitch_deg": 60.0,
+   "design_clock_deg": 0.0,
+   "axial_tol_mm": 1.5
+  },
+  {
+   "id": "l_seat_M2",
+   "kind": "seat",
+   "arm": "left",
+   "unit": "l_M2",
+   "carrier_body": "l_L1",
+   "carrier_unit": "l_L1",
+   "part_body": "l_M2",
+   "weight": 1.0,
+   "requires": [],
+   "part_pose_in_carrier": [
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "insertion_in_carrier": [
+    1.3e-05,
+    -1.0,
+    0.0
+   ],
+   "tolerance": {
+    "pos_mm": 1.5,
+    "ang_deg": 3.0
+   }
+  },
+  {
+   "id": "l_flange_j2",
+   "kind": "flange",
+   "arm": "left",
+   "unit": "l_L2",
+   "carrier_body": "l_R2",
+   "carrier_unit": "l_M2",
+   "part_body": "l_L2",
+   "weight": 1.5,
+   "requires": [
+    "l_seat_M2"
+   ],
+   "part_pose_in_carrier": [
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "insertion_in_carrier": [
+    -1.0,
+    -1.3e-05,
+    0.0
+   ],
+   "tolerance": {
+    "pos_mm": 1.5,
+    "ang_deg": 3.0
+   },
+   "face_frame_in_carrier": [
+    [
+     0.0,
+     0.0,
+     1.0,
+     0.029319
+    ],
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "face_frame_in_part": [
+    [
+     0.0,
+     0.0,
+     1.0,
+     0.029319
+    ],
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "rotor": "l_R2",
+   "joint": "l_j2",
+   "bolt_pitch_deg": 60.0,
+   "design_clock_deg": 0.0,
+   "axial_tol_mm": 1.5
+  },
+  {
+   "id": "l_flange_j3",
+   "kind": "flange",
+   "arm": "left",
+   "unit": "l_UA",
+   "carrier_body": "l_L2",
+   "carrier_unit": "l_L2",
+   "part_body": "l_R3",
+   "weight": 1.5,
+   "requires": [],
+   "part_pose_in_carrier": [
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "insertion_in_carrier": [
+    0.0,
+    0.0,
+    1.0
+   ],
+   "tolerance": {
+    "pos_mm": 1.5,
+    "ang_deg": 3.0
+   },
+   "face_frame_in_carrier": [
+    [
+     0.0,
+     -1.0,
+     0.0,
+     0.0
+    ],
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0,
+     -0.065464
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "face_frame_in_part": [
+    [
+     0.0,
+     -1.0,
+     0.0,
+     0.0
+    ],
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0,
+     -0.065464
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "rotor": "l_R3",
+   "joint": "l_j3",
+   "bolt_pitch_deg": 60.0,
+   "design_clock_deg": 0.0,
+   "axial_tol_mm": 1.5
+  },
+  {
+   "id": "l_flange_j4",
+   "kind": "flange",
+   "arm": "left",
+   "unit": "l_FA",
+   "carrier_body": "l_R4",
+   "carrier_unit": "l_UA",
+   "part_body": "l_FA",
+   "weight": 1.5,
+   "requires": [],
+   "part_pose_in_carrier": [
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "insertion_in_carrier": [
+    1.3e-05,
+    -1.0,
+    0.0
+   ],
+   "tolerance": {
+    "pos_mm": 1.5,
+    "ang_deg": 3.0
+   },
+   "face_frame_in_carrier": [
+    [
+     -1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0,
+     0.032131
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "face_frame_in_part": [
+    [
+     -1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0,
+     0.032131
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "rotor": "l_R4",
+   "joint": "l_j4",
+   "bolt_pitch_deg": 60.0,
+   "design_clock_deg": 0.0,
+   "axial_tol_mm": 1.5,
+   "also_fastens": [
+    {
+     "carrier_body": "l_FA",
+     "part_body": "l_J4D",
+     "part_pose_in_carrier": [
+      [
+       1.0,
+       0.0,
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       1.0,
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       0.0,
+       1.0,
+       0.0
+      ],
+      [
+       0.0,
+       0.0,
+       0.0,
+       1.0
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "l_seat_HA",
+   "kind": "seat",
+   "arm": "left",
+   "unit": "l_HA",
+   "carrier_body": "l_FA",
+   "carrier_unit": "l_FA",
+   "part_body": "l_HA",
+   "weight": 0.5,
+   "requires": [],
+   "part_pose_in_carrier": [
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0,
+     0.15375
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "insertion_in_carrier": [
+    0.0,
+    -1.0,
+    0.0
+   ],
+   "tolerance": {
+    "pos_mm": 1.5,
+    "ang_deg": 3.0
+   }
+  },
+  {
+   "id": "l_seat_HB",
+   "kind": "seat",
+   "arm": "left",
+   "unit": "l_HB",
+   "carrier_body": "l_J4D",
+   "carrier_unit": "l_UA",
+   "part_body": "l_HB",
+   "weight": 0.5,
+   "requires": [],
+   "part_pose_in_carrier": [
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "insertion_in_carrier": [
+    0.0,
+    1.0,
+    0.0
+   ],
+   "tolerance": {
+    "pos_mm": 1.5,
+    "ang_deg": 3.0
+   }
+  },
+  {
+   "id": "l_flange_j5",
+   "kind": "flange",
+   "arm": "left",
+   "unit": "l_W",
+   "carrier_body": "l_R5",
+   "carrier_unit": "l_FA",
+   "part_body": "l_W",
+   "weight": 1.5,
+   "requires": [],
+   "part_pose_in_carrier": [
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "insertion_in_carrier": [
+    0.0,
+    0.0,
+    1.0
+   ],
+   "tolerance": {
+    "pos_mm": 1.5,
+    "ang_deg": 3.0
+   },
+   "face_frame_in_carrier": [
+    [
+     0.0,
+     -1.0,
+     0.0,
+     0.0
+    ],
+    [
+     -1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     -1.0,
+     -0.000206
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "face_frame_in_part": [
+    [
+     0.0,
+     -1.0,
+     0.0,
+     0.0
+    ],
+    [
+     -1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     -1.0,
+     -0.000206
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "rotor": "l_R5",
+   "joint": "l_j5",
+   "bolt_pitch_deg": 60.0,
+   "design_clock_deg": 0.0,
+   "axial_tol_mm": 1.5
+  },
+  {
+   "id": "l_flange_j7",
+   "kind": "flange",
+   "arm": "left",
+   "unit": "l_EE",
+   "carrier_body": "l_R7",
+   "carrier_unit": "l_W",
+   "part_body": "l_EE",
+   "weight": 1.5,
+   "requires": [],
+   "part_pose_in_carrier": [
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "insertion_in_carrier": [
+    1.0,
+    1.3e-05,
+    0.0
+   ],
+   "tolerance": {
+    "pos_mm": 1.5,
+    "ang_deg": 3.0
+   },
+   "face_frame_in_carrier": [
+    [
+     0.0,
+     0.0,
+     1.0,
+     0.031457
+    ],
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "face_frame_in_part": [
+    [
+     0.0,
+     0.0,
+     1.0,
+     0.031457
+    ],
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "rotor": "l_R7",
+   "joint": "l_j7",
+   "bolt_pitch_deg": 60.0,
+   "design_clock_deg": 0.0,
+   "axial_tol_mm": 1.5
+  },
+  {
+   "id": "r_flange_j1",
+   "kind": "flange",
+   "arm": "right",
+   "unit": "r_L1",
+   "carrier_body": "r_R1",
+   "carrier_unit": "base",
+   "part_body": "r_L1",
+   "weight": 1.5,
+   "requires": [],
+   "part_pose_in_carrier": [
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "insertion_in_carrier": [
+    -1.3e-05,
+    1.0,
+    0.0
+   ],
+   "tolerance": {
+    "pos_mm": 1.5,
+    "ang_deg": 3.0
+   },
+   "face_frame_in_carrier": [
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     -1.0,
+     -0.000135
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "face_frame_in_part": [
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     -1.0,
+     -0.000135
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "rotor": "r_R1",
+   "joint": "r_j1",
+   "bolt_pitch_deg": 60.0,
+   "design_clock_deg": 0.0,
+   "axial_tol_mm": 1.5
+  },
+  {
+   "id": "r_seat_M2",
+   "kind": "seat",
+   "arm": "right",
+   "unit": "r_M2",
+   "carrier_body": "r_L1",
+   "carrier_unit": "r_L1",
+   "part_body": "r_M2",
+   "weight": 1.0,
+   "requires": [],
+   "part_pose_in_carrier": [
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "insertion_in_carrier": [
+    0.0,
+    1.0,
+    0.0
+   ],
+   "tolerance": {
+    "pos_mm": 1.5,
+    "ang_deg": 3.0
+   }
+  },
+  {
+   "id": "r_flange_j2",
+   "kind": "flange",
+   "arm": "right",
+   "unit": "r_L2",
+   "carrier_body": "r_R2",
+   "carrier_unit": "r_M2",
+   "part_body": "r_L2",
+   "weight": 1.5,
+   "requires": [
+    "r_seat_M2"
+   ],
+   "part_pose_in_carrier": [
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "insertion_in_carrier": [
+    -1.0,
+    -1.3e-05,
+    0.0
+   ],
+   "tolerance": {
+    "pos_mm": 1.5,
+    "ang_deg": 3.0
+   },
+   "face_frame_in_carrier": [
+    [
+     0.0,
+     0.0,
+     1.0,
+     0.029626
+    ],
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "face_frame_in_part": [
+    [
+     0.0,
+     0.0,
+     1.0,
+     0.029626
+    ],
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "rotor": "r_R2",
+   "joint": "r_j2",
+   "bolt_pitch_deg": 60.0,
+   "design_clock_deg": 0.0,
+   "axial_tol_mm": 1.5
+  },
+  {
+   "id": "r_flange_j3",
+   "kind": "flange",
+   "arm": "right",
+   "unit": "r_UA",
+   "carrier_body": "r_L2",
+   "carrier_unit": "r_L2",
+   "part_body": "r_R3",
+   "weight": 1.5,
+   "requires": [],
+   "part_pose_in_carrier": [
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "insertion_in_carrier": [
+    0.0,
+    0.0,
+    1.0
+   ],
+   "tolerance": {
+    "pos_mm": 1.5,
+    "ang_deg": 3.0
+   },
+   "face_frame_in_carrier": [
+    [
+     0.0,
+     -1.0,
+     0.0,
+     0.0
+    ],
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0,
+     -0.065366
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "face_frame_in_part": [
+    [
+     0.0,
+     -1.0,
+     0.0,
+     0.0
+    ],
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0,
+     -0.065366
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "rotor": "r_R3",
+   "joint": "r_j3",
+   "bolt_pitch_deg": 60.0,
+   "design_clock_deg": 0.0,
+   "axial_tol_mm": 1.5
+  },
+  {
+   "id": "r_flange_j4",
+   "kind": "flange",
+   "arm": "right",
+   "unit": "r_FA",
+   "carrier_body": "r_R4",
+   "carrier_unit": "r_UA",
+   "part_body": "r_FA",
+   "weight": 1.5,
+   "requires": [],
+   "part_pose_in_carrier": [
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "insertion_in_carrier": [
+    1.3e-05,
+    -1.0,
+    0.0
+   ],
+   "tolerance": {
+    "pos_mm": 1.5,
+    "ang_deg": 3.0
+   },
+   "face_frame_in_carrier": [
+    [
+     -1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0,
+     0.031977
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "face_frame_in_part": [
+    [
+     -1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0,
+     0.031977
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "rotor": "r_R4",
+   "joint": "r_j4",
+   "bolt_pitch_deg": 60.0,
+   "design_clock_deg": 0.0,
+   "axial_tol_mm": 1.5,
+   "also_fastens": [
+    {
+     "carrier_body": "r_FA",
+     "part_body": "r_J4D",
+     "part_pose_in_carrier": [
+      [
+       1.0,
+       0.0,
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       1.0,
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       0.0,
+       1.0,
+       0.0
+      ],
+      [
+       0.0,
+       0.0,
+       0.0,
+       1.0
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "r_seat_HA",
+   "kind": "seat",
+   "arm": "right",
+   "unit": "r_HA",
+   "carrier_body": "r_FA",
+   "carrier_unit": "r_FA",
+   "part_body": "r_HA",
+   "weight": 0.5,
+   "requires": [],
+   "part_pose_in_carrier": [
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0,
+     0.15375
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "insertion_in_carrier": [
+    0.0,
+    -1.0,
+    0.0
+   ],
+   "tolerance": {
+    "pos_mm": 1.5,
+    "ang_deg": 3.0
+   }
+  },
+  {
+   "id": "r_seat_HB",
+   "kind": "seat",
+   "arm": "right",
+   "unit": "r_HB",
+   "carrier_body": "r_J4D",
+   "carrier_unit": "r_UA",
+   "part_body": "r_HB",
+   "weight": 0.5,
+   "requires": [],
+   "part_pose_in_carrier": [
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "insertion_in_carrier": [
+    0.0,
+    1.0,
+    0.0
+   ],
+   "tolerance": {
+    "pos_mm": 1.5,
+    "ang_deg": 3.0
+   }
+  },
+  {
+   "id": "r_flange_j5",
+   "kind": "flange",
+   "arm": "right",
+   "unit": "r_W",
+   "carrier_body": "r_R5",
+   "carrier_unit": "r_FA",
+   "part_body": "r_W",
+   "weight": 1.5,
+   "requires": [],
+   "part_pose_in_carrier": [
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "insertion_in_carrier": [
+    0.0,
+    0.0,
+    1.0
+   ],
+   "tolerance": {
+    "pos_mm": 1.5,
+    "ang_deg": 3.0
+   },
+   "face_frame_in_carrier": [
+    [
+     0.0,
+     -1.0,
+     0.0,
+     0.0
+    ],
+    [
+     -1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     -1.0,
+     -0.000104
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "face_frame_in_part": [
+    [
+     0.0,
+     -1.0,
+     0.0,
+     0.0
+    ],
+    [
+     -1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     -1.0,
+     -0.000104
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "rotor": "r_R5",
+   "joint": "r_j5",
+   "bolt_pitch_deg": 60.0,
+   "design_clock_deg": 0.0,
+   "axial_tol_mm": 1.5
+  },
+  {
+   "id": "r_flange_j7",
+   "kind": "flange",
+   "arm": "right",
+   "unit": "r_EE",
+   "carrier_body": "r_R7",
+   "carrier_unit": "r_W",
+   "part_body": "r_EE",
+   "weight": 1.5,
+   "requires": [],
+   "part_pose_in_carrier": [
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "insertion_in_carrier": [
+    1.0,
+    1.3e-05,
+    0.0
+   ],
+   "tolerance": {
+    "pos_mm": 1.5,
+    "ang_deg": 3.0
+   },
+   "face_frame_in_carrier": [
+    [
+     0.0,
+     0.0,
+     1.0,
+     0.031399
+    ],
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "face_frame_in_part": [
+    [
+     0.0,
+     0.0,
+     1.0,
+     0.031399
+    ],
+    [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "rotor": "r_R7",
+   "joint": "r_j7",
+   "bolt_pitch_deg": 60.0,
+   "design_clock_deg": 0.0,
+   "axial_tol_mm": 1.5
+  }
+ ],
+ "fastening": {
+  "rule": "a unit on its feature is held there by the cell (ENGAGED: within 4 mm across and 8 deg; a flange also within 4 mm along its axis, its rotation about the axis left free; the J2 motor's seat at most 3 mm short of home); it fastens (the screws) when it rests within its tolerance for 50 consecutive 10 ms ticks, moving slower than 5 mm/s and 2 deg/s relative to its carrier. A flange is bolted at the nearest bolt position (every 60 deg); it counts only on its design bolt position (the rotor's yellow index mark against the part's). A mate with `also_fastens` (the forearm) needs the other body (J4_D) within the tolerance too. Nothing is reported to the program.",
+  "capture": {
+   "pos_m": 0.004,
+   "ang_deg": 8.0,
+   "axial_m": 0.004,
+   "seat_depth_m": 0.003
+  },
+  "hold_ticks": 50,
+  "rel_speed_max_m_s": 0.005,
+  "rest_ang_speed_max_deg_s": 2.0,
+  "powered_joints": "J1, J2 and J3 of each arm hold the angle they were fastened at while the arm is built (a position hold, up to 10 / 10 / 5 N m); J4-J7 and J4_D's bearing are unpowered and back-drive against their friction"
+ },
+ "risers": {
+  "note": "some units rest on two loose aluminium blocks (a riser) under their ends, so that a finger reaches under their edges; the J2 motors stand on their rim between two such blocks (a cradle)",
+  "block_m": [
+   0.01,
+   0.04,
+   0.035
+  ],
+  "block_mass_kg": 0.04
+ },
+ "bench": {
+  "size_xy_m": [
+   1.6,
+   1.4
+  ],
+  "top_z_m": 0.0
+ }
+}
