@@ -14,6 +14,16 @@ Design, in the world frame of the twin (the robots' headings are fixed):
   control takes over once it hangs, with a height trim on the measured loads that keeps the three equal;
 - minimum-jerk lift and carry profiles (no acceleration steps: little swing, little slosh), the bucket's swing
   damped from what the cameras see, and the pour driven by what the thermal cameras see.
+
+With the true state in each observation (`privileged`, which the grader adds for the reference's token only) the same
+phases and the same control run on it in place of the sensors' estimates: the robots' and the bucket's true positions,
+the pan where it stands today, the steam and the fire as they are. Then the drones wait for the steam to be off, lift
+only once the day's gust is surely over, carry round the vehicle when it stands near their line, and pour with UAV_3
+(its side faces away from the steam line).
+
+A step may be asked twice with the same t (the grader's lock asks some steps again with shifted positions and applies
+one answer): each query is answered from the state before the step, and the state carried on is the one whose
+observation the next step's observation continues (a stateful controller must not advance on the shifted copy).
 """
 import copy
 import json
@@ -25,7 +35,7 @@ import os
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # (run with -I: the script's folder is not on the path)
-from vehicle import Vehicle  # noqa: E402
+from vehicle import Vehicle, log  # noqa: E402
 
 G = 9.81
 UAVS = ("UAV_1", "UAV_2", "UAV_3")
@@ -64,23 +74,35 @@ def t_minjerk(dist, a_max):
 
 
 STEAM_WAIT = 4.0          # [s] after the lever has been pushed to its stop: the leak stops 3 s after it closes
+T_LIFT_EARLIEST = 43.0    # [s] privileged: the gust (2.5 s, at some time between 8 and 40 s) is over by then
+POURERS_PRIV = ("UAV_3",)  # privileged: the robot that lowers its hook to pour (on the side away from the steam line)
+SECOND_PRIV = "UAV_2"     # privileged: with one rope slack the bucket tips only about 27 degrees (it hangs from two rings),
+                          # which pours nothing when it holds 8.5 L (the water then stands 6 cm below the rim); if it does
+                          # not pour, this robot comes down slowly too, pausing while water leaves: the bucket tips further
+V_SECOND = 0.06           # [m/s] how fast it comes down
+POUR_PRE_PRIV = POUR_PRE
+VEHICLE_ROOM = 1.3        # [m] privileged: the carry keeps the bucket this far from the vehicle
 
 
 class Controller:
     def __init__(self):
         self.state = None
         self.snapshot = None
+        self.last_t, self.cands = None, []
         self.vehicle = Vehicle()
 
     def reset(self):
         self.state = None
+        self.last_t, self.cands = None, []
 
     # -- set-up ---------------------------------------------------------------------------------------------------
     def init(self, obs):
         mis = obs["mission"]
         hooks = {n: np.array(mis["uav"][n]["hook"]) for n in UAVS}
-        self.vehicle.setup(mis)
-        s = dict(phase="WAIT", t_phase=0.0, last_t=-1, mis=mis, hooks=hooks, ugv=self.vehicle.init_state(),
+        priv = "privileged" in obs
+        self.vehicle.setup(mis, privileged=priv)
+        s = dict(phase="WAIT", t_phase=0.0, last_t=-1, mis=mis, hooks=hooks, ugv=self.vehicle.init_state(), priv=priv,
+                 pourers=POURERS_PRIV if priv else ("UAV_1",), pour_pre=POUR_PRE_PRIV if priv else POUR_PRE,
                  load_f={n: np.zeros(3) for n in UAVS}, ie={n: np.zeros(3) for n in UAVS},
                  taut={n: False for n in UAVS}, z_ref=None, preload_ok=0.0, trim={n: 0.0 for n in UAVS},
                  rel={}, bucket_xy=None, bucket_f=None, off_f=None, off_rate=np.zeros(2), fire_seen_out=0.0, carry=None, align=None,
@@ -137,7 +159,8 @@ class Controller:
         s["load_f"][n] = 0.7 * s["load_f"][n] + 0.3 * load
         ff = -s["load_f"][n]
         ff[2] = max(0.0, ff[2])  # the rope only pulls down; never feed a ground reaction forward
-        ff = np.clip(ff, -60.0, 60.0)
+        zmax = 120.0 if s.get("priv") else 60.0  # (with the true state one robot may carry most of the bucket while it pours)
+        ff = np.clip(ff, [-60.0, -60.0, -60.0], [60.0, 60.0, zmax])
         e = p_ref - p
         ie = np.clip(s["ie"][n] + e * dt, -0.5, 0.5)
         acc = KP * e + KD * (v_ref - v) + KI * ie
@@ -160,31 +183,90 @@ class Controller:
         for n in UAVS:
             s["trim"][n] = float(np.clip(s["trim"][n] + K_TRIM * (lz[n] - mean) * dt, -0.06, 0.06))
 
+    # -- the carry's legs ---------------------------------------------------------------------------------------------
+    @staticmethod
+    def leg(p0, p1):
+        p0, p1 = np.asarray(p0, dtype=float), np.asarray(p1, dtype=float)
+        dist = max(1e-6, float(np.linalg.norm(p1 - p0)))
+        return dict(p0=p0, p1=p1, dist=dist, dirn=(p1 - p0) / dist, T=t_minjerk(dist, A_CARRY))
+
+    @staticmethod
+    def legs(p0, p1, pv):
+        """The straight line p0 -> p1, or two legs by a point beside the vehicle when the line passes within
+        VEHICLE_ROOM of it (the bucket hangs about a metre above the floor; the vehicle's arm reaches higher)."""
+        u = pv.get("ugv") or {}
+        if not u.get("pos"):
+            return [(p0, p1)]
+        v = np.array(u["pos"][:2])
+        d = p1 - p0
+        L = float(np.linalg.norm(d))
+        if L < 1e-6:
+            return [(p0, p1)]
+        f = float(np.clip((v - p0) @ d / (L * L), 0.0, 1.0))
+        near = p0 + f * d
+        gap = float(np.linalg.norm(v - near))
+        if gap >= VEHICLE_ROOM or f <= 0.0 or f >= 1.0:
+            return [(p0, p1)]
+        side = near - v if gap > 1e-6 else np.array([-d[1], d[0]]) / L
+        via = v + side / (np.linalg.norm(side) + 1e-9) * (VEHICLE_ROOM + 0.2)
+        return [(p0, via), (via, p1)]
+
     # -- the mission ----------------------------------------------------------------------------------------------
+    @staticmethod
+    def obs_key(obs):
+        """The positions a step's observation reports (odometry and, with the true state, the true ones)."""
+        v = []
+        for n in UAVS:
+            v += list((obs.get("uav") or {}).get(n, {}).get("pos") or [0.0, 0.0, 0.0])
+        if obs.get("ugv"):
+            v += list(obs["ugv"]["pose"][:2])
+        pv = obs.get("privileged") or {}
+        for n in UAVS:
+            v += list(((pv.get("uav") or {}).get(n) or {}).get("pos") or [])
+        if pv.get("ugv"):
+            v += list(pv["ugv"]["pos"][:2])
+        return np.array(v, dtype=float)
+
     def act(self, t, obs):
-        if self.state is None or t == 0:
+        """One step. A step may be asked more than once with the same t (the grader's lock asks some steps again
+        with shifted positions, and applies only one answer): each query is answered from the state before the
+        step, and the state carried on is the one whose observation the next step's observation continues."""
+        if self.state is None or t == 0 and self.last_t != 0:
             self.state = self.init(obs)
             self.snapshot = copy.deepcopy(self.state)
-        s = self.state
-        if t == s["last_t"]:  # a repeated query: start again from the state before this step
-            s = self.state = copy.deepcopy(self.snapshot)
-        else:
-            self.snapshot = copy.deepcopy(s)
-        s["last_t"] = t
+            self.last_t, self.cands = None, []
+        if t != self.last_t:
+            if self.cands:
+                key = self.obs_key(obs)
+                self.state = min(self.cands, key=lambda c: float(np.linalg.norm(c[0] - key)) if len(c[0]) == len(key) else 1e9)[1]
+            self.snapshot = copy.deepcopy(self.state)
+            self.last_t, self.cands = t, []
+        s = copy.deepcopy(self.snapshot)
+        out = self.step(t, obs, s)
+        self.cands.append((self.obs_key(obs), s))
+        return out
+
+    def step(self, t, obs, s):
         mis = s["mis"]
         dt = mis["dt"]
         s["t_phase"] += dt
-        pos, vel = self.estimates(obs, s, dt)
+        pv = obs.get("privileged") if s["priv"] else None
+        if pv is not None:  # the true state, in place of what the odometry, the lidars and the cameras give
+            pos = {n: np.array(pv["uav"][n]["pos"]) for n in UAVS}
+            vel = {n: np.array(pv["uav"][n]["vel"]) for n in UAVS}
+            bucket_est, pan_est, fire_seen = [np.array(pv["bucket"]["pos"])], [np.array(pv["pan"])], [bool(pv["fire"])]
+        else:
+            pos, vel = self.estimates(obs, s, dt)
+            # the bucket and the pan as the cameras see them (world estimates through the position estimates)
+            bucket_est, pan_est, fire_seen = [], [], []
+            for n in UAVS:
+                u = obs["uav"][n]
+                if u.get("bucket") is not None:
+                    bucket_est.append(pos[n] + np.array(u["bucket"]))
+                if u.get("pan") is not None:
+                    pan_est.append(pos[n] + np.array(u["pan"]))
+                    fire_seen.append(bool(u.get("fire")))
         cen_est = np.mean([pos[n] for n in UAVS], axis=0)
-        # the bucket and the pan as the cameras see them (world estimates through the position estimates)
-        bucket_est, pan_est, fire_seen = [], [], []
-        for n in UAVS:
-            u = obs["uav"][n]
-            if u.get("bucket") is not None:
-                bucket_est.append(pos[n] + np.array(u["bucket"]))
-            if u.get("pan") is not None:
-                pan_est.append(pos[n] + np.array(u["pan"]))
-                fire_seen.append(bool(u.get("fire")))
         if bucket_est:
             s["bucket_xy"] = np.mean(bucket_est, axis=0)[:2]
             # a slow filter of it: where the formation centres itself for the take-off (the cameras, not the prior)
@@ -200,6 +282,14 @@ class Controller:
         s["off_f"] = prev + a * (off - prev)
         s["off_rate"] = s["off_rate"] + a * ((s["off_f"] - prev) / dt - s["off_rate"])
         damp = np.clip(0.6 * s["off_rate"], -0.25, 0.25)
+        if pv is not None and os.environ.get("ARB_REFERENCE_LOG") and s["phase"] != "WAIT" and int(round(obs["time"] / dt)) % 12 == 0:
+            hooks_c = np.mean([np.array(pv["hooks"][n]) for n in UAVS], axis=0)
+            log(f"trace t={obs['time']:.2f} {s['phase']} bucket={np.round(pv['bucket']['pos'], 3).tolist()} tilt={pv['bucket']['tilt_deg']:.1f} "
+                f"off={np.round(bucket_xy - hooks_c[:2], 3).tolist()} z={[round(float(pos[n][2]), 3) for n in UAVS]} "
+                f"load={[round(float(obs['uav'][n]['load'][2]), 1) for n in UAVS]} water={pv['bucket']['water_l']:.2f}")
+        pourers = s["pourers"]
+        pour_dir = np.sum([[math.cos(math.radians(RING_BEARING[n])), math.sin(math.radians(RING_BEARING[n]))] for n in pourers], axis=0)
+        pour_dir = pour_dir / (np.linalg.norm(pour_dir) + 1e-9)  # (toward the lowered robots' side)
 
         def form(n, cxy, z):
             return np.array([cxy[0] + s["form"][n][0], cxy[1] + s["form"][n][1], z])
@@ -210,7 +300,11 @@ class Controller:
         if phase == "WAIT":  # on the pads until the steam is off: the pour hover is inside the plume
             done_t = s["ugv"].get("lever_done_t")
             gauge = (obs.get("ugv") or {}).get("gauge")
-            if (done_t is not None and obs["time"] > done_t + STEAM_WAIT) or (gauge is not None and gauge < 0.05):
+            if pv is not None:
+                go = not pv["steam"]
+            else:
+                go = (done_t is not None and obs["time"] > done_t + STEAM_WAIT) or (gauge is not None and gauge < 0.05)
+            if go:
                 s["phase"], s["t_phase"] = "RISE", 0.0
             return {"thrust": {n: [0.0, 0.0, 0.0] for n in UAVS}, "ugv": ugv_cmd}
         if phase == "RISE":  # a minimum-jerk move from the pad to the formation point just below the taut height
@@ -245,8 +339,10 @@ class Controller:
                 refs[n] = form(n, cxy, pos[n][2])  # (the height is not controlled here)
                 vrefs[n] = np.zeros(3)
             s["preload_ok"] = s["preload_ok"] + dt if ok else 0.0
-            if s["preload_ok"] > 0.3 or s["t_phase"] > 12.0:
+            if (s["preload_ok"] > 0.3 or s["t_phase"] > 12.0) and (pv is None or obs["time"] >= T_LIFT_EARLIEST):
                 s["phase"], s["t_phase"] = "LIFTOFF", 0.0
+                if pv is not None:
+                    s["ie"] = {n: np.zeros(3) for n in UAVS}
                 s["z_lo"] = float(np.mean([pos[n][2] for n in UAVS]))
         elif phase == "LIFTOFF":  # the three tensions ramp together until the bucket leaves the floor (level: equal pulls)
             for n in UAVS:
@@ -270,10 +366,15 @@ class Controller:
                 vrefs[n] = np.array([0.0, 0.0, rate * h])
             if s["t_phase"] > s["T_lift"] + 1.5:
                 s["phase"], s["t_phase"] = "CARRY", 0.0
-                p0, p1 = s["lift_xy"].copy(), np.array(mis["pan"], dtype=float)
-                dist = float(np.linalg.norm(p1 - p0))
-                s["carry"] = dict(p0=p0, p1=p1, dist=dist, dirn=(p1 - p0) / dist, T=t_minjerk(dist, A_CARRY))
-        elif phase == "CARRY":  # the formation's centre rides a minimum-jerk move along the straight line to the pan
+                p0 = s["lift_xy"].copy()
+                if pv is not None:  # straight to above today's pan (offset toward the pourer), round the vehicle if need be
+                    p1 = np.array(pv["pan"][:2]) + s["pour_pre"] * pour_dir
+                    s["carry_legs"] = self.legs(p0, p1, pv)
+                else:
+                    p1 = np.array(mis["pan"], dtype=float)
+                    s["carry_legs"] = [(p0, p1)]
+                s["carry"] = self.leg(*s["carry_legs"].pop(0))
+        elif phase == "CARRY":  # the formation's centre rides minimum-jerk moves along straight legs
             self.trim(s, dt)
             c = s["carry"]
             frac, rate = minjerk(s["t_phase"], c["T"])
@@ -282,17 +383,19 @@ class Controller:
             for n in UAVS:
                 refs[n] = form(n, cen + damp, s["z_cruise"] + s["trim"][n])
                 vrefs[n] = np.array([v[0], v[1], 0.0])
-            if s["t_phase"] > c["T"] + 1.5:
-                s["phase"], s["t_phase"] = "ALIGN", 0.0
-                s["align"] = c["p1"].copy()
+            if s["t_phase"] > c["T"] + (0.8 if s.get("carry_legs") else 1.5):
+                if s.get("carry_legs"):
+                    s["carry"], s["t_phase"] = self.leg(*s["carry_legs"].pop(0)), 0.0
+                else:
+                    s["phase"], s["t_phase"] = "ALIGN", 0.0
+                    s["align"] = c["p1"].copy()
         elif phase == "ALIGN":  # servo the bucket over the pan on what the cameras see (drift-free), gently
             self.trim(s, dt)
             aligned = False
             if pan_est and bucket_est:
-                b1 = math.radians(RING_BEARING["UAV_1"])
-                err = np.mean(pan_est, axis=0)[:2] + POUR_PRE * np.array([math.cos(b1), math.sin(b1)]) - bucket_xy
+                err = np.mean(pan_est, axis=0)[:2] + s["pour_pre"] * pour_dir - bucket_xy
                 s["align"] = s["align"] + np.clip(0.8 * err * dt, -0.06 * dt, 0.06 * dt)
-                aligned = float(np.linalg.norm(err)) < 0.08
+                aligned = float(np.linalg.norm(err)) < (0.05 if pv is not None else 0.08)
             for n in UAVS:
                 refs[n] = form(n, s["align"] + damp, s["z_cruise"] + s["trim"][n])
                 vrefs[n] = np.zeros(3)
@@ -303,18 +406,28 @@ class Controller:
                 err = np.mean(pan_est, axis=0)[:2] - bucket_xy
                 s["align"] = s["align"] + np.clip(0.8 * err * dt, -0.04 * dt, 0.04 * dt)
             frac, rate = minjerk(s["t_phase"], T_POUR)
+            second, v2 = None, 0.0
+            if pv is not None and SECOND_PRIV not in pourers:  # (not pouring after the first rope went slack: tip further)
+                second = SECOND_PRIV
+                hist = (s.get("water_hist") or []) + [[obs["time"], float(pv["bucket"]["water_l"])]]
+                s["water_hist"] = hist = [h for h in hist if obs["time"] - h[0] <= 0.5]
+                pouring = hist[0][1] - hist[-1][1] > 0.01  # (more than 0.02 L/s leaving)
+                if s["t_phase"] > T_POUR + 2.0 and pv["fire"] and not pouring and s.get("drop2", 0.0) < POUR_DROP:
+                    s["drop2"] = s.get("drop2", 0.0) + V_SECOND * dt
+                    v2 = -V_SECOND
             for n in UAVS:
-                z = s["z_cruise"] + s["trim"][n] - (frac * POUR_DROP if n == "UAV_1" else 0.0)
+                z = s["z_cruise"] + s["trim"][n] - (frac * POUR_DROP if n in pourers else 0.0) - (s.get("drop2", 0.0) if n == second else 0.0)
                 refs[n] = form(n, s["align"] + damp, z)
-                vrefs[n] = np.array([0.0, 0.0, -rate * POUR_DROP if n == "UAV_1" else 0.0])
+                vrefs[n] = np.array([0.0, 0.0, -rate * POUR_DROP if n in pourers else (v2 if n == second else 0.0)])
             if fire_seen and not any(fire_seen):
                 s["fire_seen_out"] += dt
             else:
                 s["fire_seen_out"] = 0.0
-            if s["fire_seen_out"] > 0.5 or s["t_phase"] > 15.0:
+            if s["fire_seen_out"] > 0.5 or s["t_phase"] > (40.0 if pv is not None else 15.0):
                 s["phase"], s["t_phase"] = "RECOVER", 0.0
                 s["recover_drop"] = frac * POUR_DROP
-        else:  # RECOVER / HOLD: level again and hover (the trim resumes once the lowered robot is back up)
+                s["recover_drop2"], s["drop2"], s["water_hist"] = s.get("drop2", 0.0), 0.0, []
+        else:  # RECOVER (and, without the true state, the hold): level again and hover
             frac, rate = minjerk(s["t_phase"], T_RECOVER)
             if s["t_phase"] > T_RECOVER + 0.5:
                 self.trim(s, dt)
@@ -325,11 +438,16 @@ class Controller:
             for n in UAVS:
                 z = s["z_cruise"] + s["trim"][n]
                 vz = 0.0
-                if n == "UAV_1":
+                if n in pourers:
                     z -= (1.0 - frac) * s["recover_drop"]
                     vz = rate * s["recover_drop"]
+                elif n == SECOND_PRIV and s.get("recover_drop2"):
+                    z -= (1.0 - frac) * s["recover_drop2"]
+                    vz = rate * s["recover_drop2"]
                 refs[n] = form(n, s["align"] + damp, z)
                 vrefs[n] = np.array([0.0, 0.0, vz])
+        if s["phase"] != phase:
+            log(f"t={obs['time']:.1f} hoist {phase} -> {s['phase']}" + (f" (bucket at {np.round(bucket_xy, 2).tolist()})" if bucket_xy is not None else ""))
         tension_mode = s["phase"] in ("TENSION", "LIFTOFF")
         out = {"thrust": {n: self.thrust(n, pos[n], vel[n], refs[n], vrefs[n], s, obs, dt,
                                          tz=(s["tz"][n] if tension_mode else None), vz_ref=s["vz_ref"][n]) for n in UAVS}}
