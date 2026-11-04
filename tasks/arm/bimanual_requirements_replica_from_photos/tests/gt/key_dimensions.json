@@ -1,0 +1,123 @@
+{
+ "arms": {
+  "left": {
+   "finger_lever": 0.11472105884456592,
+   "forearm": 0.24241141026598728,
+   "grip_stroke": 0.14026738146699774,
+   "upper_arm": 0.247612164546224,
+   "wrist_to_tcp": 0.17250222494014278
+  },
+  "right": {
+   "finger_lever": 0.11472105884456592,
+   "forearm": 0.24241141026598728,
+   "grip_stroke": 0.14026738146699774,
+   "upper_arm": 0.247612164546224,
+   "wrist_to_tcp": 0.17250222494014278
+  }
+ },
+ "definitions": {
+  "a_fingertip": "the fingertips at the closed stop: the closed fingers' lowest point along the gripper axis, taken on the axis",
+  "a_tcp": "on the gripper axis, 15.0 mm back from a_fingertip towards the wrist centre",
+  "finger_lever": "the distance from a finger's hinge axis to its pad centre",
+  "grip_stroke": "the distance between the two pad centres at the open stop",
+  "pad_centre": "the area centroid of a finger pad's contact face (the facets facing the other finger within 2.5 deg, within 1.5 mm of its innermost point)"
+ },
+ "format": "bimanual-key-dimensions/1",
+ "pocket_class": {
+  "left": {
+   "j1": "large",
+   "j2": "large",
+   "j3": "medium",
+   "j4": "small",
+   "j5": "small",
+   "j6": "small",
+   "j7": "small",
+   "j8": "small"
+  },
+  "right": {
+   "j1": "large",
+   "j2": "large",
+   "j3": "medium",
+   "j4": "small",
+   "j5": "small",
+   "j6": "small",
+   "j7": "small",
+   "j8": "small"
+  }
+ },
+ "shared": {
+  "shoulder_forward_offset": 0.020624074803011823,
+  "shoulder_half_span": 0.17160967157067805,
+  "shoulder_height": 0.5311672947525401
+ },
+ "stops_rad": {
+  "left": {
+   "j1": [
+    -3.3523269161846616,
+    1.306050742788807
+   ],
+   "j2": [
+    -3.0908301916519956,
+    0.12085678221654456
+   ],
+   "j3": [
+    -1.4453141925739346,
+    1.2446159355995703
+   ],
+   "j4": [
+    0.141742073165323,
+    2.3266960102063114
+   ],
+   "j5": [
+    -1.4354961728894626,
+    1.4120222931098172
+   ],
+   "j6": [
+    -0.7341671093872288,
+    0.7302321714077915
+   ],
+   "j7": [
+    -1.4032759326733506,
+    1.442330015709433
+   ],
+   "j8": [
+    0.0,
+    0.623695482978703
+   ]
+  },
+  "right": {
+   "j1": [
+    -3.3523269161846616,
+    1.306050742788807
+   ],
+   "j2": [
+    -3.0908301916519956,
+    0.12085678221654456
+   ],
+   "j3": [
+    -1.4453141925739346,
+    1.2446159355995703
+   ],
+   "j4": [
+    0.141742073165323,
+    2.3266960102063114
+   ],
+   "j5": [
+    -1.4354961728894626,
+    1.4120222931098172
+   ],
+   "j6": [
+    -0.7341671093872288,
+    0.7302321714077915
+   ],
+   "j7": [
+    -1.4032759326733506,
+    1.442330015709433
+   ],
+   "j8": [
+    0.0,
+    0.623695482978703
+   ]
+  }
+ }
+}

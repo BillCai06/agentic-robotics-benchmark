@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "description": "One module line per arm and joint (j1..j7 and the gripper j8, count 1), the bus board line(s), exactly one psu line (count 1); part_id and role as in the quote.",
+  "properties": {
+    "bus_voltage_v": {
+      "enum": [
+        24,
+        48
+      ],
+      "type": "number"
+    },
+    "format": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "parts": {
+      "items": {
+        "additionalProperties": true,
+        "properties": {
+          "arm": {
+            "enum": [
+              "left",
+              "right"
+            ],
+            "type": "string"
+          },
+          "count": {
+            "maximum": 8,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "joint": {
+            "enum": [
+              "j1",
+              "j2",
+              "j3",
+              "j4",
+              "j5",
+              "j6",
+              "j7",
+              "j8"
+            ],
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "part_id": {
+            "type": "string"
+          },
+          "role": {
+            "enum": [
+              "module",
+              "bus_board",
+              "psu"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "part_id",
+          "count",
+          "role"
+        ],
+        "type": "object"
+      },
+      "minItems": 18,
+      "type": "array"
+    },
+    "total_cost_usd": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "bus_voltage_v",
+    "parts"
+  ],
+  "title": "bom-bimanual/1 bill of materials (per replica pair)",
+  "type": "object"
+}

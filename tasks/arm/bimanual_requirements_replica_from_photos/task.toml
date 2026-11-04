@@ -1,0 +1,55 @@
+# bimanual_requirements_replica_from_photos: the requirements stage of the robotic-arm workflow on a bimanual pair (an
+# atomic task). The agent specifies upgraded replicas of a two-arm robot (two seven-joint arms with two-finger grippers on
+# one pedestal column) that has left the lab, known only from one fixed photo set (rendered in a lab room, sparse
+# physical scale references), a build log, a customer brief with a public acceptance procedure (a cooperative tray carry),
+# vendor datasheet pages of joint modules, bus boards and power supplies, two module-lot reports (images only) and a
+# distributor quote. It delivers requirements.yaml, bom.json and kinematic_sketch.json.
+#
+# Grading (tests/verify.py; knobs in tests/grader_config.json; static, no agent code runs): gates G0 structure and G1
+# submission integrity (verify-start lockdown) x kinematic_replication 0.30, requirements_sheet 0.10,
+# derived_requirements 0.20, bom_acceptance 0.10 (the acceptance verdict on the true pair with the delivered lot's
+# weakest expected unit), bom_economy 0.30 (linear from the live true optimum J* to J* + two engineering changes, on the
+# ECO-repaired cost). requirements_score = the weighted mean; reward = requirements_score (tests/anchor.json).
+
+schema_version = "1.4+ale.1"
+artifacts = ["/home/user/submission"]
+
+[task]
+name = "grounded-intelligence-initiative/bimanual_requirements_replica_from_photos"
+
+[metadata]
+platform = "arm"
+
+[environment]
+cpus = 4
+memory_mb = 8192
+
+# setup: stage the payload into the agent home (< 30 s). agent: photogrammetry on the photo set, the datasheet pages and
+# two lot reports read from images, a dynamics model of both arms and a BOM search (6 h budget). verify: lockdown, the
+# acceptance set of both arms, the regressor, the live optimum search (about 5 s, also on a BOM with eleven repaired
+# lines).
+[agent]
+timeout_sec = 21600
+network_mode = "no-network"
+
+# Separate verification: after the agent phase the engine releases the agent's sandbox and scores in a fresh verifier
+# sandbox started from this task's image, into which it restores only the declared artifact /home/user/submission
+# (regular files and directories; links are never copied). Under shared verification the grader would run as root
+# in the agent's own sandbox, where the ALE base image leaves /usr/local/bin writable for the agent account and ahead
+# of /usr/bin on root's PATH: a program planted there would run as root when the engine starts `bash test.sh`. The
+# verifier has everything the grader reads: tests/ (gt/, grader_config.json, anchor.json, the grading modules, the
+# kit), the image's /opt/venv and the restored submission. environment/setup/setup.sh does not run there, and verify
+# reads nothing it stages (the grader's givens are its own copies in tests/gt/). Its machine: the grader is static and
+# single-threaded (test.sh pins the BLAS threads to 1); measured on the oracle submission in a container of the task
+# image (2 CPUs, 4 GB) it peaked at 210 MB RSS and used 3 s of one CPU (5 s of wall time with the lockdown), and the
+# whole container, the base image's desktop session included, at 765 MB, so 2 CPUs and 4 GB, no GPU. timeout_sec also
+# covers the verifier's start, the restore of the submission and the stage upload (under ale validate the whole verify
+# phase took 10 s), far inside 1200 s.
+[verifier]
+timeout_sec = 1200
+environment_mode = "separate"
+
+[verifier.environment]
+cpus = 2
+memory_mb = 4096
+gpus = 0

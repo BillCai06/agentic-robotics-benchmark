@@ -1,0 +1,198 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "description": "A reading of datasheets/DS-*.png (with the erratum applied) and price_list.md in SI units: torques N.m, speeds rad/s, currents A, voltages V, power W, inertia kg m2, masses kg, prices USD; lists in the quote's order; a vendor with an incoming-inspection report is inspected.",
+  "properties": {
+    "boards": {
+      "items": {
+        "additionalProperties": true,
+        "properties": {
+          "channels": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "input_range_v": {
+            "items": {
+              "type": "number"
+            },
+            "maxItems": 2,
+            "minItems": 2,
+            "type": "array"
+          },
+          "modules_per_channel": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "part_id": {
+            "type": "string"
+          },
+          "price_usd": {
+            "type": "number"
+          },
+          "protocols": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "part_id",
+          "protocols",
+          "channels",
+          "modules_per_channel",
+          "input_range_v",
+          "price_usd"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "format": {
+      "type": "string"
+    },
+    "modules": {
+      "items": {
+        "additionalProperties": true,
+        "properties": {
+          "copper_loss_rated_w": {
+            "type": "number"
+          },
+          "housing": {
+            "enum": [
+              "large",
+              "medium",
+              "small"
+            ],
+            "type": "string"
+          },
+          "idle_current_a": {
+            "type": "number"
+          },
+          "mass_kg": {
+            "type": "number"
+          },
+          "output_inertia_kgm2": {
+            "type": "number"
+          },
+          "part_id": {
+            "type": "string"
+          },
+          "peak_torque_nm": {
+            "type": "number"
+          },
+          "points": {
+            "items": {
+              "properties": {
+                "no_load_speed_rad_s": {
+                  "type": "number"
+                },
+                "speed_at_peak_rad_s": {
+                  "type": "number"
+                },
+                "voltage_v": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "voltage_v",
+                "no_load_speed_rad_s",
+                "speed_at_peak_rad_s"
+              ],
+              "type": "object"
+            },
+            "maxItems": 2,
+            "minItems": 1,
+            "type": "array"
+          },
+          "price_usd": {
+            "type": "number"
+          },
+          "protocol": {
+            "type": "string"
+          },
+          "rated_torque_nm": {
+            "type": "number"
+          },
+          "vendor": {
+            "type": "string"
+          },
+          "voltage_range_v": {
+            "items": {
+              "type": "number"
+            },
+            "maxItems": 2,
+            "minItems": 2,
+            "type": "array"
+          }
+        },
+        "required": [
+          "part_id",
+          "vendor",
+          "housing",
+          "protocol",
+          "voltage_range_v",
+          "points",
+          "peak_torque_nm",
+          "rated_torque_nm",
+          "idle_current_a",
+          "copper_loss_rated_w",
+          "output_inertia_kgm2",
+          "mass_kg",
+          "price_usd"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "psus": {
+      "items": {
+        "additionalProperties": true,
+        "properties": {
+          "output_v": {
+            "type": "number"
+          },
+          "part_id": {
+            "type": "string"
+          },
+          "price_usd": {
+            "type": "number"
+          },
+          "rated_current_a": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "part_id",
+          "output_v",
+          "rated_current_a",
+          "price_usd"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "vendors": {
+      "additionalProperties": {
+        "properties": {
+          "inspected": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "inspected"
+        ],
+        "type": "object"
+      },
+      "type": "object"
+    }
+  },
+  "required": [
+    "modules",
+    "boards",
+    "psus",
+    "vendors"
+  ],
+  "title": "bimanual-req-catalogue/1 transcription of the vendor pages and the quote (SI units)",
+  "type": "object"
+}

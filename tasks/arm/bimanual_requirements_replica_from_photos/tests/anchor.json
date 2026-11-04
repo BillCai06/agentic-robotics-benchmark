@@ -1,0 +1,8 @@
+{
+ "direction": "higher",
+ "full_at": 1.0,
+ "metric": "requirements_score",
+ "note": "requirements_score is the weighted mean of the five criteria, already on [0, 1]; ratio = score / 1.0, reward = ratio",
+ "source": "the oracle's own measured requirements_score under ale validate: the static, deterministic grader scores the oracle submission (the hidden instance's ground-truth answer) exactly 1.0 on every criterion, on every run",
+ "value": 1.0
+}

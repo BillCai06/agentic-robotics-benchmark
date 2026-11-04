@@ -1,0 +1,97 @@
+{
+ "approach_pitch_deg": -45.0,
+ "area": {
+  "x_max": 0.447,
+  "x_min": 0.325,
+  "y_max": 0.049,
+  "y_min": -0.049
+ },
+ "brief": {
+  "H": 0.9,
+  "T": 1.16,
+  "band_lines": 2,
+  "bus_voltages_v": [
+   24.0,
+   48.0
+  ],
+  "ceiling": 4178.0,
+  "ceiling_factor": 1.204243,
+  "close_s": 0.7,
+  "com_drop": 0.079,
+  "eco": 120.0,
+  "harness_drop_v": 0.4,
+  "m_hi": 1.601,
+  "m_lo": 0.94,
+  "mu": 0.55,
+  "p_quantile_z": 1.96,
+  "proof": 1.25,
+  "slip_sf": 2.0,
+  "unit_count": 7,
+  "untested_cap": 0.7
+ },
+ "draw": {
+  "front_x": 0.09499999999999947,
+  "law": "bimanual-layer-law/1",
+  "search_box": {
+   "spacing_m": 0.36,
+   "swivel_deg": 54.0,
+   "volume_m3": 0.00315,
+   "x_max": 0.5,
+   "x_min": 0.29,
+   "y_half": 0.06,
+   "z_hi": 0.215,
+   "z_lo": 0.09
+  }
+ },
+ "format": "bimanual-req-layer/1",
+ "handle_spacing_m": 0.36,
+ "objects": [
+  {
+   "diameter_m": 0.065,
+   "finish": "steel",
+   "height_m": 0.0206,
+   "kind": "ring",
+   "mass_kg": 0.343,
+   "name": "bearing ring",
+   "on_tray": true
+  },
+  {
+   "diameter_m": 0.083,
+   "finish": "steel",
+   "height_m": 0.0234,
+   "kind": "hub",
+   "mass_kg": 0.523,
+   "name": "flange hub",
+   "on_tray": true
+  }
+ ],
+ "rack": {
+  "clearance_m": 0.015,
+  "colour": "black",
+  "footprint_m": [
+   0.46,
+   0.27
+  ],
+  "shelf_heights_m": [
+   0.0,
+   0.1
+  ],
+  "side": "right"
+ },
+ "swivel_deg": 54.0,
+ "tape": {
+  "colour": "white",
+  "width_m": 0.025
+ },
+ "tray": {
+  "colour": "blue",
+  "grip_height_m": 0.09,
+  "handle_bar_d_m": 0.02,
+  "height_m": 0.051,
+  "length_m": 0.405,
+  "mass_kg": 0.735,
+  "width_m": 0.2
+ },
+ "z_hi": 0.205,
+ "z_lo": 0.09
+}

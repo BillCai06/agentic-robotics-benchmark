@@ -1,0 +1,1017 @@
+{
+ "boards": [
+  {
+   "channels": 2,
+   "input_range_v": [
+    12.0,
+    56.0
+   ],
+   "modules_per_channel": 8,
+   "part_id": "VR-CFD-2CH",
+   "price_usd": 78.0,
+   "protocols": [
+    "CAN-FD"
+   ]
+  },
+  {
+   "channels": 1,
+   "input_range_v": [
+    12.0,
+    56.0
+   ],
+   "modules_per_channel": 8,
+   "part_id": "VR-CFD-1CH",
+   "price_usd": 47.0,
+   "protocols": [
+    "CAN-FD"
+   ]
+  },
+  {
+   "channels": 1,
+   "input_range_v": [
+    9.0,
+    50.0
+   ],
+   "modules_per_channel": 4,
+   "part_id": "OGD-485-1CH",
+   "price_usd": 41.0,
+   "protocols": [
+    "RS-485"
+   ]
+  },
+  {
+   "channels": 2,
+   "input_range_v": [
+    18.0,
+    52.0
+   ],
+   "modules_per_channel": 6,
+   "part_id": "HUB-DUAL-2CH",
+   "price_usd": 84.0,
+   "protocols": [
+    "CAN-FD",
+    "RS-485"
+   ]
+  }
+ ],
+ "format": "bimanual-req-catalogue/1",
+ "modules": [
+  {
+   "copper_loss_rated_w": 41.0,
+   "housing": "large",
+   "idle_current_a": 0.16,
+   "mass_kg": 0.742,
+   "output_inertia_kgm2": 0.0042,
+   "part_id": "VR-L98-11-W",
+   "peak_torque_nm": 25.2,
+   "points": [
+    {
+     "no_load_speed_rad_s": 19.530234329816548,
+     "speed_at_peak_rad_s": 11.938052083641214,
+     "voltage_v": 24.0
+    },
+    {
+     "no_load_speed_rad_s": 38.851029149393774,
+     "speed_at_peak_rad_s": 31.25884690321844,
+     "voltage_v": 48.0
+    }
+   ],
+   "price_usd": 309.0,
+   "protocol": "CAN-FD",
+   "rated_torque_nm": 10.6,
+   "vendor": "VR",
+   "voltage_range_v": [
+    18.0,
+    52.0
+   ]
+  },
+  {
+   "copper_loss_rated_w": 43.0,
+   "housing": "large",
+   "idle_current_a": 0.19,
+   "mass_kg": 0.768,
+   "output_inertia_kgm2": 0.0058,
+   "part_id": "VR-L98-13-24",
+   "peak_torque_nm": 29.6,
+   "points": [
+    {
+     "no_load_speed_rad_s": 11.885692206081384,
+     "speed_at_peak_rad_s": 5.707226654021457,
+     "voltage_v": 18.0
+    },
+    {
+     "no_load_speed_rad_s": 15.812683023068624,
+     "speed_at_peak_rad_s": 9.634217471008698,
+     "voltage_v": 24.0
+    }
+   ],
+   "price_usd": 318.0,
+   "protocol": "CAN-FD",
+   "rated_torque_nm": 12.1,
+   "vendor": "VR",
+   "voltage_range_v": [
+    18.0,
+    30.0
+   ]
+  },
+  {
+   "copper_loss_rated_w": 42.0,
+   "housing": "large",
+   "idle_current_a": 0.11,
+   "mass_kg": 0.781,
+   "output_inertia_kgm2": 0.0058,
+   "part_id": "VR-L98-13-48",
+   "peak_torque_nm": 29.9,
+   "points": [
+    {
+     "no_load_speed_rad_s": 11.833332328521553,
+     "speed_at_peak_rad_s": 5.707226654021457,
+     "voltage_v": 36.0
+    },
+    {
+     "no_load_speed_rad_s": 15.865042900628454,
+     "speed_at_peak_rad_s": 9.738937226128359,
+     "voltage_v": 48.0
+    }
+   ],
+   "price_usd": 327.0,
+   "protocol": "CAN-FD",
+   "rated_torque_nm": 12.4,
+   "vendor": "VR",
+   "voltage_range_v": [
+    36.0,
+    52.0
+   ]
+  },
+  {
+   "copper_loss_rated_w": 44.0,
+   "housing": "large",
+   "idle_current_a": 0.16,
+   "mass_kg": 0.824,
+   "output_inertia_kgm2": 0.0078,
+   "part_id": "VR-L98-15-W",
+   "peak_torque_nm": 34.2,
+   "points": [
+    {
+     "no_load_speed_rad_s": 14.189526818713897,
+     "speed_at_peak_rad_s": 8.377580409572781,
+     "voltage_v": 24.0
+    },
+    {
+     "no_load_speed_rad_s": 28.117254249628648,
+     "speed_at_peak_rad_s": 22.30530784048753,
+     "voltage_v": 48.0
+    }
+   ],
+   "price_usd": 362.0,
+   "protocol": "CAN-FD",
+   "rated_torque_nm": 13.9,
+   "vendor": "VR",
+   "voltage_range_v": [
+    18.0,
+    52.0
+   ]
+  },
+  {
+   "copper_loss_rated_w": 47.0,
+   "housing": "large",
+   "idle_current_a": 0.17,
+   "mass_kg": 1.035,
+   "output_inertia_kgm2": 0.0105,
+   "part_id": "VR-L98-17-W",
+   "peak_torque_nm": 45.5,
+   "points": [
+    {
+     "no_load_speed_rad_s": 12.147491593880533,
+     "speed_at_peak_rad_s": 6.963863715457374,
+     "voltage_v": 24.0
+    },
+    {
+     "no_load_speed_rad_s": 24.085543677521745,
+     "speed_at_peak_rad_s": 18.90191579909859,
+     "voltage_v": 48.0
+    }
+   ],
+   "price_usd": 509.0,
+   "protocol": "CAN-FD",
+   "rated_torque_nm": 16.1,
+   "vendor": "VR",
+   "voltage_range_v": [
+    18.0,
+    52.0
+   ]
+  },
+  {
+   "copper_loss_rated_w": 49.0,
+   "housing": "large",
+   "idle_current_a": 0.17,
+   "mass_kg": 1.096,
+   "output_inertia_kgm2": 0.0151,
+   "part_id": "VR-L98-21-W",
+   "peak_torque_nm": 28.3,
+   "points": [
+    {
+     "no_load_speed_rad_s": 9.948376736367678,
+     "speed_at_peak_rad_s": 5.1312680008633285,
+     "voltage_v": 24.0
+    },
+    {
+     "no_load_speed_rad_s": 19.739673840055865,
+     "speed_at_peak_rad_s": 14.922565104551516,
+     "voltage_v": 48.0
+    }
+   ],
+   "price_usd": 552.0,
+   "protocol": "CAN-FD",
+   "rated_torque_nm": 18.6,
+   "vendor": "VR",
+   "voltage_range_v": [
+    18.0,
+    52.0
+   ]
+  },
+  {
+   "copper_loss_rated_w": 52.0,
+   "housing": "large",
+   "idle_current_a": 0.18,
+   "mass_kg": 1.162,
+   "output_inertia_kgm2": 0.0214,
+   "part_id": "VR-L98-25-W",
+   "peak_torque_nm": 57.5,
+   "points": [
+    {
+     "no_load_speed_rad_s": 8.79645943005142,
+     "speed_at_peak_rad_s": 5.078908123303498,
+     "voltage_v": 24.0
+    },
+    {
+     "no_load_speed_rad_s": 17.48819910498318,
+     "speed_at_peak_rad_s": 13.77064779823526,
+     "voltage_v": 48.0
+    }
+   ],
+   "price_usd": 604.0,
+   "protocol": "CAN-FD",
+   "rated_torque_nm": 22.6,
+   "vendor": "VR",
+   "voltage_range_v": [
+    18.0,
+    52.0
+   ]
+  },
+  {
+   "copper_loss_rated_w": 27.0,
+   "housing": "medium",
+   "idle_current_a": 0.14,
+   "mass_kg": 0.412,
+   "output_inertia_kgm2": 0.0019,
+   "part_id": "VR-M57-16-24",
+   "peak_torque_nm": 14.1,
+   "points": [
+    {
+     "no_load_speed_rad_s": 11.728612573401893,
+     "speed_at_peak_rad_s": 7.435102613495843,
+     "voltage_v": 18.0
+    },
+    {
+     "no_load_speed_rad_s": 15.707963267948966,
+     "speed_at_peak_rad_s": 11.414453308042914,
+     "voltage_v": 24.0
+    }
+   ],
+   "price_usd": 186.0,
+   "protocol": "CAN-FD",
+   "rated_torque_nm": 5.3,
+   "vendor": "VR",
+   "voltage_range_v": [
+    18.0,
+    30.0
+   ]
+  },
+  {
+   "copper_loss_rated_w": 26.0,
+   "housing": "medium",
+   "idle_current_a": 0.08,
+   "mass_kg": 0.418,
+   "output_inertia_kgm2": 0.0019,
+   "part_id": "VR-M57-16-48",
+   "peak_torque_nm": 14.4,
+   "points": [
+    {
+     "no_load_speed_rad_s": 11.780972450961723,
+     "speed_at_peak_rad_s": 7.5398223686155035,
+     "voltage_v": 36.0
+    },
+    {
+     "no_load_speed_rad_s": 15.760323145508794,
+     "speed_at_peak_rad_s": 11.519173063162574,
+     "voltage_v": 48.0
+    }
+   ],
+   "price_usd": 197.0,
+   "protocol": "CAN-FD",
+   "rated_torque_nm": 5.5,
+   "vendor": "VR",
+   "voltage_range_v": [
+    36.0,
+    52.0
+   ]
+  },
+  {
+   "copper_loss_rated_w": 28.0,
+   "housing": "medium",
+   "idle_current_a": 0.13,
+   "mass_kg": 0.431,
+   "output_inertia_kgm2": 0.0027,
+   "part_id": "VR-M57-19-W",
+   "peak_torque_nm": 16.8,
+   "points": [
+    {
+     "no_load_speed_rad_s": 13.194689145077131,
+     "speed_at_peak_rad_s": 9.00589894029074,
+     "voltage_v": 24.0
+    },
+    {
+     "no_load_speed_rad_s": 26.17993877991494,
+     "speed_at_peak_rad_s": 21.991148575128552,
+     "voltage_v": 48.0
+    }
+   ],
+   "price_usd": 214.0,
+   "protocol": "CAN-FD",
+   "rated_torque_nm": 6.3,
+   "vendor": "VR",
+   "voltage_range_v": [
+    18.0,
+    52.0
+   ]
+  },
+  {
+   "copper_loss_rated_w": 29.0,
+   "housing": "medium",
+   "idle_current_a": 0.13,
+   "mass_kg": 0.447,
+   "output_inertia_kgm2": 0.0038,
+   "part_id": "VR-M57-22-W",
+   "peak_torque_nm": 19.6,
+   "points": [
+    {
+     "no_load_speed_rad_s": 11.152653920243765,
+     "speed_at_peak_rad_s": 7.5398223686155035,
+     "voltage_v": 24.0
+    },
+    {
+     "no_load_speed_rad_s": 22.095868330248212,
+     "speed_at_peak_rad_s": 18.483036778619947,
+     "voltage_v": 48.0
+    }
+   ],
+   "price_usd": 233.0,
+   "protocol": "CAN-FD",
+   "rated_torque_nm": 7.2,
+   "vendor": "VR",
+   "voltage_range_v": [
+    18.0,
+    52.0
+   ]
+  },
+  {
+   "copper_loss_rated_w": 29.0,
+   "housing": "medium",
+   "idle_current_a": 0.13,
+   "mass_kg": 0.463,
+   "output_inertia_kgm2": 0.0051,
+   "part_id": "VR-M57-26-W",
+   "peak_torque_nm": 22.9,
+   "points": [
+    {
+     "no_load_speed_rad_s": 9.634217471008698,
+     "speed_at_peak_rad_s": 6.492624817418905,
+     "voltage_v": 24.0
+    },
+    {
+     "no_load_speed_rad_s": 19.111355309337906,
+     "speed_at_peak_rad_s": 15.969762655748115,
+     "voltage_v": 48.0
+    }
+   ],
+   "price_usd": 252.0,
+   "protocol": "CAN-FD",
+   "rated_torque_nm": 8.1,
+   "vendor": "VR",
+   "voltage_range_v": [
+    18.0,
+    52.0
+   ]
+  },
+  {
+   "copper_loss_rated_w": 33.0,
+   "housing": "medium",
+   "idle_current_a": 0.14,
+   "mass_kg": 0.538,
+   "output_inertia_kgm2": 0.0068,
+   "part_id": "VR-M57-30-W",
+   "peak_torque_nm": 25.7,
+   "points": [
+    {
+     "no_load_speed_rad_s": 8.115781021773632,
+     "speed_at_peak_rad_s": 5.707226654021457,
+     "voltage_v": 24.0
+    },
+    {
+     "no_load_speed_rad_s": 16.074482410867773,
+     "speed_at_peak_rad_s": 13.6659280431156,
+     "voltage_v": 48.0
+    }
+   ],
+   "price_usd": 400.0,
+   "protocol": "CAN-FD",
+   "rated_torque_nm": 9.6,
+   "vendor": "VR",
+   "voltage_range_v": [
+    18.0,
+    52.0
+   ]
+  },
+  {
+   "copper_loss_rated_w": 34.0,
+   "housing": "medium",
+   "idle_current_a": 0.14,
+   "mass_kg": 0.546,
+   "output_inertia_kgm2": 0.0087,
+   "part_id": "VR-M57-34-W",
+   "peak_torque_nm": 28.4,
+   "points": [
+    {
+     "no_load_speed_rad_s": 7.382742735936014,
+     "speed_at_peak_rad_s": 4.974188368183839,
+     "voltage_v": 24.0
+    },
+    {
+     "no_load_speed_rad_s": 14.556045961632707,
+     "speed_at_peak_rad_s": 12.147491593880533,
+     "voltage_v": 48.0
+    }
+   ],
+   "price_usd": 443.0,
+   "protocol": "CAN-FD",
+   "rated_torque_nm": 11.0,
+   "vendor": "VR",
+   "voltage_range_v": [
+    18.0,
+    52.0
+   ]
+  },
+  {
+   "copper_loss_rated_w": 16.0,
+   "housing": "small",
+   "idle_current_a": 0.14,
+   "mass_kg": 0.268,
+   "output_inertia_kgm2": 0.00052,
+   "part_id": "VR-S57-07-24",
+   "peak_torque_nm": 6.1,
+   "points": [
+    {
+     "no_load_speed_rad_s": 26.70353755551324,
+     "speed_at_peak_rad_s": 16.022122533307943,
+     "voltage_v": 18.0
+    },
+    {
+     "no_load_speed_rad_s": 35.60471674068432,
+     "speed_at_peak_rad_s": 24.923301718479024,
+     "voltage_v": 24.0
+    }
+   ],
+   "price_usd": 86.0,
+   "protocol": "CAN-FD",
+   "rated_torque_nm": 2.3,
+   "vendor": "VR",
+   "voltage_range_v": [
+    18.0,
+    30.0
+   ]
+  },
+  {
+   "copper_loss_rated_w": 16.0,
+   "housing": "small",
+   "idle_current_a": 0.08,
+   "mass_kg": 0.271,
+   "output_inertia_kgm2": 0.00052,
+   "part_id": "VR-S57-07-48",
+   "peak_torque_nm": 6.2,
+   "points": [
+    {
+     "no_load_speed_rad_s": 26.59881780039358,
+     "speed_at_peak_rad_s": 16.074482410867773,
+     "voltage_v": 36.0
+    },
+    {
+     "no_load_speed_rad_s": 35.499996985564664,
+     "speed_at_peak_rad_s": 24.975661596038854,
+     "voltage_v": 48.0
+    }
+   ],
+   "price_usd": 88.0,
+   "protocol": "CAN-FD",
+   "rated_torque_nm": 2.4,
+   "vendor": "VR",
+   "voltage_range_v": [
+    36.0,
+    52.0
+   ]
+  },
+  {
+   "copper_loss_rated_w": 17.0,
+   "housing": "small",
+   "idle_current_a": 0.12,
+   "mass_kg": 0.322,
+   "output_inertia_kgm2": 0.0015,
+   "part_id": "VR-S57-12-W",
+   "peak_torque_nm": 8.6,
+   "points": [
+    {
+     "no_load_speed_rad_s": 19.477874452256717,
+     "speed_at_peak_rad_s": 11.990411961201044,
+     "voltage_v": 24.0
+    },
+    {
+     "no_load_speed_rad_s": 38.64158963915445,
+     "speed_at_peak_rad_s": 31.15412714809878,
+     "voltage_v": 48.0
+    }
+   ],
+   "price_usd": 115.0,
+   "protocol": "CAN-FD",
+   "rated_torque_nm": 3.4,
+   "vendor": "VR",
+   "voltage_range_v": [
+    18.0,
+    52.0
+   ]
+  },
+  {
+   "copper_loss_rated_w": 18.0,
+   "housing": "small",
+   "idle_current_a": 0.12,
+   "mass_kg": 0.331,
+   "output_inertia_kgm2": 0.0022,
+   "part_id": "VR-S57-14-W",
+   "peak_torque_nm": 10.6,
+   "points": [
+    {
+     "no_load_speed_rad_s": 17.59291886010284,
+     "speed_at_peak_rad_s": 11.466813185602744,
+     "voltage_v": 24.0
+    },
+    {
+     "no_load_speed_rad_s": 34.97639820996636,
+     "speed_at_peak_rad_s": 28.850292535466266,
+     "voltage_v": 48.0
+    }
+   ],
+   "price_usd": 133.0,
+   "protocol": "CAN-FD",
+   "rated_torque_nm": 4.2,
+   "vendor": "VR",
+   "voltage_range_v": [
+    18.0,
+    52.0
+   ]
+  },
+  {
+   "copper_loss_rated_w": 19.0,
+   "housing": "small",
+   "idle_current_a": 0.12,
+   "mass_kg": 0.343,
+   "output_inertia_kgm2": 0.0034,
+   "part_id": "VR-S57-18-W",
+   "peak_torque_nm": 12.9,
+   "points": [
+    {
+     "no_load_speed_rad_s": 13.875367553354918,
+     "speed_at_peak_rad_s": 8.90117918517108,
+     "voltage_v": 24.0
+    },
+    {
+     "no_load_speed_rad_s": 27.59365547403035,
+     "speed_at_peak_rad_s": 22.61946710584651,
+     "voltage_v": 48.0
+    }
+   ],
+   "price_usd": 149.0,
+   "protocol": "CAN-FD",
+   "rated_torque_nm": 5.1,
+   "vendor": "VR",
+   "voltage_range_v": [
+    18.0,
+    52.0
+   ]
+  },
+  {
+   "copper_loss_rated_w": 19.0,
+   "housing": "small",
+   "idle_current_a": 0.12,
+   "mass_kg": 0.348,
+   "output_inertia_kgm2": 0.0051,
+   "part_id": "VR-S57-22-W",
+   "peak_torque_nm": 15.4,
+   "points": [
+    {
+     "no_load_speed_rad_s": 11.362093430483085,
+     "speed_at_peak_rad_s": 7.2780229808163535,
+     "voltage_v": 24.0
+    },
+    {
+     "no_load_speed_rad_s": 22.56710722828668,
+     "speed_at_peak_rad_s": 18.483036778619947,
+     "voltage_v": 48.0
+    }
+   ],
+   "price_usd": 167.0,
+   "protocol": "CAN-FD",
+   "rated_torque_nm": 6.2,
+   "vendor": "VR",
+   "voltage_range_v": [
+    18.0,
+    52.0
+   ]
+  },
+  {
+   "copper_loss_rated_w": 20.0,
+   "housing": "small",
+   "idle_current_a": 0.13,
+   "mass_kg": 0.398,
+   "output_inertia_kgm2": 0.0034,
+   "part_id": "VR-S57-30H-W",
+   "peak_torque_nm": 17.9,
+   "points": [
+    {
+     "no_load_speed_rad_s": 7.330382858376184,
+     "speed_at_peak_rad_s": 4.241150082346221,
+     "voltage_v": 24.0
+    },
+    {
+     "no_load_speed_rad_s": 14.556045961632707,
+     "speed_at_peak_rad_s": 11.466813185602744,
+     "voltage_v": 48.0
+    }
+   ],
+   "price_usd": 321.0,
+   "protocol": "CAN-FD",
+   "rated_torque_nm": 7.4,
+   "vendor": "VR",
+   "voltage_range_v": [
+    18.0,
+    52.0
+   ]
+  },
+  {
+   "copper_loss_rated_w": 20.0,
+   "housing": "small",
+   "idle_current_a": 0.13,
+   "mass_kg": 0.405,
+   "output_inertia_kgm2": 0.0049,
+   "part_id": "VR-S57-36H-W",
+   "peak_torque_nm": 19.8,
+   "points": [
+    {
+     "no_load_speed_rad_s": 6.126105674500097,
+     "speed_at_peak_rad_s": 3.508111796508602,
+     "voltage_v": 24.0
+    },
+    {
+     "no_load_speed_rad_s": 12.147491593880533,
+     "speed_at_peak_rad_s": 9.529497715889038,
+     "voltage_v": 48.0
+    }
+   ],
+   "price_usd": 359.0,
+   "protocol": "CAN-FD",
+   "rated_torque_nm": 8.6,
+   "vendor": "VR",
+   "voltage_range_v": [
+    18.0,
+    52.0
+   ]
+  },
+  {
+   "copper_loss_rated_w": 21.0,
+   "housing": "small",
+   "idle_current_a": 0.13,
+   "mass_kg": 0.437,
+   "output_inertia_kgm2": 0.007,
+   "part_id": "VR-S57-43H-W",
+   "peak_torque_nm": 13.0,
+   "points": [
+    {
+     "no_load_speed_rad_s": 5.1312680008633285,
+     "speed_at_peak_rad_s": 2.9321531433504733,
+     "voltage_v": 24.0
+    },
+    {
+     "no_load_speed_rad_s": 9.896016858807847,
+     "speed_at_peak_rad_s": 7.696902001294993,
+     "voltage_v": 48.0
+    }
+   ],
+   "price_usd": 510.0,
+   "protocol": "CAN-FD",
+   "rated_torque_nm": 10.1,
+   "vendor": "VR",
+   "voltage_range_v": [
+    18.0,
+    52.0
+   ]
+  },
+  {
+   "copper_loss_rated_w": 22.0,
+   "housing": "small",
+   "idle_current_a": 0.13,
+   "mass_kg": 0.452,
+   "output_inertia_kgm2": 0.0095,
+   "part_id": "VR-S57-50H-W",
+   "peak_torque_nm": 14.2,
+   "points": [
+    {
+     "no_load_speed_rad_s": 4.39822971502571,
+     "speed_at_peak_rad_s": 2.5132741228718345,
+     "voltage_v": 24.0
+    },
+    {
+     "no_load_speed_rad_s": 8.69173967493176,
+     "speed_at_peak_rad_s": 6.8067840827778845,
+     "voltage_v": 48.0
+    }
+   ],
+   "price_usd": 556.0,
+   "protocol": "CAN-FD",
+   "rated_torque_nm": 11.6,
+   "vendor": "VR",
+   "voltage_range_v": [
+    18.0,
+    52.0
+   ]
+  },
+  {
+   "copper_loss_rated_w": 46.0,
+   "housing": "large",
+   "idle_current_a": 0.18,
+   "mass_kg": 1.005,
+   "output_inertia_kgm2": 0.0068,
+   "part_id": "OGD-9862-R13",
+   "peak_torque_nm": 37.26527,
+   "points": [
+    {
+     "no_load_speed_rad_s": 14.660765716752369,
+     "speed_at_peak_rad_s": 8.726646259971648,
+     "voltage_v": 24.0
+    },
+    {
+     "no_load_speed_rad_s": 28.797932657906436,
+     "speed_at_peak_rad_s": 22.863813201125716,
+     "voltage_v": 48.0
+    }
+   ],
+   "price_usd": 355.0,
+   "protocol": "RS-485",
+   "rated_torque_nm": 14.6119085,
+   "vendor": "OGD",
+   "voltage_range_v": [
+    20.0,
+    50.0
+   ]
+  },
+  {
+   "copper_loss_rated_w": 48.0,
+   "housing": "large",
+   "idle_current_a": 0.18,
+   "mass_kg": 1.12,
+   "output_inertia_kgm2": 0.015,
+   "part_id": "OGD-9862-R18",
+   "peak_torque_nm": 50.99458,
+   "points": [
+    {
+     "no_load_speed_rad_s": 9.773843811168245,
+     "speed_at_peak_rad_s": 5.759586531581287,
+     "voltage_v": 24.0
+    },
+    {
+     "no_load_speed_rad_s": 19.198621771937624,
+     "speed_at_peak_rad_s": 15.184364492350667,
+     "voltage_v": 48.0
+    }
+   ],
+   "price_usd": 545.0,
+   "protocol": "RS-485",
+   "rated_torque_nm": 20.986231,
+   "vendor": "OGD",
+   "voltage_range_v": [
+    20.0,
+    50.0
+   ]
+  },
+  {
+   "copper_loss_rated_w": 32.0,
+   "housing": "medium",
+   "idle_current_a": 0.13,
+   "mass_kg": 0.486,
+   "output_inertia_kgm2": 0.0034,
+   "part_id": "OGD-5755-R20",
+   "peak_torque_nm": 20.1036325,
+   "points": [
+    {
+     "no_load_speed_rad_s": 11.170107212763709,
+     "speed_at_peak_rad_s": 7.3303828583761845,
+     "voltage_v": 24.0
+    },
+    {
+     "no_load_speed_rad_s": 21.991148575128552,
+     "speed_at_peak_rad_s": 18.151424220741028,
+     "voltage_v": 48.0
+    }
+   ],
+   "price_usd": 247.0,
+   "protocol": "RS-485",
+   "rated_torque_nm": 8.629852,
+   "vendor": "OGD",
+   "voltage_range_v": [
+    20.0,
+    50.0
+   ]
+  },
+  {
+   "copper_loss_rated_w": 31.0,
+   "housing": "medium",
+   "idle_current_a": 0.13,
+   "mass_kg": 0.548,
+   "output_inertia_kgm2": 0.0086,
+   "part_id": "OGD-5755-R32",
+   "peak_torque_nm": 28.439285,
+   "points": [
+    {
+     "no_load_speed_rad_s": 6.981317007977318,
+     "speed_at_peak_rad_s": 4.363323129985824,
+     "voltage_v": 24.0
+    },
+    {
+     "no_load_speed_rad_s": 13.788101090755204,
+     "speed_at_peak_rad_s": 11.170107212763709,
+     "voltage_v": 48.0
+    }
+   ],
+   "price_usd": 435.0,
+   "protocol": "RS-485",
+   "rated_torque_nm": 12.944778,
+   "vendor": "OGD",
+   "voltage_range_v": [
+    20.0,
+    50.0
+   ]
+  },
+  {
+   "copper_loss_rated_w": 18.0,
+   "housing": "small",
+   "idle_current_a": 0.12,
+   "mass_kg": 0.338,
+   "output_inertia_kgm2": 0.0011,
+   "part_id": "OGD-5746-R11",
+   "peak_torque_nm": 10.2969825,
+   "points": [
+    {
+     "no_load_speed_rad_s": 19.722220547535922,
+     "speed_at_peak_rad_s": 11.868238913561441,
+     "voltage_v": 24.0
+    },
+    {
+     "no_load_speed_rad_s": 38.92084231947355,
+     "speed_at_peak_rad_s": 31.066860685499066,
+     "voltage_v": 48.0
+    }
+   ],
+   "price_usd": 129.0,
+   "protocol": "RS-485",
+   "rated_torque_nm": 4.314926,
+   "vendor": "OGD",
+   "voltage_range_v": [
+    20.0,
+    50.0
+   ]
+  },
+  {
+   "copper_loss_rated_w": 19.0,
+   "housing": "small",
+   "idle_current_a": 0.12,
+   "mass_kg": 0.384,
+   "output_inertia_kgm2": 0.0052,
+   "part_id": "OGD-5746-R24",
+   "peak_torque_nm": 18.1423025,
+   "points": [
+    {
+     "no_load_speed_rad_s": 8.115781021773632,
+     "speed_at_peak_rad_s": 5.061454830783556,
+     "voltage_v": 24.0
+    },
+    {
+     "no_load_speed_rad_s": 16.14429558094755,
+     "speed_at_peak_rad_s": 13.08996938995747,
+     "voltage_v": 48.0
+    }
+   ],
+   "price_usd": 309.0,
+   "protocol": "RS-485",
+   "rated_torque_nm": 7.453054,
+   "vendor": "OGD",
+   "voltage_range_v": [
+    20.0,
+    50.0
+   ]
+  },
+  {
+   "copper_loss_rated_w": 20.0,
+   "housing": "small",
+   "idle_current_a": 0.12,
+   "mass_kg": 0.412,
+   "output_inertia_kgm2": 0.013,
+   "part_id": "OGD-5746-R42",
+   "peak_torque_nm": 22.555295,
+   "points": [
+    {
+     "no_load_speed_rad_s": 5.061454830783556,
+     "speed_at_peak_rad_s": 2.9670597283903604,
+     "voltage_v": 24.0
+    },
+    {
+     "no_load_speed_rad_s": 10.035643198967396,
+     "speed_at_peak_rad_s": 7.941248096574199,
+     "voltage_v": 48.0
+    }
+   ],
+   "price_usd": 499.0,
+   "protocol": "RS-485",
+   "rated_torque_nm": 10.198916,
+   "vendor": "OGD",
+   "voltage_range_v": [
+    20.0,
+    50.0
+   ]
+  }
+ ],
+ "psus": [
+  {
+   "output_v": 24.0,
+   "part_id": "PSU-24V-10A",
+   "price_usd": 74.0,
+   "rated_current_a": 10.0
+  },
+  {
+   "output_v": 24.0,
+   "part_id": "PSU-24V-12A5",
+   "price_usd": 89.0,
+   "rated_current_a": 12.5
+  },
+  {
+   "output_v": 24.0,
+   "part_id": "PSU-24V-15A",
+   "price_usd": 109.0,
+   "rated_current_a": 15.0
+  },
+  {
+   "output_v": 24.0,
+   "part_id": "PSU-24V-20A",
+   "price_usd": 142.0,
+   "rated_current_a": 20.0
+  },
+  {
+   "output_v": 48.0,
+   "part_id": "PSU-48V-5A",
+   "price_usd": 79.0,
+   "rated_current_a": 5.0
+  },
+  {
+   "output_v": 48.0,
+   "part_id": "PSU-48V-6A3",
+   "price_usd": 95.0,
+   "rated_current_a": 6.3
+  },
+  {
+   "output_v": 48.0,
+   "part_id": "PSU-48V-7A5",
+   "price_usd": 116.0,
+   "rated_current_a": 7.5
+  },
+  {
+   "output_v": 48.0,
+   "part_id": "PSU-48V-10A",
+   "price_usd": 149.0,
+   "rated_current_a": 10.0
+  }
+ ],
+ "vendors": {
+  "OGD": {
+   "inspected": false
+  },
+  "VR": {
+   "inspected": true
+  }
+ }
+}

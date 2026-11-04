@@ -1,0 +1,570 @@
+format: req-bimanual/1
+project: replica pairs
+units:
+  system: SI
+requirements:
+- id: REQ-PAYLOAD-MAX
+  quantity: payload_mass_max
+  comparator: <=
+  bound: 1.601
+  unit: kg
+  source_id: PH-40
+  source_clause: PH-40, B-06
+- id: REQ-PAYLOAD-MIN
+  quantity: payload_mass_min
+  comparator: '>='
+  bound: 0.94
+  unit: kg
+  source_id: B-06
+  source_clause: B-06
+- id: REQ-COM
+  quantity: payload_com_drop
+  comparator: <=
+  bound: 0.079
+  unit: m
+  source_id: B-06
+  source_clause: B-06
+- id: REQ-PITCH
+  quantity: approach_pitch
+  comparator: ==
+  bound: -0.7853981633974483
+  unit: rad
+  source_id: B-05
+  source_clause: B-05
+- id: REQ-SWIVEL
+  quantity: elbow_swivel
+  comparator: ==
+  bound: 0.9424777960769379
+  unit: rad
+  source_id: B-05
+  source_clause: B-05
+- id: REQ-MOVE
+  quantity: move_time
+  comparator: <=
+  bound: 1.16
+  unit: s
+  source_id: B-07
+  source_clause: B-07
+- id: REQ-DWELL
+  quantity: dwell_time
+  comparator: '>='
+  bound: 0.9
+  unit: s
+  source_id: B-07
+  source_clause: B-07
+- id: REQ-PROOF
+  quantity: proof_load_factor
+  comparator: '>='
+  bound: 1.25
+  unit: fraction
+  source_id: B-08
+  source_clause: B-08
+- id: REQ-MU
+  quantity: pad_friction
+  comparator: ==
+  bound: 0.55
+  unit: fraction
+  source_id: B-09
+  source_clause: B-09
+- id: REQ-SF
+  quantity: slip_safety_factor
+  comparator: '>='
+  bound: 2.0
+  unit: fraction
+  source_id: B-09
+  source_clause: B-09
+- id: REQ-CLOSE
+  quantity: gripper_close_time
+  comparator: <=
+  bound: 0.7
+  unit: s
+  source_id: B-09
+  source_clause: B-09
+- id: REQ-PSU
+  quantity: psu_count
+  comparator: ==
+  bound: 1.0
+  unit: count
+  source_id: B-11
+  source_clause: B-11
+- id: REQ-MODULES
+  quantity: module_count
+  comparator: ==
+  bound: 16.0
+  unit: count
+  source_id: B-10
+  source_clause: B-10
+- id: REQ-DOF
+  quantity: revolute_dof
+  comparator: ==
+  bound: 14.0
+  unit: count
+  source_id: B-01
+  source_clause: B-01
+- id: REQ-COST
+  quantity: total_cost
+  comparator: <=
+  bound: 4178.0
+  unit: USD
+  source_id: B-12
+  source_clause: B-12
+- id: REQ-ECO
+  quantity: eco_cost
+  comparator: ==
+  bound: 120.0
+  unit: USD
+  source_id: B-13
+  source_clause: B-13
+- id: REQ-UNITS
+  quantity: unit_count
+  comparator: ==
+  bound: 7.0
+  unit: count
+  source_id: B-01
+  source_clause: B-01
+- id: REQ-UNTESTED
+  quantity: untested_vendor_derating
+  comparator: <=
+  bound: 0.7
+  unit: fraction
+  source_id: B-10
+  source_clause: B-10
+- id: REQ-DROP
+  quantity: harness_drop
+  comparator: ==
+  bound: 0.4
+  unit: V
+  source_id: BL-03
+  source_clause: BL-03, B-11
+- id: REQ-XMIN
+  quantity: tray_x_min
+  comparator: <=
+  bound: 0.325
+  unit: m
+  source_id: PH-37
+  source_clause: PH-37, B-04
+- id: REQ-XMAX
+  quantity: tray_x_max
+  comparator: '>='
+  bound: 0.447
+  unit: m
+  source_id: PH-37
+  source_clause: PH-37, B-04
+- id: REQ-YMIN
+  quantity: tray_y_min
+  comparator: <=
+  bound: -0.049
+  unit: m
+  source_id: PH-37
+  source_clause: PH-37, B-04
+- id: REQ-YMAX
+  quantity: tray_y_max
+  comparator: '>='
+  bound: 0.049
+  unit: m
+  source_id: PH-37
+  source_clause: PH-37, B-04
+- id: REQ-ZMIN
+  quantity: tray_height_min
+  comparator: <=
+  bound: 0.09
+  unit: m
+  source_id: PH-38
+  source_clause: PH-38, PH-37, B-05
+- id: REQ-ZMAX
+  quantity: tray_height_max
+  comparator: '>='
+  bound: 0.205
+  unit: m
+  source_id: PH-37
+  source_clause: PH-37, PH-38, B-05
+- id: REQ-HANDLES
+  quantity: handle_spacing
+  comparator: ==
+  bound: 0.36
+  unit: m
+  source_id: PH-38
+  source_clause: PH-38, B-14
+- id: REQ-OPEN
+  quantity: gripper_opening_min
+  comparator: '>='
+  bound: 0.03
+  unit: m
+  source_id: PH-38
+  source_clause: PH-38, B-09
+- id: REQ-D01
+  quantity: joint_peak_torque:left_j1
+  comparator: ==
+  bound: 10.592939394862174
+  unit: N.m
+  source_id: derived
+  source_clause: B-16
+  derivation: acceptance procedure B-14 on the replica pair with this BOM and the delivered lot's weakest unit
+- id: REQ-D02
+  quantity: joint_peak_torque:left_j2
+  comparator: ==
+  bound: 3.9142495876303007
+  unit: N.m
+  source_id: derived
+  source_clause: B-16
+  derivation: acceptance procedure B-14 on the replica pair with this BOM and the delivered lot's weakest unit
+- id: REQ-D03
+  quantity: joint_peak_torque:left_j3
+  comparator: ==
+  bound: 4.713189906553809
+  unit: N.m
+  source_id: derived
+  source_clause: B-16
+  derivation: acceptance procedure B-14 on the replica pair with this BOM and the delivered lot's weakest unit
+- id: REQ-D04
+  quantity: joint_peak_torque:left_j4
+  comparator: ==
+  bound: 6.265597888118906
+  unit: N.m
+  source_id: derived
+  source_clause: B-16
+  derivation: acceptance procedure B-14 on the replica pair with this BOM and the delivered lot's weakest unit
+- id: REQ-D05
+  quantity: joint_peak_torque:left_j5
+  comparator: ==
+  bound: 1.1929822948495854
+  unit: N.m
+  source_id: derived
+  source_clause: B-16
+  derivation: acceptance procedure B-14 on the replica pair with this BOM and the delivered lot's weakest unit
+- id: REQ-D06
+  quantity: joint_peak_torque:left_j6
+  comparator: ==
+  bound: 1.4496987954260832
+  unit: N.m
+  source_id: derived
+  source_clause: B-16
+  derivation: acceptance procedure B-14 on the replica pair with this BOM and the delivered lot's weakest unit
+- id: REQ-D07
+  quantity: joint_peak_torque:left_j7
+  comparator: ==
+  bound: 0.12077608454414498
+  unit: N.m
+  source_id: derived
+  source_clause: B-16
+  derivation: acceptance procedure B-14 on the replica pair with this BOM and the delivered lot's weakest unit
+- id: REQ-D08
+  quantity: joint_peak_torque:right_j1
+  comparator: ==
+  bound: 10.592939394862174
+  unit: N.m
+  source_id: derived
+  source_clause: B-16
+  derivation: acceptance procedure B-14 on the replica pair with this BOM and the delivered lot's weakest unit
+- id: REQ-D09
+  quantity: joint_peak_torque:right_j2
+  comparator: ==
+  bound: 3.914249587630298
+  unit: N.m
+  source_id: derived
+  source_clause: B-16
+  derivation: acceptance procedure B-14 on the replica pair with this BOM and the delivered lot's weakest unit
+- id: REQ-D10
+  quantity: joint_peak_torque:right_j3
+  comparator: ==
+  bound: 4.71318990655381
+  unit: N.m
+  source_id: derived
+  source_clause: B-16
+  derivation: acceptance procedure B-14 on the replica pair with this BOM and the delivered lot's weakest unit
+- id: REQ-D11
+  quantity: joint_peak_torque:right_j4
+  comparator: ==
+  bound: 6.265597888118908
+  unit: N.m
+  source_id: derived
+  source_clause: B-16
+  derivation: acceptance procedure B-14 on the replica pair with this BOM and the delivered lot's weakest unit
+- id: REQ-D12
+  quantity: joint_peak_torque:right_j5
+  comparator: ==
+  bound: 1.1929822948495845
+  unit: N.m
+  source_id: derived
+  source_clause: B-16
+  derivation: acceptance procedure B-14 on the replica pair with this BOM and the delivered lot's weakest unit
+- id: REQ-D13
+  quantity: joint_peak_torque:right_j6
+  comparator: ==
+  bound: 1.4496987954260834
+  unit: N.m
+  source_id: derived
+  source_clause: B-16
+  derivation: acceptance procedure B-14 on the replica pair with this BOM and the delivered lot's weakest unit
+- id: REQ-D14
+  quantity: joint_peak_torque:right_j7
+  comparator: ==
+  bound: 0.12077608454414557
+  unit: N.m
+  source_id: derived
+  source_clause: B-16
+  derivation: acceptance procedure B-14 on the replica pair with this BOM and the delivered lot's weakest unit
+- id: REQ-D15
+  quantity: joint_rms_torque:left_j1
+  comparator: ==
+  bound: 10.466619080074883
+  unit: N.m
+  source_id: derived
+  source_clause: B-16
+  derivation: acceptance procedure B-14 on the replica pair with this BOM and the delivered lot's weakest unit
+- id: REQ-D16
+  quantity: joint_rms_torque:left_j2
+  comparator: ==
+  bound: 3.8299772480804775
+  unit: N.m
+  source_id: derived
+  source_clause: B-16
+  derivation: acceptance procedure B-14 on the replica pair with this BOM and the delivered lot's weakest unit
+- id: REQ-D17
+  quantity: joint_rms_torque:left_j3
+  comparator: ==
+  bound: 4.663698072484199
+  unit: N.m
+  source_id: derived
+  source_clause: B-16
+  derivation: acceptance procedure B-14 on the replica pair with this BOM and the delivered lot's weakest unit
+- id: REQ-D18
+  quantity: joint_rms_torque:left_j4
+  comparator: ==
+  bound: 5.826305974195827
+  unit: N.m
+  source_id: derived
+  source_clause: B-16
+  derivation: acceptance procedure B-14 on the replica pair with this BOM and the delivered lot's weakest unit
+- id: REQ-D19
+  quantity: joint_rms_torque:left_j5
+  comparator: ==
+  bound: 1.0346994099455638
+  unit: N.m
+  source_id: derived
+  source_clause: B-16
+  derivation: acceptance procedure B-14 on the replica pair with this BOM and the delivered lot's weakest unit
+- id: REQ-D20
+  quantity: joint_rms_torque:left_j6
+  comparator: ==
+  bound: 1.339205863425773
+  unit: N.m
+  source_id: derived
+  source_clause: B-16
+  derivation: acceptance procedure B-14 on the replica pair with this BOM and the delivered lot's weakest unit
+- id: REQ-D21
+  quantity: joint_rms_torque:left_j7
+  comparator: ==
+  bound: 0.06357784682759651
+  unit: N.m
+  source_id: derived
+  source_clause: B-16
+  derivation: acceptance procedure B-14 on the replica pair with this BOM and the delivered lot's weakest unit
+- id: REQ-D22
+  quantity: joint_rms_torque:right_j1
+  comparator: ==
+  bound: 10.466619080074883
+  unit: N.m
+  source_id: derived
+  source_clause: B-16
+  derivation: acceptance procedure B-14 on the replica pair with this BOM and the delivered lot's weakest unit
+- id: REQ-D23
+  quantity: joint_rms_torque:right_j2
+  comparator: ==
+  bound: 3.8299772480804757
+  unit: N.m
+  source_id: derived
+  source_clause: B-16
+  derivation: acceptance procedure B-14 on the replica pair with this BOM and the delivered lot's weakest unit
+- id: REQ-D24
+  quantity: joint_rms_torque:right_j3
+  comparator: ==
+  bound: 4.663698072484199
+  unit: N.m
+  source_id: derived
+  source_clause: B-16
+  derivation: acceptance procedure B-14 on the replica pair with this BOM and the delivered lot's weakest unit
+- id: REQ-D25
+  quantity: joint_rms_torque:right_j4
+  comparator: ==
+  bound: 5.8263059741958285
+  unit: N.m
+  source_id: derived
+  source_clause: B-16
+  derivation: acceptance procedure B-14 on the replica pair with this BOM and the delivered lot's weakest unit
+- id: REQ-D26
+  quantity: joint_rms_torque:right_j5
+  comparator: ==
+  bound: 1.0346994099455633
+  unit: N.m
+  source_id: derived
+  source_clause: B-16
+  derivation: acceptance procedure B-14 on the replica pair with this BOM and the delivered lot's weakest unit
+- id: REQ-D27
+  quantity: joint_rms_torque:right_j6
+  comparator: ==
+  bound: 1.3392058634257729
+  unit: N.m
+  source_id: derived
+  source_clause: B-16
+  derivation: acceptance procedure B-14 on the replica pair with this BOM and the delivered lot's weakest unit
+- id: REQ-D28
+  quantity: joint_rms_torque:right_j7
+  comparator: ==
+  bound: 0.06357784682759653
+  unit: N.m
+  source_id: derived
+  source_clause: B-16
+  derivation: acceptance procedure B-14 on the replica pair with this BOM and the delivered lot's weakest unit
+- id: REQ-D29
+  quantity: joint_peak_speed:left_j1
+  comparator: ==
+  bound: 1.1874828011823697
+  unit: rad/s
+  source_id: derived
+  source_clause: B-16
+  derivation: acceptance procedure B-14 on the replica pair with this BOM and the delivered lot's weakest unit
+- id: REQ-D30
+  quantity: joint_peak_speed:left_j2
+  comparator: ==
+  bound: 0.7702056486581923
+  unit: rad/s
+  source_id: derived
+  source_clause: B-16
+  derivation: acceptance procedure B-14 on the replica pair with this BOM and the delivered lot's weakest unit
+- id: REQ-D31
+  quantity: joint_peak_speed:left_j3
+  comparator: ==
+  bound: 1.2393556347215513
+  unit: rad/s
+  source_id: derived
+  source_clause: B-16
+  derivation: acceptance procedure B-14 on the replica pair with this BOM and the delivered lot's weakest unit
+- id: REQ-D32
+  quantity: joint_peak_speed:left_j4
+  comparator: ==
+  bound: 1.5987078397058478
+  unit: rad/s
+  source_id: derived
+  source_clause: B-16
+  derivation: acceptance procedure B-14 on the replica pair with this BOM and the delivered lot's weakest unit
+- id: REQ-D33
+  quantity: joint_peak_speed:left_j5
+  comparator: ==
+  bound: 0.8156591727382195
+  unit: rad/s
+  source_id: derived
+  source_clause: B-16
+  derivation: acceptance procedure B-14 on the replica pair with this BOM and the delivered lot's weakest unit
+- id: REQ-D34
+  quantity: joint_peak_speed:left_j6
+  comparator: ==
+  bound: 0.801705016244126
+  unit: rad/s
+  source_id: derived
+  source_clause: B-16
+  derivation: acceptance procedure B-14 on the replica pair with this BOM and the delivered lot's weakest unit
+- id: REQ-D35
+  quantity: joint_peak_speed:left_j7
+  comparator: ==
+  bound: 1.1460712406482
+  unit: rad/s
+  source_id: derived
+  source_clause: B-16
+  derivation: acceptance procedure B-14 on the replica pair with this BOM and the delivered lot's weakest unit
+- id: REQ-D36
+  quantity: joint_peak_speed:right_j1
+  comparator: ==
+  bound: 1.1874828011823697
+  unit: rad/s
+  source_id: derived
+  source_clause: B-16
+  derivation: acceptance procedure B-14 on the replica pair with this BOM and the delivered lot's weakest unit
+- id: REQ-D37
+  quantity: joint_peak_speed:right_j2
+  comparator: ==
+  bound: 0.7702056486581923
+  unit: rad/s
+  source_id: derived
+  source_clause: B-16
+  derivation: acceptance procedure B-14 on the replica pair with this BOM and the delivered lot's weakest unit
+- id: REQ-D38
+  quantity: joint_peak_speed:right_j3
+  comparator: ==
+  bound: 1.2393556347215513
+  unit: rad/s
+  source_id: derived
+  source_clause: B-16
+  derivation: acceptance procedure B-14 on the replica pair with this BOM and the delivered lot's weakest unit
+- id: REQ-D39
+  quantity: joint_peak_speed:right_j4
+  comparator: ==
+  bound: 1.5987078397058478
+  unit: rad/s
+  source_id: derived
+  source_clause: B-16
+  derivation: acceptance procedure B-14 on the replica pair with this BOM and the delivered lot's weakest unit
+- id: REQ-D40
+  quantity: joint_peak_speed:right_j5
+  comparator: ==
+  bound: 0.8156591727382195
+  unit: rad/s
+  source_id: derived
+  source_clause: B-16
+  derivation: acceptance procedure B-14 on the replica pair with this BOM and the delivered lot's weakest unit
+- id: REQ-D41
+  quantity: joint_peak_speed:right_j6
+  comparator: ==
+  bound: 0.801705016244126
+  unit: rad/s
+  source_id: derived
+  source_clause: B-16
+  derivation: acceptance procedure B-14 on the replica pair with this BOM and the delivered lot's weakest unit
+- id: REQ-D42
+  quantity: joint_peak_speed:right_j7
+  comparator: ==
+  bound: 1.1460712406482
+  unit: rad/s
+  source_id: derived
+  source_clause: B-16
+  derivation: acceptance procedure B-14 on the replica pair with this BOM and the delivered lot's weakest unit
+- id: REQ-D43
+  quantity: grip_torque:left
+  comparator: ==
+  bound: 3.4044065482552472
+  unit: N.m
+  source_id: derived
+  source_clause: B-16
+  derivation: acceptance procedure B-14 on the replica pair with this BOM and the delivered lot's weakest unit
+- id: REQ-D44
+  quantity: grip_torque:right
+  comparator: ==
+  bound: 3.4044065482552472
+  unit: N.m
+  source_id: derived
+  source_clause: B-16
+  derivation: acceptance procedure B-14 on the replica pair with this BOM and the delivered lot's weakest unit
+- id: REQ-D45
+  quantity: moving_mass:left
+  comparator: ==
+  bound: 4.797257020291621
+  unit: kg
+  source_id: derived
+  source_clause: B-16
+  derivation: acceptance procedure B-14 on the replica pair with this BOM and the delivered lot's weakest unit
+- id: REQ-D46
+  quantity: moving_mass:right
+  comparator: ==
+  bound: 4.797257020291621
+  unit: kg
+  source_id: derived
+  source_clause: B-16
+  derivation: acceptance procedure B-14 on the replica pair with this BOM and the delivered lot's weakest unit
+- id: REQ-D47
+  quantity: supply_peak_current
+  comparator: ==
+  bound: 11.525307602200826
+  unit: A
+  source_id: derived
+  source_clause: B-16
+  derivation: acceptance procedure B-14 on the replica pair with this BOM and the delivered lot's weakest unit
