@@ -149,7 +149,8 @@ robots in it.
   robot's pad; a rope does not collide with the robot that carries it; the bucket is the real one (1.2 kg plus the
   water).
 - **What your program knows**: its working directory is a copy of your submission, so what it reads there (your
-  scene) describes your twin, not the real bay.
+  scene) describes your twin, not the real bay. Nothing else of your home is there when it is graded: `~/given`,
+  `control_sim.py` included, is absent, so copy into the submission whatever your program imports or reads.
 
 ## The water
 

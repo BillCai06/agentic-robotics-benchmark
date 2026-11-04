@@ -45,7 +45,10 @@ In `/home/user/submission/`:
   graphs for the hazard rules. The grader runs none of your scene's code.
 - `run.sh` and whatever it starts: your fleet's program for the bay mission, speaking the wire in `control.md`
   (`/opt/venv/bin/python3` with NumPy and `pxr` is there). The grader runs it as a separate process, as your account,
-  in a copy of your submission folder.
+  in a copy of your submission folder. Grading happens in a fresh copy of this environment that holds only
+  `/home/user/submission/`: `~/given` (`control_sim.py` included) and anything else you leave in your home are not
+  there, so put everything `run.sh` needs inside the submission (copy what you use from `~/given`); `/opt/venv` and
+  `/opt/assets/` are there as now.
 
 ## How it is graded
 

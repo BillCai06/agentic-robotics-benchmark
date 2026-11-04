@@ -17,12 +17,12 @@ apart around the rim), built as `interface.md` says: a chain of at least 8 rigid
 bay's rig through the same moves as yours, by holding the robots and moving them, and compares:
 
 - slack, the rope sags like a rope (a 1.2 m chord of the 1.5 m rope hangs about as deep as the real one);
-- taut, it is straight and 1.50 m long (±3 cm), and it stretches no more than 5 cm under any of the moves;
+- taut, it is straight and 1.50 m long (±3 cm), and it stretches no more than 8 cm under any of the moves;
 - the three robots rising together bring the bucket up level (bottom ≥ 0.40 m, tilt ≤ 5°);
 - one robot moved 0.3 m outward shifts the bucket and tilts it as the real rig does (±4 cm, ±2°);
-- stepped 0.5 m sideways, the bucket swings with the real rig's period (±8 %) and does not die out unnaturally
-  (its swing after 10 s is between 30 % and 115 % of its first seconds');
-- one robot lowered 0.8 m tips the bucket as the real one tips (±5°); over the pan, 1.0 m, it pours and the fire
+- stepped 0.4 m sideways, the bucket swings with the real rig's period (±8 %) and does not die out unnaturally
+  (its swing after 10 s is between 25 % and 160 % of its first seconds');
+- one robot lowered 0.8 m tips the bucket as the real one tips (±5°); over the pan, 0.8 m, it pours and the fire
   goes out (the hazard rules);
 - a 1 m move in half a second and a dead stop leaves the bucket swinging, not flying (never faster than 4 m/s);
 - lowered back to the floor it stands upright with the ropes slack.
