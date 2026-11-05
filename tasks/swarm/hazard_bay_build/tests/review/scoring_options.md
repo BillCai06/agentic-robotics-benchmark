@@ -9,7 +9,8 @@
   far as it did them: each run's three bucket checks (lift-off level, swing, water kept) are multiplied by its fire-out
   check (1 when the fire is out at the end, else 0), so lifting the bucket and hovering earns nothing; its four safety
   checks (parts not dropped, no losses, no collisions, separation) by its progress, (steam released + fire out +
-  station cleared) / 3; and consistency by the two runs' mean progress. A run that does all three jobs loses nothing.
+  station cleared) / 3; and consistency by the two missions' mean progress (the two days of the fixed hidden set,
+  `tests/hidden/fixed_set.json`: every submission meets the same two). A run that does all three jobs loses nothing.
   The bucket's gate dates from 2026-11-04 (the owner: lifting the bucket and hovering must earn about nothing; before
   it a lift-and-hover program earned 0.223 of the mission, an idle one 0.041, now both 0.041). Multiplying the bucket
   checks by the run's progress instead was considered and not kept: it takes from runs that put the fire out but
@@ -21,10 +22,10 @@ Every verdict records all six combinations in its metrics (`acceptance.<combine>
 `section.control.no_progress_gate`), so a switch needs no new measurement of the agents' runs.
 
 **The anchor follows the config by itself.** `tests/anchor.json` records the reference's value and `full_at` under all
-six combinations (`by_combine`, keyed as the metrics are): each value the lowest of the same eight full verifies under
-that combination, each `full_at` sized by the same rule from the same runs; the grader takes the entry of the
-combination in use (the verdict's metrics `anchor_value` and `anchor_full_at` say which). Re-measure only when the
-reference or the grader's scores change.
+six combinations (`by_combine`, keyed as the metrics are): each value the lowest of the same full verifies of the
+reference under that combination (its `source` names them), each `full_at` sized by the same rule from the same runs;
+the grader takes the entry of the combination in use (the verdict's metrics `anchor_value` and `anchor_full_at` say
+which). Re-measure when the reference, the grader's scores or the fixed hidden set change.
 
 **The agent's text does not.** It must describe the scoring that is used, so a switch also swaps the sentences
 below (the one edit besides the config line):

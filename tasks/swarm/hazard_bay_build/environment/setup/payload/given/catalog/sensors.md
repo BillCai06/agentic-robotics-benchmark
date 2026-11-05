@@ -2,7 +2,7 @@
 
 Cameras are pinhole: focal length and sensor apertures in mm, image size in pixels. A camera counts only as a
 `UsdGeom.Camera` prim with `arb:sensor_model` naming it and exactly these intrinsics (within 2 %); its mass counts toward the
-robot's. A lidar is not a camera: declare it on any prim with `arb:sensor_model`; its mass counts, and in the hoist
+robot's. A lidar is not a camera: declare it on any prim with `arb:sensor_model`; its mass counts, and in the bay
 mission it is what lets a flying robot see the other two (range and vertical field below; 2D: only robots within
 ±0.25 m of its own height).
 

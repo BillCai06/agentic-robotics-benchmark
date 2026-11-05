@@ -57,7 +57,8 @@ entry, and the camera's focal length and apertures are that entry's (within 2 %)
 **R11 — Seeing each other.** Each flying robot carries a lidar from the catalog (declared with `arb:sensor_model`):
 in the bay mission it is the only way a flying robot sees the other two, and your program gets nothing else about them.
 Think about what each robot must see (the others, the bucket below it, the pan) when you place its sensors: a camera
-reports the bucket only while the bucket is in its field of view.
+reports the bucket only while the bucket's bottom centre is in its field of view, and it is taken where your scene puts
+it relative to the robot's root body (on an arm link it does not follow the arm: `control.md`).
 
 **R12 — The program.** The fleet does the whole job under your program, `control.md`: the valve closed, the fire
 put out (a synchronised take-off, a level lift, a carry with little swing and little spill, the pour), every part off

@@ -1,15 +1,16 @@
 """The bay mission: the agent's controller drives the whole fleet through the plant's job: the ground vehicle closes the
 leaking line's valve and clears the assembly station into the crate, the three flying robots lift the bucket on its
 ropes, carry it to the burning pan and pour. The grader's `control` probe runs it in its own stage of the real bay with
-the agent's four robots in it (`control.md`, The real bay); the agent's practice runner (`~/given/practice_control.py`)
-runs this same simulation, with the same random draws, on the agent's own scene. Only the stage, the controller
-process, the seeds and the account differ (the grader measures the outcomes in the real bay; the practice runner, which
-knows only the agent's scene, against that scene).
+the agent's four robots in it (`control.md`, The real bay), on one day of the fixed hidden set
+(`hidden/fixed_set.json`): every submission meets the same days.
 
-What varies per run (`draw_hidden`, from the run's seed): the water and the gust (as always), and the bay of the day:
-the six parts placed at random on the two tables (2 to 4 on each, upright, turned to any heading), the vehicle up to
-0.15 m and 8 degrees off its parking bay's nominal pose (its odometry starting from the nominal pose), the valve's lever
-left partly turned toward closed, and the pan moved up to 0.30 m from its nominal place.
+What varies from day to day (`DEFAULT["hidden"]`: the distribution the set's days were drawn from, once, by
+`review/make_fixed_set.py`; each day carries its values, so nothing is drawn at mission time): the water, two or three
+gusts (one some seconds after the bucket first leaves the floor, one or two more at fixed times), and the bay of the
+day: the six parts on the two tables (1 to 5 on each, upright or, for four of them, lying on a broad side, turned to any
+heading), the vehicle up to 0.30 m along x and along y and 25 degrees off its parking bay's nominal pose (its odometry
+starting from the nominal pose), the valve's lever left turned up to 60 degrees toward closed, and the pan moved up to
+0.45 m along x and along y from its nominal place. The sensors' noise comes from the run's own seed.
 
 What the controller does is its own business. The grader only steps the physics, applies what the controller commands
 (thrust vectors for the flying robots; joint velocity and position targets and a suction grip for the vehicle), keeps
@@ -17,16 +18,18 @@ the bay's rules itself (the steam, the fire, the hazards), and measures what hap
 out, the parts in the crate, the time, the lift and the swing and the water, the losses, the collisions.
 
 Flying robots: attitude held level by a perfect inner loop (the body's rotation is reset every step); position is pure
-dynamics (thrust, gravity, rope, wind). Water: the bucket holds V litres (drawn per run), its mass follows the water;
-the free surface stands normal to the apparent gravity; water over the rim leaves at a rate proportional to the
-excess; water that leaves over the pan is poured, elsewhere it is spilt.
+dynamics (thrust, gravity, rope, wind). Water: the bucket holds the day's litres, its mass follows the water; the free
+surface stands normal to the apparent gravity; water over the rim leaves at a rate proportional to the excess; water
+that leaves over the pan is poured, elsewhere it is spilt.
+
+pxr and numpy only at import (the set's generator uses the geometry helpers without Kit); the simulation itself needs
+Kit (omni.physx, PhysxSchema).
 """
-import json
 import math
 import random
 
 import numpy as np
-from pxr import Gf, PhysxSchema, Usd, UsdGeom, UsdPhysics
+from pxr import Gf, Usd, UsdGeom, UsdPhysics
 
 UAVS = ("UAV_1", "UAV_2", "UAV_3")
 ROBOTS = UAVS + ("UGV",)
@@ -35,9 +38,10 @@ G = 9.81
 
 DEFAULT = dict(
     dt_physics=1.0 / 120.0, substeps=2, time_limit_s=600.0, cruise_z=2.6,
-    pan_center=[2.60, 1.90], pour_r=0.6, pour_zmax=2.5, rope_length=1.5,
-    bucket=dict(mass_empty=1.2, radius=0.12, height=0.25, water_min_l=8.5, water_max_l=10.0, spill_rate_l_per_s_m=15.0),
-    tilt_max_deg=40.0, wind=dict(t_min=8.0, t_max=40.0, duration_s=2.5, speed_mps=7.0, area_uav=0.12, area_bucket=0.06),
+    pour_r=0.6, pour_zmax=2.5, rope_length=1.5,
+    bucket=dict(mass_empty=1.2, radius=0.12, height=0.25, water_max_l=10.0, spill_rate_l_per_s_m=15.0),
+    # a gust's force: 0.5 * 1.2 kg/m^3 * area * speed^2, horizontal, on each flying robot's root link and on the bucket
+    tilt_max_deg=40.0, wind=dict(area_uav=0.12, area_bucket=0.06),
     noise=dict(vio_walk_m_sqrt_s=0.02, vio_white_m=0.01, vel_m_s=0.03, load_n=0.4, lidar_m=0.02, lidar_rel=0.01,
                cam_m=0.02, cam_rel=0.02, tilt_deg=1.0, odo_walk_m_sqrt_m=0.02, odo_yaw_walk_deg_sqrt_rad=1.0, gyro_walk_deg_sqrt_s=0.05,
                odo_white_m=0.005,
@@ -46,28 +50,84 @@ DEFAULT = dict(
     separation=dict(full_m=1.2, collide_m=0.9), crash_z=0.30, done_hold_s=3.0,
     ugv=dict(vel_max_rad_s=40.0, grip_reach_m=0.04, see_range_m=8.0, still_mps=0.1),
     rules=dict(steam_stop_s=3.0, pressure_bar=8.0, lever_closed_deg=85.0, plume_s=1.0, fire_r=2.0, fire_s=1.0, fire_out_l=1.0),
-    # where the robots are (the real bay: the agent's fleet mounted elsewhere, the plant's ropes; practice: the scene's)
+    # where the robots are (the agent's fleet mounted in the real bay, the plant's ropes) and the real bay's facts
     fleet_root=FLEET, rope_root=None, item_alias=None, table_tops=None, pan_nominal=None,
-    # the bay of the day: what draw_hidden draws (control.md, What varies per run)
-    hidden=dict(per_table=[2, 4], edge_m=0.06, gap_m=0.05, tries=400, ugv_xy_m=0.15, ugv_yaw_deg=8.0, lever_deg=[0.0, 30.0],
-                pan_m=0.30, preroll_s=1.0),
+    # the day's draws (control.md, What varies from day to day): the distribution the fixed hidden set's days were drawn
+    # from, once (review/make_fixed_set.py; a day carries its values, nothing is drawn at mission time). The vehicle off
+    # its parking bay's nominal pose (dx, dy uniform within +-ugv_xy_m, dpsi within +-ugv_yaw_deg, about its
+    # articulation root); the lever left turned lever_deg from its open stop toward closed; the pan off its nominal
+    # place (dx, dy within +-pan_m); the six parts on the two tables (each on Table A or B with probability 1/2, redrawn
+    # until per_table holds on both; at least edge_m inside the top's edges, gap_m from any other part; upright, or for
+    # the `lying` ones on a broad side with probability p_lying, either way; any heading); the water; one gust
+    # gust_after_liftoff_s after the bucket first leaves the floor and gusts_extra more at gust_t0_s on the mission's
+    # clock, each gust_duration_s long at gust_speed_mps from a direction uniform over 360 degrees. preroll_s: the
+    # settle before t = 0 (the mission's own).
+    hidden=dict(ugv_xy_m=0.30, ugv_yaw_deg=25.0, lever_deg=[0.0, 60.0], pan_m=0.45, per_table=[1, 5], edge_m=0.04, gap_m=0.05,
+                tries=400, lying=["cracker_box", "sugar_box", "mustard_bottle", "power_drill"], p_lying=0.5, water_l=[8.5, 10.0],
+                gust_after_liftoff_s=[2.0, 12.0], gusts_extra=[1, 2], gust_t0_s=[8.0, 240.0], gust_duration_s=[1.5, 5.0],
+                gust_speed_mps=[4.0, 10.0], preroll_s=1.0),
 )
 # what a robot may touch without it counting as a collision: the floor and the hall, the parts (the vehicle handles
 # them), the valve's lever (the vehicle works it), the markings
 FREE = ("/World/Facility/Floor", "/World/Facility/Items", "/World/Facility/SteamLine/Handle", "/World/Facility/Pads",
         "/World/Facility/CalibMat")
+TABLES = ("Table_A", "Table_B")
+RESTS = ("upright", "side")
 
 
-def draw_hidden(seed, cfg=None):
-    """The bay of the day for one run, from its own stream of the run's seed (the noise stream, random.Random(seed), is
-    another): the vehicle's offset from its nominal pose (dx, dy [m], dpsi [deg]), the lever's opening [deg], the pan's
-    offset (dx, dy [m]) and the seed the parts' places are drawn from."""
-    h = dict(DEFAULT["hidden"], **(((cfg or {}).get("hidden")) or {}))
-    rng = random.Random(f"bay-hidden:{int(seed)}")
-    return dict(spec=h, ugv=[rng.uniform(-h["ugv_xy_m"], h["ugv_xy_m"]), rng.uniform(-h["ugv_xy_m"], h["ugv_xy_m"]),
-                             rng.uniform(-h["ugv_yaw_deg"], h["ugv_yaw_deg"])],
-                lever_deg=rng.uniform(*h["lever_deg"]), pan=[rng.uniform(-h["pan_m"], h["pan_m"]) for _ in range(2)],
-                parts_seed=rng.getrandbits(63))
+def normalise_day(day):
+    """One day of the fixed hidden set (a mission's `day` in `hidden/fixed_set.json`) as the simulation takes it,
+    checked and copied: `ugv` [dx m, dy m, dpsi deg] (the vehicle off its nominal pose), `lever_deg`, `pan` [dx m, dy m],
+    `water_l`, `gusts` (each `duration_s`, `speed_mps`, `dir_deg` (the direction it pushes toward, degrees
+    counter-clockwise from +x) and either `t0_s` (on the mission's clock) or `after_liftoff_s` (counted from the moment
+    the bucket first leaves the floor)), `parts` (each real part by its name: `table`, `rest`, `heading_deg` and its
+    body's world pose, `pos` [m] and `quat` [w, x, y, z], normalised here). Raises ValueError naming the first missing
+    or malformed field, never its value."""
+    def number(v, what, lo=-math.inf, hi=math.inf, lo_open=False):
+        if isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(float(v)):
+            raise ValueError(f"day.{what}: not a finite number")
+        v = float(v)
+        if v < lo or v > hi or (lo_open and v == lo):
+            raise ValueError(f"day.{what}: out of range")
+        return v
+
+    def numbers(v, n, what):
+        if not isinstance(v, (list, tuple)) or len(v) != n:
+            raise ValueError(f"day.{what}: not {n} numbers")
+        return [number(x, what) for x in v]
+
+    if not isinstance(day, dict):
+        raise ValueError("day: not an object")
+    out = dict(ugv=numbers(day.get("ugv"), 3, "ugv"), lever_deg=number(day.get("lever_deg"), "lever_deg", 0.0),
+               pan=numbers(day.get("pan"), 2, "pan"), water_l=number(day.get("water_l"), "water_l", 0.0, lo_open=True), gusts=[], parts={})
+    if out["lever_deg"] >= DEFAULT["rules"]["lever_closed_deg"]:
+        raise ValueError("day.lever_deg: at or past the closed line")
+    gusts = day.get("gusts")
+    if not isinstance(gusts, list):
+        raise ValueError("day.gusts: not a list")
+    for k, g in enumerate(gusts):
+        what = f"gusts[{k}]"
+        if not isinstance(g, dict) or ("t0_s" in g) == ("after_liftoff_s" in g):
+            raise ValueError(f"day.{what}: not a gust with one of t0_s, after_liftoff_s")
+        when = "t0_s" if "t0_s" in g else "after_liftoff_s"
+        out["gusts"].append({when: number(g[when], f"{what}.{when}", 0.0), "duration_s": number(g.get("duration_s"), f"{what}.duration_s", 0.0, lo_open=True),
+                             "speed_mps": number(g.get("speed_mps"), f"{what}.speed_mps", 0.0), "dir_deg": number(g.get("dir_deg"), f"{what}.dir_deg")})
+    parts = day.get("parts")
+    if not isinstance(parts, dict) or not parts:
+        raise ValueError("day.parts: not a non-empty object")
+    for name, p in parts.items():
+        what = f"parts.{name}"
+        if not isinstance(name, str) or not name or not isinstance(p, dict):
+            raise ValueError(f"day.{what}: not a part")
+        if p.get("table") not in TABLES or p.get("rest") not in RESTS:
+            raise ValueError(f"day.{what}: table or rest not one of {TABLES} / {RESTS}")
+        q = numbers(p.get("quat"), 4, f"{what}.quat")
+        qn = math.sqrt(sum(x * x for x in q))
+        if not 0.99 <= qn <= 1.01:
+            raise ValueError(f"day.{what}.quat: not a unit quaternion")
+        out["parts"][name] = dict(table=p["table"], rest=p["rest"], heading_deg=number(p.get("heading_deg"), f"{what}.heading_deg"),
+                                  pos=numbers(p.get("pos"), 3, f"{what}.pos"), quat=[x / qn for x in q])
+    return out
 
 
 def rope_roots(stage, fleet_root=FLEET, rope_root=None):
@@ -101,9 +161,10 @@ def move_in_world(stage, path, world_row, tag):
 
 def prepare(stage, hidden=None, fleet_root=FLEET, rope_root=None):
     """Before the simulation starts: contact reports on every body of the four robots (not their ropes), every
-    contact at any force with anything (a threshold or a pair list the scene authored is overridden); with the bay of
-    the day, the pan moved off its nominal place and the vehicle off its nominal pose (both in USD, so that everything
-    they carry moves with them)."""
+    contact at any force with anything (a threshold or a pair list the scene authored is overridden); with the day
+    (`hidden`, `normalise_day`), the pan moved off its nominal place and the vehicle off its nominal pose, turned by
+    dpsi degrees about its articulation root (both in USD, so that everything they carry moves with them)."""
+    from pxr import PhysxSchema  # (Kit's schema: not in plain pxr)
     ropes = rope_roots(stage, fleet_root, rope_root)
     for name in ROBOTS:
         root = stage.GetPrimAtPath(f"{fleet_root}/{name}")
@@ -331,37 +392,14 @@ def wrap(a):
     return (a + math.pi) % (2 * math.pi) - math.pi
 
 
-def table_tops(stage):
-    """The two tables' tops from a scene as authored (the practice runner's stand-in for the real bay's): each Table_X
-    prim's own box carried by its pose, the box's axis nearest the vertical taken as its up; the top is the face at the
-    world box's top."""
-    out = []
-    for name in ("Table_A", "Table_B"):
-        path = f"{FAC}/Tables/{name}"
-        prim = stage.GetPrimAtPath(path)
-        b, wb = own_box(stage, path) if prim.IsValid() else None, world_box(stage, path) if prim.IsValid() else None
-        if b is None or wb is None:
-            continue
-        m = UsdGeom.Xformable(prim).ComputeLocalToWorldTransform(Usd.TimeCode.Default())
-        axes = [np.array(m.TransformDir(Gf.Vec3d(*e))) for e in ((1, 0, 0), (0, 1, 0), (0, 0, 1))]
-        up = int(np.argmax([abs(a[2]) for a in axes]))
-        a1, a2 = [k for k in range(3) if k != up]
-        lo, hi = b
-        c = np.array(m.Transform(Gf.Vec3d(*((lo + hi) / 2))))
-        e1, e2 = axes[a1] * (hi[a1] - lo[a1]), axes[a2] * (hi[a2] - lo[a2])
-        out.append(dict(name=name, center=[float(c[0]), float(c[1])], size=[float(np.linalg.norm(e1[:2])), float(np.linalg.norm(e2[:2]))],
-                        yaw_deg=math.degrees(math.atan2(e1[1], e1[0])), height=float(wb[1][2])))
-    return out
-
-
-def bay_facts(stage):
-    """The bay's facts from a scene as authored (the practice runner's stand-in for the real bay's)."""
-    out = {}
-    for key, path, vis in (("plume", f"{FAC}/SteamLine/Plume", True), ("crate", f"{FAC}/Crate", False), ("dial", f"{FAC}/SteamLine/Gauge/Dial", False),
-                           ("table_a", f"{FAC}/Tables/Table_A", False), ("table_b", f"{FAC}/Tables/Table_B", False)):
-        b = world_box(stage, path, vis)
-        out[key] = None if b is None else [[float(v) for v in b[0]], [float(v) for v in b[1]]]
-    return out
+def on_top(top, lo, hi, tol=0.02):
+    """Does a box (world corners' range `lo`, `hi`) rest on a table's top (`table_tops`: centre, size, yaw, height):
+    its centre over the top, its lowest point within `tol` of the top's height?"""
+    c = (np.asarray(lo, dtype=float) + np.asarray(hi, dtype=float)) / 2
+    yaw = math.radians(float(top["yaw_deg"]))
+    d = c[:2] - np.array(top["center"], dtype=float)
+    u, v = d[0] * math.cos(yaw) + d[1] * math.sin(yaw), -d[0] * math.sin(yaw) + d[1] * math.cos(yaw)
+    return bool(abs(u) <= top["size"][0] / 2 and abs(v) <= top["size"][1] / 2 and abs(float(lo[2]) - float(top["height"])) <= tol)
 
 
 class Lever:
@@ -475,25 +513,28 @@ class Lever:
 
 # --------------------------------------------------------------------------------------------- the mission
 class ControlSim:
-    """One episode of the bay mission on an open scene (`prepare(stage, hidden, ...)` applied before the simulation
-    started). `scene` offers: stage, view (a numpy simulation view, started), step() (one physics step).
-    `catalog` is the grader's catalog; `bay` the real bay's facts (None: the scene's own, for practice); `hidden` the
-    run's bay of the day (`draw_hidden`; None: the scene as authored)."""
+    """One run of the bay mission on an open scene (`prepare(stage, day, ...)` applied before the simulation started).
+    `scene` offers: stage, view (a numpy simulation view, started), step() (one physics step). `catalog` is the
+    grader's catalog; `bay` the real bay's facts (the plume, the crate, the dial, the tables: boxes as [lo, hi]); `day`
+    the run's day (`normalise_day`: one mission of the fixed hidden set); `seed` the sensors' noise (the only thing
+    drawn at mission time). `cfg` must name the real bay's nominal pan place (`pan_nominal`)."""
 
-    def __init__(self, scene, catalog, cfg=None, seed=0, log=None, bay=None, hidden=None):
+    def __init__(self, scene, catalog, cfg, bay, day, seed=0, log=None):
         self.s = scene
         self.cfg = dict(DEFAULT, **(cfg or {}))
         for k in ("bucket", "wind", "noise", "ugv", "rules", "separation", "hidden"):
             self.cfg[k] = dict(DEFAULT[k], **((cfg or {}).get(k) or {}))
         self.cat = catalog
-        self.rng = random.Random(seed)
+        self.rng = random.Random(seed)  # (the sensors' noise, nothing else)
         self.log = log or (lambda *a: None)
         st = scene.stage
         self.st = st
-        self.bay = bay or bay_facts(st)
+        if not bay or self.cfg["pan_nominal"] is None:
+            raise RuntimeError("the mission needs the real bay's facts and its nominal pan place")
+        self.bay = bay
         self.fleet = self.cfg["fleet_root"] or FLEET
         self.rope_roots = rope_roots(st, self.fleet, self.cfg["rope_root"])
-        self.hidden = hidden
+        self.day = normalise_day(day)
         self.dt = self.cfg["dt_physics"] * self.cfg["substeps"]
         self.robots = {}
         for name in UAVS:
@@ -513,14 +554,9 @@ class ControlSim:
             air = self.cat["airframes"].get(airframe or "") or {}
             self.robots[name] = dict(root=root, aroot=aroot, links=links, hook=hook, sensors=sensors_of(st, root, self.cat["sensors"]),
                                      thrust_max=float(air.get("thrust_max", 0.0)))
-        # the pan: its nominal place (the real bay's, or the scene's own) and where it stands today
-        off = np.array((hidden or {}).get("pan") or [0.0, 0.0], dtype=float)
-        if self.cfg["pan_nominal"] is not None:
-            self.pan_nominal = np.array(self.cfg["pan_nominal"][:2], dtype=float)
-        else:
-            pb = world_box(st, f"{FAC}/FirePan")
-            self.pan_nominal = ((pb[0][:2] + pb[1][:2]) / 2 - off) if pb is not None else np.array(self.cfg["pan_center"], dtype=float)
-        self.pan = self.pan_nominal + off
+        # the pan: its nominal place (the real bay's) and where it stands today
+        self.pan_nominal = np.array(self.cfg["pan_nominal"][:2], dtype=float)
+        self.pan = self.pan_nominal + np.array(self.day["pan"], dtype=float)
         self.bucket_path = f"{FAC}/Bucket/Body"
         self.view = scene.view
         self.av = {n: self.view.create_articulation_view(r["aroot"]) for n, r in self.robots.items()}
@@ -539,17 +575,16 @@ class ControlSim:
         self._init_ugv()
         self._init_items()
         self.lever = Lever(st, self.view)
-        # the water
+        # the water (the day's)
         b = self.cfg["bucket"]
-        self.water = self.rng.uniform(b["water_min_l"], b["water_max_l"])
+        self.water = float(self.day["water_l"])
         self.water0 = self.water
         self.bv.set_masses(np.array([b["mass_empty"] + self.water], dtype=np.float32), self.idx)
         self.spilt, self.poured = 0.0, 0.0
-        # the wind
-        w = self.cfg["wind"]
-        self.wind_t0 = self.rng.uniform(w["t_min"], w["t_max"])
-        ang = self.rng.uniform(0, 2 * math.pi)
-        self.wind_dir = np.array([math.cos(ang), math.sin(ang), 0.0])
+        # the wind: the day's gusts, each pushing along its own horizontal direction
+        self.gusts = [dict(g, unit=np.array([math.cos(math.radians(g["dir_deg"])), math.sin(math.radians(g["dir_deg"])), 0.0]))
+                      for g in self.day["gusts"]]
+        self.calm = True  # (no wind while the day is set up: the gusts blow on the mission's clock only)
         # odometry drift per robot
         self.drift = {n: np.zeros(3) for n in ROBOTS}
         self.yaw_drift = 0.0
@@ -573,23 +608,26 @@ class ControlSim:
         from omni.physx import get_physx_simulation_interface
         self.phx = get_physx_simulation_interface()
         self.hidden_rec = None
-        if hidden:
-            self._apply_hidden()
+        self._apply_day()
         self.bucket_start = tf_pq(self.bv.get_transforms()[0])[0].copy()
 
-    # -- the bay of the day ---------------------------------------------------------------------------------------
-    def _apply_hidden(self):
-        """The run's bay of the day on the started simulation: the lever left partly turned, the parts placed at random
-        on the tables; then a pre-roll with nothing commanded (the parts and the ropes settle), after which the clock,
-        the contacts and the robots' starts are taken anew: at t = 0 everything is at rest. (The pan and the vehicle
-        were moved in USD by `prepare`.)"""
-        h = self.hidden
-        spec = dict(DEFAULT["hidden"], **(h.get("spec") or {}))
-        rec = dict(ugv=[round(float(v), 4) for v in h["ugv"]], lever_deg=round(float(h["lever_deg"]), 3),
-                   pan=[round(float(v), 4) for v in h["pan"]], pan_center=r3(self.pan), parts={})
-        rec["lever_sign"] = self.lever.open_by(float(h["lever_deg"]))
-        self.physics_step()  # (the scene queries see the stage after one step)
-        rec["parts"] = self._place_parts(random.Random(int(h["parts_seed"])), spec)
+    # -- the day ------------------------------------------------------------------------------------------------
+    def _apply_day(self):
+        """The run's day on the started simulation: the lever left partly turned, every part set to its pose of the day
+        (nothing drawn, nothing cast: the day holds the poses); then a pre-roll with nothing commanded and no wind (the
+        parts and the ropes settle), after which the clock, the contacts and the robots' starts are taken anew: at t = 0
+        everything is at rest. (The pan and the vehicle were moved in USD by `prepare`.) The record says how far each
+        part moved in the pre-roll and whether it ended on its table."""
+        d, spec = self.day, self.cfg["hidden"]
+        rec = dict(ugv=[round(float(v), 4) for v in d["ugv"]], lever_deg=round(float(d["lever_deg"]), 3),
+                   pan=[round(float(v), 4) for v in d["pan"]], pan_center=r3(self.pan), water_l=round(self.water0, 3))
+        rec["lever_sign"] = self.lever.open_by(float(d["lever_deg"]))
+        placed = self._set_parts(d["parts"])
+        rec["parts"] = {n: dict(table=d["parts"][n]["table"], rest=d["parts"][n]["rest"], wire=self.wire[n]) for n in placed}
+        rec["parts_missing"] = sorted(set(d["parts"]) - set(self.item_names))  # (named by the day, not in the stage)
+        rec["parts_unplaced"] = sorted(set(self.item_names) - set(d["parts"]))  # (in the stage, not in the day: as authored)
+        c0 = {n: np.array(d["parts"][n]["pos"]) + rot(d["parts"][n]["quat"], (self.items[n]["box"][0] + self.items[n]["box"][1]) / 2)
+              if self.items[n]["box"] is not None else np.array(d["parts"][n]["pos"]) for n in placed}
         starts = {n: self.uav_state(n)[0].copy() for n in UAVS}
         u0 = self.ugv_pose()[0].copy() if self.ugv else None
         for _ in range(max(0, int(round(spec["preroll_s"] / self.cfg["dt_physics"])))):
@@ -598,9 +636,18 @@ class ControlSim:
         if self.ugv:
             moved["UGV"] = float(np.linalg.norm(self.ugv_pose()[0] - u0))
         rec["start_moved"] = {n: round(v, 4) for n, v in moved.items()}
+        tfs = self.iv.get_transforms() if self.iv is not None else None
+        tops = {t["name"]: t for t in (self.cfg["table_tops"] or [])}
+        rec["parts_moved"], rec["parts_on_table"] = {}, {}
+        for n in placed:
+            c, lo, hi = self.item_box_world(n, tfs)
+            rec["parts_moved"][n] = round(float(np.linalg.norm(c - c0[n])), 4) if np.all(np.isfinite(c)) else 99.0
+            top = tops.get(d["parts"][n]["table"])
+            rec["parts_on_table"][n] = on_top(top, lo, hi) if top is not None and np.all(np.isfinite(c)) else None
         self.metrics["collisions"].clear()
         self.contacts_seen.clear()
         self.t = 0.0
+        self.calm = False
         for n in UAVS:
             p, q, v = self.uav_state(n)
             self.robots[n]["p0"] = p
@@ -615,119 +662,24 @@ class ControlSim:
         rec["lever_start_deg"] = round(abs(self.lever.angle()), 3)
         self.hidden_rec = rec
 
-    def _tops(self):
-        tops = self.cfg["table_tops"] or table_tops(self.st)
-        return [dict(t, path=f"{FAC}/Tables/{t['name']}") for t in tops]
-
-    def _place_parts(self, rng, spec):
-        """Each part on Table A or B (2 to 4 on each), upright as authored, turned to any heading, anywhere on its top at
-        least `edge_m` inside the edges and `gap_m` from any other part; checked by raycasts that the table's top is
-        what lies under it. A part with no valid place keeps its authored pose (recorded as `fallback`)."""
-        if self.iv is None or not self.item_names:
-            return {}
-        tops = self._tops()
-        if not tops:
-            return {}
-        from omni.physx import get_physx_scene_query_interface
-        sq = get_physx_scene_query_interface()
+    def _set_parts(self, parts):
+        """Every part the day names to its body's world pose of the day, at rest. A part the day names that the stage
+        does not hold, or one of the stage's the day leaves out, keeps its authored pose (both recorded; such a day is
+        never in the set). Returns the parts set."""
+        placed = [n for n in self.item_names if n in parts]
+        if self.iv is None or not placed:
+            return placed
         tfs = np.array(self.iv.get_transforms(), dtype=np.float32)
-        parts = []
-        for i, name in enumerate(self.item_names):
-            pq = usd_pose(self.st, self.items[name]["path"])
-            b = self.items[name]["box"]
-            if b is None:
-                continue
-            lo, hi = b
-            corners = np.array([(x, y, z) for x in (lo[0], hi[0]) for y in (lo[1], hi[1]) for z in (lo[2], hi[2])])
-            fp = [rot(pq[1], c) for c in corners]
-            area = (max(c[0] for c in fp) - min(c[0] for c in fp)) * (max(c[1] for c in fp) - min(c[1] for c in fp))
-            parts.append(dict(i=i, name=name, q=pq[1], corners=corners, area=area))
-        parts.sort(key=lambda d: -d["area"])
-        n = len(parts)
-        lo_n, hi_n = spec["per_table"]
-        ok_counts = [k for k in range(n + 1) if lo_n <= k <= hi_n and lo_n <= n - k <= hi_n] or list(range(n + 1))
-        out = {}
-        for attempt in range(20):
-            for _ in range(1000):
-                on_a = [rng.random() < 0.5 for _ in parts]
-                if sum(on_a) in ok_counts:
-                    break
-            placed, poses, failed = [], {}, None
-            for d, a_side in zip(parts, on_a):
-                top = tops[0] if a_side or len(tops) == 1 else tops[1]
-                got = self._place_one(rng, d, top, placed, spec, sq)
-                if got is None:
-                    failed = d["name"]
-                    break
-                poses[d["name"]] = got
-                placed.append(got["hull"])
-            if failed is None:
-                break
-        for d in parts:
-            name = d["name"]
-            if name not in poses:
-                out[self.wire[name]] = dict(fallback=True)
-                continue
-            g = poses[name]
-            tfs[d["i"]] = pq_tf(g["pos"], g["quat"])
-            out[self.wire[name]] = dict(table=g["table"], xy=r3(g["xy"]), heading_deg=round(g["heading"], 2))
-        self.iv.set_transforms(tfs, np.arange(len(self.item_names), dtype=np.int32))
-        self.iv.set_velocities(np.zeros((len(self.item_names), 6), dtype=np.float32), np.arange(len(self.item_names), dtype=np.int32))
-        return out
-
-    def _place_one(self, rng, d, top, placed, spec, sq):
-        c0, (w, dep), yaw = np.array(top["center"], dtype=float), top["size"], math.radians(top["yaw_deg"])
-        ca, sa = math.cos(yaw), math.sin(yaw)
-        ax, ay = np.array([ca, sa]), np.array([-sa, ca])
-        hw, hd = w / 2 - spec["edge_m"], dep / 2 - spec["edge_m"]
-        if hw <= 0 or hd <= 0:
-            return None
-        for _ in range(int(spec["tries"])):
-            heading = rng.uniform(0.0, 360.0)
-            q = qmul(quat_z(math.radians(heading)), d["q"])
-            cw = np.array([rot(q, c) for c in d["corners"]])
-            hull = convex_hull(cw[:, :2])
-            cen = hull.mean(axis=0)
-            u, v = rng.uniform(-hw, hw), rng.uniform(-hd, hd)
-            pt = c0 + u * ax + v * ay
-            hull = hull - cen + pt
-            rel = hull - c0
-            if np.any(np.abs(rel @ ax) > hw) or np.any(np.abs(rel @ ay) > hd):
-                continue
-            if any(sat_gap(hull, other) < spec["gap_m"] for other in placed):
-                continue
-            zs = []
-            for xy in [pt] + list(hull):
-                hz = self._top_under(sq, xy, top)
-                if hz is None:
-                    break
-                zs.append(hz)
-            if len(zs) < 1 + len(hull):
-                continue
-            z_top = max(zs)
-            origin = np.array([pt[0] - (cen[0] - 0.0), pt[1] - (cen[1] - 0.0), z_top - float(cw[:, 2].min()) + 0.001])
-            return dict(pos=origin, quat=q, hull=hull, table=top["name"], xy=pt, heading=heading)
-        return None
-
-    def _top_under(self, sq, xy, top):
-        """The height of the table's top under (x, y): the first hit of a downward ray that is not a part must be the
-        table, within 1 cm of its top."""
-        hits = []
-
-        def report(hit):
-            hits.append((float(hit.distance), str(hit.collision), str(hit.rigid_body)))
-            return True
-        z0 = float(top["height"]) + 0.3
-        sq.raycast_all((float(xy[0]), float(xy[1]), z0), (0.0, 0.0, -1.0), 0.6, report)
-        for dist_, col, body in sorted(hits):
-            if _under(col, f"{FAC}/Items") or _under(body, f"{FAC}/Items"):
-                continue
-            z = z0 - dist_
-            return z if _under(col, top["path"]) and abs(z - float(top["height"])) <= 0.01 else None
-        return None
+        for i, n in enumerate(self.item_names):
+            if n in parts:
+                tfs[i] = pq_tf(parts[n]["pos"], parts[n]["quat"])
+        idx = np.arange(len(self.item_names), dtype=np.int32)
+        self.iv.set_transforms(tfs, idx)
+        self.iv.set_velocities(np.zeros((len(self.item_names), 6), dtype=np.float32), idx)
+        return placed
 
     def hidden_record(self):
-        """The run's draws, for the record (written after the run)."""
+        """The run's day as applied, for the record (written after the run)."""
         return self.hidden_rec
 
     # -- the vehicle ----------------------------------------------------------------------------------------------
@@ -740,10 +692,10 @@ class ControlSim:
             return
         gv = self.view.create_articulation_view(aroot)
         p0, q0 = tf_pq(gv.get_root_transforms()[0])
-        if self.hidden:  # (prepare moved it off its nominal pose: p0, q0 are that pose, the odometry's origin)
-            dx, dy, dpsi = self.hidden["ugv"]
-            p0 = p0 - np.array([dx, dy, 0.0])
-            q0 = qmul(quat_z(-math.radians(dpsi)), q0)
+        # (prepare moved it off its nominal pose: the nominal pose, recovered here, is the odometry's origin)
+        dx, dy, dpsi = self.day["ugv"]
+        p0 = p0 - np.array([dx, dy, 0.0])
+        q0 = qmul(quat_z(-math.radians(dpsi)), q0)
         meta = gv.shared_metatype
         dof_names = list(meta.dof_names)
         link_names = list(meta.link_names)
@@ -1065,20 +1017,63 @@ class ControlSim:
             f = f * tmax / mag
         return f
 
+    def gust_times(self, g):
+        """A gust's start and end on the mission's clock: fixed (`t0_s`), or for the lift-off gust counted from the
+        moment the bucket first left the floor (the grader's lift-off rule, `measure`): (None, None) until then, and
+        for good if it never does."""
+        if "t0_s" in g:
+            t0 = g["t0_s"]
+        elif self.metrics["liftoff_t"] is not None:
+            t0 = self.metrics["liftoff_t"] + g["after_liftoff_s"]
+        else:
+            return None, None
+        return t0, t0 + g["duration_s"]
+
     def wind_force(self, area):
+        """The wind's force now on a body of this frontal area: every gust blowing now, each 0.5 * 1.2 * area * speed^2
+        along its own horizontal direction (none while the day is set up)."""
+        f = np.zeros(3)
+        if self.calm:
+            return f
+        for g in self.gusts:
+            t0, t1 = self.gust_times(g)
+            if t0 is not None and t0 <= self.t < t1:
+                f = f + g["unit"] * (0.5 * 1.2 * 1.0 * area * g["speed_mps"] ** 2)
+        return f
+
+    def wind_state(self):
+        """The wind as it is now (the privileged block's `wind`): the force on each flying robot and on the bucket [N,
+        world axes], and the day's gusts on the mission's clock (the lift-off gust's times None until lift-off)."""
         w = self.cfg["wind"]
-        if self.wind_t0 <= self.t < self.wind_t0 + w["duration_s"]:
-            return self.wind_dir * (0.5 * 1.2 * 1.0 * area * w["speed_mps"] ** 2)
-        return np.zeros(3)
+        gusts = []
+        for g in self.gusts:
+            t0, t1 = self.gust_times(g)
+            gusts.append(dict(t0_s=None if t0 is None else round(t0, 3), t1_s=None if t1 is None else round(t1, 3),
+                              speed_mps=round(g["speed_mps"], 4), dir_deg=round(g["dir_deg"], 4)))
+        return dict(uav=r3(self.wind_force(w["area_uav"])), bucket=r3(self.wind_force(w["area_bucket"])), gusts=gusts)
+
+    def gust_record(self):
+        """The day's gusts as they blew, for the record: each with its start and end on the mission's clock (None for a
+        lift-off gust in a run whose bucket never left the floor)."""
+        out = []
+        for g in self.gusts:
+            t0, t1 = self.gust_times(g)
+            r = dict(t0_s=None if t0 is None else round(t0, 3), t1_s=None if t1 is None else round(t1, 3), duration_s=round(g["duration_s"], 3),
+                     speed_mps=round(g["speed_mps"], 3), dir_deg=round(g["dir_deg"], 2))
+            if "after_liftoff_s" in g:
+                r["after_liftoff_s"] = round(g["after_liftoff_s"], 3)
+            out.append(r)
+        return out
 
     def physics_step(self):
         """One physics step: the thrusts (and the wind) on the airframes, the wind on the bucket, attitude held level,
         the held part carried; the contacts read."""
+        wu = self.wind_force(self.cfg["wind"]["area_uav"])
         for n in UAVS:
             av = self.av[n]
             f = np.zeros((1, av.max_links, 3), dtype=np.float32)
             off = n in self.lost
-            f[0, self.robots[n]["root_link"]] = (np.zeros(3) if off else self.thrust[n]) + self.wind_force(self.cfg["wind"]["area_uav"])
+            f[0, self.robots[n]["root_link"]] = (np.zeros(3) if off else self.thrust[n]) + wu
             av.apply_forces_and_torques_at_position(f, None, None, self.idx, True)
         wb = self.wind_force(self.cfg["wind"]["area_bucket"])
         if np.any(wb):
@@ -1309,67 +1304,8 @@ class ControlSim:
         m.update(water0_l=round(self.water0, 3), water_l=round(self.water, 3), spilt_l=round(self.spilt, 3), poured_l=round(self.poured, 3),
                  t_end=round(self.t, 3), end_tilt=round(btilt, 2), end_bucket_z=round(float(bp[2]), 3),
                  end_speed=round(max(float(np.linalg.norm(self.uav_state(n)[2])) for n in UAVS), 3),
-                 wind_t0=round(self.wind_t0, 2), min_sep=round(m["min_sep"], 3), swing_max=round(m["swing_max"], 3),
+                 gusts=self.gust_record(), min_sep=round(m["min_sep"], 3), swing_max=round(m["swing_max"], 3),
                  steam_end=bool(self.steam), fire_end=bool(self.fire), lever_deg=round(abs(self.lever.angle()), 1),
                  parts=where, parts_in_crate=n_in, parts_dropped=n_drop, n_parts=len(self.item_names),
                  ugv_end=r3(self.ugv_pose()[0]) if self.ugv else None, n_collisions=len(m["collisions"]))
         return m
-
-
-# --------------------------------------------------------------------------------------------- a local solver (the practice runner)
-class LocalSolver:
-    """The agent's `run.sh` spoken to over the same wire as the grader's, in the agent's own session (no account change,
-    no probe lock). For practice only."""
-
-    def __init__(self, submission, step_timeout=30.0):
-        import os
-        import queue
-        import subprocess
-        import threading
-        self.proc = subprocess.Popen(["bash", "run.sh"], cwd=submission, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                     stderr=None, universal_newlines=True, bufsize=1, start_new_session=True)
-        self.q = queue.Queue()
-        self.timeout = step_timeout
-        self._queue_mod = queue
-        self._os = os
-
-        def pump():
-            for line in self.proc.stdout:
-                self.q.put(line)
-            self.q.put(None)
-
-        threading.Thread(target=pump, daemon=True).start()
-        for _ in range(200):
-            line = self.q.get(timeout=step_timeout * 4)
-            if line is None:
-                raise RuntimeError("the controller exited before READY")
-            if line.strip() == "READY":
-                break
-        else:
-            raise RuntimeError("the controller never printed READY")
-        self.request({"type": "reset"})
-
-    def request(self, msg):
-        self.proc.stdin.write(json.dumps(msg) + "\n")
-        self.proc.stdin.flush()
-        while True:
-            line = self.q.get(timeout=self.timeout)
-            if line is None:
-                raise RuntimeError("the controller closed its stdout")
-            line = line.strip()
-            if line:
-                return json.loads(line)
-
-    def act(self, t, obs):
-        return self.request({"type": "act", "t": t, "obs": obs}).get("action")
-
-    def close(self):
-        import signal
-        try:
-            self.request({"type": "close"})
-        except Exception:  # noqa: BLE001
-            pass
-        try:
-            self._os.killpg(self.proc.pid, signal.SIGKILL)
-        except Exception:  # noqa: BLE001
-            pass

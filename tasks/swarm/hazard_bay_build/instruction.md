@@ -26,9 +26,11 @@ You have **8 hours** of wall time for the whole job. Have a usable scene and a p
 | `~/given/catalog/` | airframes, sensors, ground vehicles and arms you may build the fleet from, with their data (`catalog.json`: the same, as data) |
 | `~/given/interface.md` | how the grader reads your scene: stage settings, the prim paths it looks for, the ropes, the rules |
 | `~/given/check_structure.py` | checks a scene against `interface.md` (paths, files, ropes, graph nodes); it scores nothing |
-| `~/given/practice_control.py`, `control_sim.py` | the bay mission on your own scene with your own program: the grader's simulation with the same random draws, raw numbers, no score |
 | `/opt/assets/isaac/` | a part of NVIDIA's Isaac Sim asset library, offline (robots, objects, environments) |
 | `/opt/assets/arb/` | the task's own assets: four multirotor airframes; two NVIDIA Flow volume effects (a fire, a steam plume) for the pictures, if you want them |
+
+Nothing in `~/given` runs the bay mission: rehearse your program in your own twin (`control.md` says what the grader
+simulates and measures).
 
 Software: Isaac Sim 6.2 and Isaac Lab 3.0 with Python 3.12 in `/opt/venv` (run Python as `/opt/venv/bin/python3`;
 it is not on your `PATH`), PyTorch, NumPy, OpenCV, one NVIDIA GPU with RTX rendering, so you can render your own
@@ -45,10 +47,13 @@ In `/home/user/submission/`:
   graphs for the hazard rules. The grader runs none of your scene's code.
 - `run.sh` and whatever it starts: your fleet's program for the bay mission, speaking the wire in `control.md`
   (`/opt/venv/bin/python3` with NumPy and `pxr` is there). The grader runs it as a separate process, as your account,
-  in a copy of your submission folder. Grading happens in a fresh copy of this environment that holds only
-  `/home/user/submission/`: `~/given` (`control_sim.py` included) and anything else you leave in your home are not
-  there, so put everything `run.sh` needs inside the submission (copy what you use from `~/given`); `/opt/venv` and
-  `/opt/assets/` are there as now.
+  in a read-only copy of your submission folder, with no network. Grading happens in a fresh copy of this environment
+  that holds only `/home/user/submission/`: `~/given` and anything else you leave in your home are not there, so put
+  everything `run.sh` needs inside the submission (copy what you use from `~/given`); `/opt/venv` and `/opt/assets/`
+  are there as now.
+
+The submission may hold only regular files and directories, 2 GiB at most in all: a symbolic link or any other kind of
+file in it, and the whole submission scores 0.
 
 ## How it is graded
 
@@ -70,12 +75,14 @@ mission's is the last section's score.
 - **The fleet's design (0.10)**: the requirements in `requirements.md`, each checked from the stage and the catalog.
 - **The mission (it multiplies the scene's score)**: your program runs the fleet, as dynamic bodies under its
   commands, through the whole job in the real bay (the grader's own stage of the bay as it really is, with your four
-  robots in it as your stage builds them and the plant's rope rig), twice; the grader keeps the bay's rules and
-  measures only the outcomes: the steam released, the fire out, the parts in the crate, the time, the lift, the swing,
-  the water spilt, the losses, the collisions, the separation, and how alike the two runs were (`control.md`).
+  robots in it as your stage builds them and the plant's rope rig), twice, on two days of its own; the grader keeps the
+  bay's rules and measures only the outcomes: the steam released, the fire out, the parts in the crate, the time, the
+  lift, the swing, the water spilt, the losses, the collisions, the separation, and how alike the two runs were
+  (`control.md`).
 
-The amounts, angles, points, directions and timings of these tests, the water in the bucket and the wind are drawn
-at random for each run, and so, in the mission, are where the six parts lie on the tables, where the vehicle stands in
-its bay, how far the valve's lever is turned and where the burning pan stands. Measurements come from the simulation
-itself (body poses, masses, joint motion) and from the state attributes the interface declares, never from anything
-else the scene, the controller or the plan reports about itself.
+The amounts, angles, points, directions and timings of these tests were drawn once at random and are kept hidden: they
+are the same for every submission. So are the mission's two days, drawn once from the ranges `control.md` gives: the
+water in the bucket, the wind, where and how the six parts lie on the tables, where the vehicle stands, how far the
+valve's lever is turned and where the burning pan stands. Measurements come from the simulation itself (body poses,
+masses, joint motion) and from the state attributes the interface declares, never from anything else the scene, the
+controller or the plan reports about itself.

@@ -61,6 +61,7 @@ rope as it hangs, sags, carries and swings, against the real bay's rig (`require
 - `arb:sensor_model` (string) on each sensor prim that counts: a catalog name; cameras are `UsdGeom.Camera` prims with
   that entry's intrinsics; a lidar is any prim with the entry's name. What a robot senses in the bay mission
   (`control.md`) is what it carries here.
+- Put every declaration and every sensor prim outside instanceable prims: the grader does not read inside instances.
 
 ## State attributes
 

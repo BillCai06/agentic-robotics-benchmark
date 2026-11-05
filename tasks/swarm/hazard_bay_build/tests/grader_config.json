@@ -475,8 +475,8 @@
       "consistency_full": 0.05,
       "consistency_zero": 0.3
     },
-    "episodes": 2,
-    "episode_timeout_s": 1800,
+    "reply_budget_s": 1800,
+    "episode_wall_cap_s": 5400,
     "setup_timeout_s": 1200
   }
 }

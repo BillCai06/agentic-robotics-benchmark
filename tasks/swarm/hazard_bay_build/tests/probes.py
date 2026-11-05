@@ -5,14 +5,17 @@ bucket hangs and swings on its ropes, how the agent's controller flies the hoist
     groups: layout settle steam hoist control fleet
 
 The grader passes the seed in the environment (`ARB_SEED`; the command line is readable by every account), a maintainer
-may pass it as the fourth argument.
+may pass it as the fourth argument. The scene probes run at the fixed hidden set's seeds (0, the seed truth.json was
+measured with); the seed draws their random amounts (the steam test's points, the hoist's robot and directions, the
+fleet's arm configurations). The control group runs one mission of the set: its day is the `missions` entry of the
+probe's own config file (`ARB_GRADER_CFG`) that `ARB_MISSION` names (a maintainer may instead name a file holding one
+day in `ARB_DAY_FILE`), and its seed draws the sensors' noise.
 
 Everything is read from PhysX or from the stage as authored, never from anything the scene reports about itself except
 the state attributes the interface declares (`arb:steam_active`, `arb:fire_active`, `arb:disabled`), and everything is
 pushed from outside (forces and torques on bodies, robots moved kinematically). The grader runs this on the submission
 as an unprivileged account after the static scan passed (no code in the scene), one fresh process per group, and
-compares the result with the same measurement of the reference build (truth.json) and with the brief's numbers. The
-seed draws the probe's random amounts (angles, points, forces).
+compares the result with the same measurement of the reference build (truth.json) and with the brief's numbers.
 """
 
 import json
@@ -832,7 +835,8 @@ def hoist(out):
 # --------------------------------------------------------------------------------------------- the bay mission (the agent's controller)
 def privileged_state(sim):
     """The true state at the instant of the observation (the token-privileged reference's channel; read only, no
-    random draw: a privileged run is the same simulation as any other)."""
+    random draw: a privileged run is the same simulation as any other), the wind included: the force acting now on
+    each flying robot and on the bucket, and the day's gusts on the mission's clock (`ControlSim.wind_state`)."""
     tfs = sim.iv.get_transforms() if sim.iv is not None else []
     bp, bq, bv, _, tilt = sim.bucket_state()
     parts = {}
@@ -866,6 +870,7 @@ def privileged_state(sim):
             hp, hq = control_sim.tf_pq(sim.lever.art.get_link_transforms()[0][names.index("Handle")])
             lever.update(hub=r3(hp), hub_quat=[round(float(x), 5) for x in hq])
     out["lever"] = lever
+    out["wind"] = sim.wind_state()
     return out
 
 
@@ -873,14 +878,25 @@ def privileged_state(sim):
 def control(out):
     """The agent's controller drives the fleet (the flying robots dynamic under its thrust commands, the vehicle under
     its joint targets and grip) through the bay mission in the real bay: the grader's own stage of the bay as it really
-    is (`bay_layer`), with the agent's four robots mounted in it (`mission_stage`), on the day's draws (`draw_hidden`).
-    The grader relays the wire through two pipes (`ARB_WIRE_DIR`): this process never runs the agent's code. It keeps
-    the bay's rules itself and measures the outcomes against the real bay's facts (`bay` in the grader's config)."""
+    is (`bay_layer`), with the agent's four robots mounted in it (`mission_stage`), on one day of the fixed hidden set
+    (the config's `missions[ARB_MISSION]`, or the day in `ARB_DAY_FILE`; the sensors' noise from the seed). The grader
+    relays the wire through two pipes (`ARB_WIRE_DIR`): this process never runs the agent's code. It keeps the bay's
+    rules itself and measures the outcomes against the real bay's facts (`bay` in the grader's config)."""
     import mission_stage
     wire = os.environ.get("ARB_WIRE_DIR")
     if not wire:
         out["error"] = "no wire to a controller"
         return
+    if os.environ.get("ARB_DAY_FILE"):  # (a maintainer's day: one day, or a mission entry holding one)
+        with open(os.environ["ARB_DAY_FILE"]) as f:
+            day = json.load(f)
+        day = day.get("day", day) if isinstance(day, dict) else day
+    elif os.environ.get("ARB_MISSION") is not None and CFG.get("missions"):
+        day = CFG["missions"][int(os.environ["ARB_MISSION"])]
+    else:
+        out["error"] = "no day for the mission (neither ARB_MISSION with the config's missions nor ARB_DAY_FILE)"
+        return
+    day = control_sim.normalise_day(day)
     facts = CFG["bay_facts"]
     stage_path = os.path.splitext(OUT)[0] + "_mission.usda"
     t0 = time.time()
@@ -892,17 +908,15 @@ def control(out):
         return
     out["real_bay"] = info
     timing = dict(build_s=round(time.time() - t0, 2))
-    hidden = control_sim.draw_hidden(SEED, CFG.get("control_sim"))
     t0 = time.time()
     s = Scene(stage_path)
-    control_sim.prepare(s.stage, hidden=hidden, fleet_root=info["fleet_root"], rope_root=info["rope_root"])
+    control_sim.prepare(s.stage, hidden=day, fleet_root=info["fleet_root"], rope_root=info["rope_root"])
     s.start()
     timing["open_s"] = round(time.time() - t0, 2)
     t0 = time.time()
     cfg = dict(CFG.get("control_sim") or {}, fleet_root=info["fleet_root"], rope_root=info["rope_root"],
                item_alias=CFG.get("item_alias") or None, table_tops=facts["table_tops"], pan_nominal=facts["pan"]["center"])
-    sim = control_sim.ControlSim(s, CFG["catalog"], cfg, seed=SEED, log=lambda *a: print("[control]", *a, flush=True),
-                                 bay=CFG.get("bay"), hidden=hidden)
+    sim = control_sim.ControlSim(s, CFG["catalog"], cfg, CFG["bay"], day, seed=SEED, log=lambda *a: print("[control]", *a, flush=True))
     out["mission"] = sim.mission()
     timing["init_s"] = round(time.time() - t0, 2)
     t0 = time.time()

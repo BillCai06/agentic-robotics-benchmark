@@ -27,9 +27,10 @@ the robots will stand, and the bucket's three ropes lie on the floor with their 
 robots' hooks.
 
 The photographs show the bay on an earlier day. On the day of the job the parts lie wherever they were left on the two
-tables, the vehicle stands somewhere in its parking bay, the valve's lever may have been left partly turned, and the pan
-may stand up to 0.30 m from where the photographs show it; everything else stands as photographed. Your twin is the bay
-as photographed; the fleet's program meets the bay of the day (`control.md`).
+tables, some of them on their side, the vehicle stands near its parking bay, not quite as it was parked, the valve's
+lever may have been left partly turned, and the pan may stand up to 0.45 m (along x and along y) from where the
+photographs show it; everything else stands as photographed. Your twin is the bay as photographed; the fleet's program
+meets the bay of the day (`control.md`).
 
 Painted on the floor: three square launch pads with an arrow (the flying robots, one per pad, facing the arrow), a
 larger rectangular parking bay with an arrow (the ground vehicle, facing the arrow), and a white square in front of

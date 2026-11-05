@@ -6,18 +6,23 @@ shared Kit folders are emptied, and the measurements run as a separate unprivile
 (`python3 -I -s`), each probe group in its own Isaac Sim process (one stage per process: a clean clock), with Kit's
 cache in the grader's own folder. The static scan (`scan.py`, pxr only) decides whether the scene is measurable at
 all; `probes.py` then measures it (layout, settle, the valve and the plume, the bucket on its ropes, the fleet's
-design) and runs the bay mission twice (two seeds): the agent's controller drives the agent's four robots in the
-grader's own stage of the real bay (`mission_stage.py` on `hidden/bay_true.usda`), on the day's random draws, while the
-grader keeps the bay's rules and measures the outcomes. The controller runs as the agent's account behind the kit's
-solver wire, started only once the probe has the mission set up (and every process of the agent's account stopped
-before each run and after it); this process relays the wire to the control probe through two pipes and applies the
-match lock. A canary scene goes through the same launcher first: when that fails, the grading environment is broken
-and the run ends as a task error, not as a zero. So does a mission that cannot be set up twice in a row, before any of
-the agent's code ran, for a scene that passed the scan and simulates on its own.
+design) and runs the bay mission on each day of the fixed hidden set (`hidden/fixed_set.json`: two missions, the same
+for every submission): the agent's controller drives the agent's four robots in the grader's own stage of the real bay
+(`mission_stage.py` on `hidden/bay_true.usda`), on the mission's day, while the grader keeps the bay's rules and
+measures the outcomes. The controller runs as the agent's account behind the kit's solver wire (`GuardedSolver`:
+started through `nonet_exec.py`, so that it can open no internet socket), started only once the probe has the mission
+set up (and every process of the agent's account stopped before each run and after it); this process relays the wire
+to the control probe through two pipes and applies the match lock. A canary scene goes through the same launcher
+first: when that fails, the grading environment is broken and the run ends as a task error, not as a zero. So does a
+mission that cannot be set up twice in a row, before any of the agent's code ran, for a scene that passed the scan
+and simulates on its own, and so does a missing or malformed set.
 
-What the probes read (their code, `grader_config.json` with the real bay's facts, the real bay's layer) sits in a
-folder only the probe account can read (`work/probe`, 0700), and each probe's seed (63 bits) travels in its own
-environment, never on a command line: the agent's controller runs in the same sandbox during the mission.
+Nothing in a verify draws from OS entropy or the clock: the scene probes run at the set's seeds (0: truth.json's own),
+each mission's sensor noise at its noise seed, and each mission's match lock from a stream keyed by its lock key (a
+retry meets the same lock). What the probes read (their code, `grader_config.json` with the real bay's facts and the
+set's days, the real bay's layer) sits in a folder only the probe account can read (`work/probe`, 0700); a mission's
+seed and index travel in the probe's own environment, never on a command line (the agent's controller runs in the same
+sandbox during the mission), and nothing of the set is written to the log.
 
 A submission that carries the reference's token (`.oracle_token`, sha256 in `hidden/oracle_token.sha256`) gets the
 true state in each observation (`privileged`): the reference program's channel; nothing else changes.
@@ -28,7 +33,7 @@ sections (`sections`); "mission_gate", the weighted mean of the five scene secti
 name of another weights block (`sections_<name>`, e.g. "mission_0.8"). With `progress_gate` the mission's checks that a
 run earns without doing its jobs count only as far as it did them: the bucket's three (lift-off level, swing, water
 kept) only in a run that put the fire out; the five safety checks (parts not dropped, no losses, no collisions,
-separation; consistency by the two runs' mean) in proportion to the run's progress, (steam released + fire out +
+separation; consistency by the two missions' mean) in proportion to the run's progress, (steam released + fire out +
 station cleared) / 3. The metrics record the acceptance under every combination, with and without the gate.
 """
 
@@ -38,6 +43,7 @@ import json
 import math
 import os
 import pwd
+import re
 import shutil
 import stat
 import subprocess
@@ -50,9 +56,13 @@ import traceback
 HERE = os.path.dirname(os.path.abspath(__file__))
 HIDDEN = os.path.join(HERE, "hidden")
 PROBE_FILES = ("probes.py", "scan.py", "control_sim.py", "mission_stage.py", "bay_rig.py")
+FIXED_SET = os.path.join(HIDDEN, "fixed_set.json")  # (root's alone: never staged for the probe, never on a command line)
+SET_FORMAT = "hazard_bay_build fixed set 1"
+NONET = os.path.join(HERE, "nonet_exec.py")  # (run as root from this root-only folder)
 sys.path.insert(0, HERE)
 from robotics_grader import agent_user, fail, ratio_rewards, read_anchor, seed_rng, stage_config, write_verdict, zero_verdict  # noqa: E402
 from robotics_grader.solver import ProbeLock, Solver, SolverAborted, SolverMissing  # noqa: E402
+from robotics_grader.stage import secure_exec_path  # noqa: E402
 
 PROBE_USER = "arbprobe"
 KIT_SHARED = "/opt/venv/lib/python3.12/site-packages/isaacsim/kit"  # cache / logs / data: shared with the agent's runs
@@ -107,6 +117,64 @@ def nz(x, default):
     """A finite float, or `default` when missing (zero is a value, not a gap)."""
     v = num(x)
     return default if v is None else v
+
+
+# --------------------------------------------------------------------------------------------- the fixed hidden set
+def _int63(v):
+    return not isinstance(v, bool) and isinstance(v, int) and 0 <= v < (1 << 63)
+
+
+def read_missions(missions, part_names=None):
+    """A list of missions as the fixed set holds them (each its `id`, `noise_seed` (63 bits: the sensors' noise),
+    `lock_key` (64 hex digits: the match lock's stream) and `day`), checked and returned in order with each day
+    normalised (`control_sim.normalise_day`; with `part_names`, a day must place exactly the real bay's parts). Raises
+    ValueError saying what is wrong, never a value of the set."""
+    import control_sim
+    if not isinstance(missions, list) or not missions:
+        raise ValueError("no missions")
+    out, ids, seeds, keys = [], set(), set(), set()
+    for k, m in enumerate(missions):
+        if not isinstance(m, dict) or not isinstance(m.get("id"), str) or not m["id"]:
+            raise ValueError(f"mission {k}: not an object with an id")
+        if not _int63(m.get("noise_seed")):
+            raise ValueError(f"mission {k}: noise_seed is not a 63-bit integer")
+        key = m.get("lock_key")
+        if not isinstance(key, str) or not re.fullmatch(r"[0-9a-fA-F]{64}", key):
+            raise ValueError(f"mission {k}: lock_key is not 64 hex digits")
+        try:
+            day = control_sim.normalise_day(m.get("day"))
+        except ValueError as exc:
+            raise ValueError(f"mission {k}: {exc}")
+        if part_names is not None and set(day["parts"]) != set(part_names):
+            raise ValueError(f"mission {k}: the day does not place exactly the real bay's parts")
+        if m["id"] in ids or m["noise_seed"] in seeds or key.lower() in keys:
+            raise ValueError(f"mission {k}: an id, noise seed or lock key of an earlier mission")
+        ids.add(m["id"])
+        seeds.add(m["noise_seed"])
+        keys.add(key.lower())
+        out.append(dict(id=m["id"], noise_seed=m["noise_seed"], lock_key=key.lower(), day=day))
+    return out
+
+
+def load_fixed_set(path=None, part_names=None):
+    """The fixed hidden set (`hidden/fixed_set.json`, format SET_FORMAT): the scene probes' seeds and the missions,
+    in order. Every submission meets all of it; a missing or malformed set is a task error. Nothing of it is logged."""
+    path = path or FIXED_SET
+    try:
+        with open(path) as f:
+            spec = json.load(f)
+    except (OSError, ValueError) as exc:
+        fail(f"cannot read the fixed hidden set ({os.path.basename(path)}): {type(exc).__name__}")
+    try:
+        if not isinstance(spec, dict) or spec.get("format") != SET_FORMAT:
+            raise ValueError(f"not a set of the format '{SET_FORMAT}'")
+        probes = spec.get("scene_probes")
+        if not isinstance(probes, dict) or not all(_int63(probes.get(g)) for g in GROUPS if g != "control"):
+            raise ValueError("scene_probes does not give each scene probe group a 63-bit seed")
+        missions = read_missions(spec.get("missions"), part_names)
+    except ValueError as exc:
+        fail(f"the fixed hidden set is malformed: {exc}")
+    return dict(scene_probes={g: probes[g] for g in GROUPS if g != "control"}, missions=missions)
 
 
 # --------------------------------------------------------------------------------------------- lockdown
@@ -408,20 +476,23 @@ def perturbed_obs(obs, lock):
     privileged run, its true position by the same amount, so the probe asks the same question of every program)."""
     o = json.loads(json.dumps(obs))
     priv = o.get("privileged") or {}
+
+    def shift(v, dv):  # (rounded as the observation rounds positions: the copy is shaped like any other request)
+        return round(float(v) + dv, 4)
     for n, u in (o.get("uav") or {}).items():
         if isinstance(u.get("pos"), list):
             d = [lock.rng.uniform(-lock.magnitude, lock.magnitude) for _ in u["pos"]]
-            u["pos"] = [float(v) + dv for v, dv in zip(u["pos"], d)]
+            u["pos"] = [shift(v, dv) for v, dv in zip(u["pos"], d)]
             pu = (priv.get("uav") or {}).get(n) or {}
             if isinstance(pu.get("pos"), list):
-                pu["pos"] = [float(v) + dv for v, dv in zip(pu["pos"], d)]
+                pu["pos"] = [shift(v, dv) for v, dv in zip(pu["pos"], d)]
     g = o.get("ugv") or {}
     if isinstance(g.get("pose"), list) and len(g["pose"]) == 3:
         d = [lock.rng.uniform(-lock.magnitude, lock.magnitude) for _ in range(2)]
-        g["pose"] = [float(g["pose"][0]) + d[0], float(g["pose"][1]) + d[1], float(g["pose"][2])]
+        g["pose"] = [shift(g["pose"][0], d[0]), shift(g["pose"][1], d[1]), g["pose"][2]]
         pg = priv.get("ugv") or {}
         if isinstance(pg.get("pos"), list) and len(pg["pos"]) == 3:
-            pg["pos"] = [float(pg["pos"][0]) + d[0], float(pg["pos"][1]) + d[1], float(pg["pos"][2])]
+            pg["pos"] = [shift(pg["pos"][0], d[0]), shift(pg["pos"][1], d[1]), pg["pos"][2]]
     return o
 
 
@@ -437,19 +508,124 @@ def kill_agent():
             return
 
 
-def run_control(scene, work, cfg, seed, lock_rng, snap, timeout, episode=0):
-    """The control probe (Isaac Sim, the probe account) on one side; the agent's controller (`Solver`: `bash run.sh`
-    in the snapshot, the agent's account) on the other. This process relays the wire through two pipes and applies
-    the match lock. The controller sees observations and answers actions; nothing else crosses.
+# --------------------------------------------------------------------------------------------- the program's network
+def agent_ids():
+    pw = pwd.getpwnam(agent_user())
+    return pw.pw_uid, pw.pw_gid
+
+
+class GuardedSolver(Solver):
+    """The kit's Solver (the kit stays as it is), its program started through `nonet_exec.py` (no_new_privs; a seccomp
+    filter under which socket() and socketpair() work for AF_UNIX only, io_uring and foreign syscall ABIs refused; then
+    the agent's account and a fixed environment: PATH /opt/venv/bin:/usr/local/bin:/usr/bin:/bin, HOME /home/user,
+    LANG C.UTF-8). Where the filter cannot be installed (`guard` False: the egress self-test said "detect") the program
+    starts as the agent's account with the same environment, and the relay watches its sockets instead. `env_prefix`
+    (NAME=VALUE words) is for a maintainer's run only (`review/run_mission.py --program-env`); the grader passes none."""
+
+    def __init__(self, *args, guard=True, env_prefix=(), **kwargs):
+        self.guard = bool(guard)
+        self.env_prefix = [str(e) for e in env_prefix]
+        super().__init__(*args, **kwargs)
+
+    def _spawn(self):
+        secure_exec_path()  # (as the kit's deprivileged does: nothing agent-writable left on root's PATH)
+        try:
+            uid, gid = agent_ids()
+        except KeyError:
+            raise SolverAborted("no agent account to run the controller as")
+        prog = (["/usr/bin/env"] + self.env_prefix if self.env_prefix else []) + ["bash", self.entry]
+        if self.guard:
+            cmd = [sys.executable, "-I", NONET, "--uid", str(uid), "--gid", str(gid), "--cwd", self.submission, "--"] + prog
+        else:
+            from nonet_exec import WHITELIST_ENV
+            runuser = shutil.which("runuser", path="/usr/sbin:/usr/bin:/sbin:/bin") or "/usr/sbin/runuser"
+            cmd = ([runuser, "-u", agent_user(), "--", "/usr/bin/env", "-i"] + [f"{k}={v}" for k, v in sorted(WHITELIST_ENV.items())]
+                   + prog)
+        try:
+            return subprocess.Popen(cmd, cwd=self.submission, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+                                    universal_newlines=True, bufsize=1, start_new_session=True, env={"PATH": "/usr/bin:/bin"})
+        except OSError as exc:
+            raise SolverAborted(f"the controller could not be started: {exc}")
+
+
+def egress_self_test(uid, gid):
+    """True if a program started through the launcher cannot open an internet socket (AF_INET, AF_INET6, AF_VSOCK)
+    and can open a Unix one."""
+    probe = ("import socket,sys\n"
+             "bad=0\n"
+             "for fam in (socket.AF_INET, socket.AF_INET6, 40):\n"
+             "    try:\n"
+             "        socket.socket(fam, socket.SOCK_STREAM).close(); bad=1\n"
+             "    except OSError:\n"
+             "        pass\n"
+             "try:\n"
+             "    socket.socket(socket.AF_UNIX, socket.SOCK_STREAM).close()\n"
+             "except OSError:\n"
+             "    bad=1\n"
+             "sys.exit(3 if bad else 0)\n")
+    try:
+        r = subprocess.run([sys.executable, "-I", NONET, "--uid", str(uid), "--gid", str(gid), "--cwd", "/", "--", sys.executable, "-I", "-c", probe],
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=60, env={"PATH": "/usr/bin:/bin"})
+        return r.returncode == 0
+    except (OSError, subprocess.SubprocessError):
+        return False
+
+
+def egress_mode():
+    """Decided once, before the missions: "seccomp" (the launcher's filter holds) or "detect" (it cannot be installed
+    here: a run in which the agent's account holds an internet socket with a peer off this machine aborts)."""
+    secure_exec_path()
+    try:
+        uid, gid = agent_ids()
+    except KeyError:
+        return "detect"
+    return "seccomp" if egress_self_test(uid, gid) else "detect"
+
+
+def agent_inet_sockets(uid):
+    """How many internet sockets the agent's account holds with a peer that is not this machine's loopback (the
+    detect mode's check)."""
+    n = 0
+    for name in ("tcp", "tcp6", "udp", "udp6", "raw", "raw6"):
+        try:
+            with open("/proc/net/" + name) as f:
+                next(f, None)
+                for line in f:
+                    parts = line.split()
+                    if len(parts) < 8 or int(parts[7]) != uid:
+                        continue
+                    rem = parts[2].split(":")[0]
+                    if rem.strip("0") == "" or rem in ("0100007F", "00000000000000000000000001000000"):
+                        continue
+                    n += 1
+        except (OSError, ValueError, StopIteration):
+            continue
+    return n
+
+
+def run_control(scene, work, cfg, mission, index, snap, egress="seccomp", env_prefix=()):
+    """The control probe (Isaac Sim, the probe account) on one side; the agent's controller (`GuardedSolver`: `bash
+    run.sh` in the snapshot, the agent's account, no internet sockets) on the other. This process relays the wire
+    through two pipes and applies the match lock. The controller sees observations and answers actions; nothing else
+    crosses. `mission` is the fixed set's entry `index` (its day is the probe config's `missions[index]`): its noise
+    seed and the index go to the probe in its environment, and its lock key keys the lock's stream, made here, so that
+    a retry meets the same lock.
 
     Order: nothing of the agent's runs while the probe sets the mission up (it builds the mission stage, starts Isaac
-    Sim, opens the stage, draws the bay of the day, pre-rolls); the controller starts once the probe opens the wire. So
-    a failure before that point (`setup_failed`) is the grader's or the environment's, never the program's doing. The
-    set-up has its own bound (`setup_timeout_s`); the run's wall-clock budget (`timeout`) counts from the wire."""
+    Sim, opens the stage, sets the day up, pre-rolls); the controller starts once the probe opens the wire. So a failure
+    before that point (`setup_failed`) is the grader's or the environment's, never the program's doing. The set-up has
+    its own bound (`setup_timeout_s`). The program's budget (`reply_budget_s`) is its own time, the time from each
+    request to its reply summed over the run: the simulator's own pace, which depends on the machine and its load,
+    never counts against it. A run that has not ended `episode_wall_cap_s` after the wire opened is stopped all the
+    same (the bound on a verify; at the measured 19-55 ms a control step a full run takes 12-33 min). Either ends the
+    run as aborted. With `egress` "detect" the relay looks at the agent's account's sockets every 60 steps and aborts
+    the run at the first internet socket with a peer off this machine."""
     ctl = cfg.get("control", {})
+    budget = float(ctl.get("reply_budget_s", 1800))
+    wall_cap = float(ctl.get("episode_wall_cap_s", 5400))
     if not os.path.isfile(os.path.join(snap, "run.sh")):
         log("control: no controller (no run.sh in the submission)")
-        return dict(abort="no controller: no run.sh in the submission", end="aborted")
+        return dict(abort="no controller: no run.sh in the submission", end="aborted", egress_mode=egress, egress_hits=0)
     kill_agent()
     clean_shm()
     wire = os.path.join(work, "wire")
@@ -465,12 +641,14 @@ def run_control(scene, work, cfg, seed, lock_rng, snap, timeout, episode=0):
         os.mkfifo(p, 0o600)
         os.chown(p, pw.pw_uid, pw.pw_gid)
         fifos[n] = p
-    lock = ProbeLock(lock_rng, rate=float(ctl.get("lock_rate", 0.05)), magnitude=float(ctl.get("lock_magnitude", 0.4)))
-    path = os.path.join(work, "out", f"control_{episode}.json")
+    lock = ProbeLock(seed_rng(entropy=int(mission["lock_key"], 16)), rate=float(ctl.get("lock_rate", 0.05)),
+                     magnitude=float(ctl.get("lock_magnitude", 0.4)))
+    path = os.path.join(work, "out", f"control_{index}.json")
     if os.path.exists(path):
         os.remove(path)
-    env = probe_env(work, seed)
+    env = probe_env(work, mission["noise_seed"])
     env["ARB_WIRE_DIR"] = wire
+    env["ARB_MISSION"] = str(int(index))
     proc = subprocess.Popen(probe_cmd([os.path.join(probe_dir(work), "probes.py"), scene, path, "control"]), env=env,
                             cwd=os.path.join(work, "probe_home"), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     sink = {"out": [], "err": []}
@@ -481,16 +659,23 @@ def run_control(scene, work, cfg, seed, lock_rng, snap, timeout, episode=0):
 
     threading.Thread(target=pump, args=(proc.stdout, "out"), daemon=True).start()
     threading.Thread(target=pump, args=(proc.stderr, "err"), daemon=True).start()
-    state = {"steps": 0, "abort": None, "wire": False, "solver": None}
+    state = {"steps": 0, "abort": None, "wire": False, "solver": None, "egress_hits": 0, "reply_s": 0.0}
+    try:
+        agent_uid = agent_ids()[0]
+    except KeyError:
+        agent_uid = None
 
     def relay():
         try:
             with open(fifos["obs.fifo"]) as fi, open(fifos["act.fifo"], "w") as fo:
+                if proc.poll() is not None:  # (opened by the unblocking below, not by the probe: it died during set-up)
+                    return
                 state["wire"] = time.time()  # (the probe has the mission ready: only now does the agent's program start)
                 seal_probe_shm()
                 try:
-                    state["solver"] = Solver(step_timeout=float(ctl.get("step_timeout_s", 10.0)), submission=snap, entry="run.sh",
-                                             max_restarts=int(ctl.get("max_restarts", 1)))
+                    state["solver"] = GuardedSolver(step_timeout=float(ctl.get("step_timeout_s", 10.0)), submission=snap, entry="run.sh",
+                                                    max_restarts=int(ctl.get("max_restarts", 1)), guard=egress == "seccomp",
+                                                    env_prefix=env_prefix)
                     state["solver"].reset()
                 except (SolverAborted, SolverMissing) as exc:
                     state["abort"] = f"the controller did not come up: {exc}"[:300]
@@ -507,6 +692,13 @@ def run_control(scene, work, cfg, seed, lock_rng, snap, timeout, episode=0):
                     if msg.get("end"):
                         break
                     t, obs = int(msg["t"]), msg["obs"]
+                    if egress != "seccomp" and state["steps"] % 60 == 0 and agent_uid is not None and agent_inet_sockets(agent_uid):
+                        state["egress_hits"] += 1
+                        state["abort"] = "the controller held an internet socket (no network while it is graded)"
+                        fo.write(json.dumps({"abort": state["abort"]}) + "\n")
+                        fo.flush()
+                        break
+                    asked = time.monotonic()
                     try:
                         if lock.due():
                             action = probe_pair(lock, solver, t, obs)
@@ -514,6 +706,12 @@ def run_control(scene, work, cfg, seed, lock_rng, snap, timeout, episode=0):
                             action = solver.act(t, obs)
                     except SolverAborted as exc:
                         state["abort"] = str(exc)[:300]
+                        fo.write(json.dumps({"abort": state["abort"]}) + "\n")
+                        fo.flush()
+                        break
+                    state["reply_s"] += time.monotonic() - asked  # (the program's own time: from each request to its reply)
+                    if state["reply_s"] > budget:
+                        state["abort"] = f"the controller's replies took more than {budget:.0f} s in all"
                         fo.write(json.dumps({"abort": state["abort"]}) + "\n")
                         fo.flush()
                         break
@@ -527,7 +725,7 @@ def run_control(scene, work, cfg, seed, lock_rng, snap, timeout, episode=0):
     th.start()
     t0 = time.time()
     setup_s = float(ctl.get("setup_timeout_s", 1200))
-    while proc.poll() is None:  # (the set-up has its own bound; the run's wall-clock budget counts from the wire's opening)
+    while proc.poll() is None:  # (the set-up has its own bound; the run's wall-clock cap counts from the wire's opening)
         try:
             proc.wait(timeout=2.0)
         except subprocess.TimeoutExpired:
@@ -539,9 +737,9 @@ def run_control(scene, work, cfg, seed, lock_rng, snap, timeout, episode=0):
         if not state["wire"] and time.time() - t0 > setup_s:
             proc.kill()
             state["abort"] = state["abort"] or f"the mission was not set up within {setup_s:.0f} s"
-        elif state["wire"] and time.time() - state["wire"] > timeout:
+        elif state["wire"] and time.time() - state["wire"] > wall_cap:
             proc.kill()
-            state["abort"] = state["abort"] or "the control probe did not finish in time"
+            state["abort"] = state["abort"] or f"the run did not end within {wall_cap:.0f} s of wall clock"
     if th.is_alive():  # (the probe died before opening its ends, or mid-run: unblock the relay)
         for n, mode in (("obs.fifo", os.O_WRONLY), ("act.fifo", os.O_RDONLY)):
             try:
@@ -564,29 +762,33 @@ def run_control(scene, work, cfg, seed, lock_rng, snap, timeout, episode=0):
         data["abort"] = state["abort"]
     data["lock"] = lock.rewards()
     data["relay_steps"] = state["steps"]
+    data["reply_s"] = round(state["reply_s"], 1)
     data["setup_failed"] = not state["wire"]
-    data["probe_out"] = "".join(sink["out"])[-3000:]  # (the probe's progress lines, for the record)
-    log(f"control probe: {round(time.time() - t0)} s, {state['steps']} steps relayed, abort={state['abort']}, lock={lock.rewards()}")
+    data["egress_mode"], data["egress_hits"] = egress, state["egress_hits"]
+    data["probe_out"] = "".join(sink["out"])[-3000:]  # (the probe's progress lines, for the record; never logged)
+    log(f"control probe: {round(time.time() - t0)} s, {state['steps']} steps relayed, the controller's replies {state['reply_s']:.0f} s, "
+        f"abort={state['abort']}, lock={lock.rewards()}")
     return data
 
 
-def run_probes(scene, work, timeout, retries, seeds, cfg, lock_rng, snap, cfg_probe=None, truth=None):
+def run_probes(scene, work, timeout, retries, fixed, cfg, snap, cfg_probe=None, truth=None):
+    """The scene probe groups at the fixed set's seeds, then the bay mission on each of the set's days."""
     groups = {}
     for g in GROUPS:
-        if g == "control":  # the bay mission, twice (two fresh seeds): the outcomes and how consistent they are
+        if g == "control":  # the bay mission on each day of the fixed set: the outcomes and how consistent they are
             if cfg_probe is not None:  # the real bay's parts by the agent's names (matched by shape after the settle probe)
                 alias = match_items(((groups.get("settle") or {}).get("items")) or {}, truth["groups"]["settle"]["items"], cfg["tol"])
                 cfg_probe["item_alias"] = {t: a for t, (a, _) in alias.items()}
                 write_probe_config(work, cfg_probe)
                 log("control: parts by the agent's names:", json.dumps(cfg_probe["item_alias"]))
-            ctl_timeout = int(cfg.get("control", {}).get("episode_timeout_s", timeout))
+            egress = egress_mode()  # (once, before the missions)
+            log("control: egress guard:", egress)
             runs = []
-            for e in range(int(cfg.get("control", {}).get("episodes", 2))):
-                seed = seeds["control"][e]
-                data = run_control(scene, work, cfg, seed, lock_rng, snap, ctl_timeout, episode=e)
-                if "error" in data and not data.get("relay_steps"):  # (a fault before the first step: once more, same seed)
+            for e, mission in enumerate(fixed["missions"]):
+                data = run_control(scene, work, cfg, mission, e, snap, egress)
+                if "error" in data and not data.get("relay_steps"):  # (a fault before the first step: once more, the same day and lock)
                     log(f"control run {e} failed before its first step:", str(data["error"])[-600:])
-                    data = run_control(scene, work, cfg, seed, lock_rng, snap, ctl_timeout, episode=e)
+                    data = run_control(scene, work, cfg, mission, e, snap, egress)
                     data["retried"] = True
                     if "error" in data and data.get("setup_failed") and "error" not in (groups.get("settle") or {"error": True}):
                         # the mission could not be set up twice, before any of the agent's code ran, for a scene that
@@ -601,7 +803,7 @@ def run_probes(scene, work, timeout, retries, seeds, cfg, lock_rng, snap, cfg_pr
             path = os.path.join(work, "out", f"{g}_{attempt}.json")
             t0 = time.time()
             try:
-                r = as_probe([os.path.join(probe_dir(work), "probes.py"), scene, path, g], work, timeout, seed=seeds[g])
+                r = as_probe([os.path.join(probe_dir(work), "probes.py"), scene, path, g], work, timeout, seed=fixed["scene_probes"][g])
                 rc, tail = r.returncode, (r.stderr or "")[-1500:]
             except subprocess.TimeoutExpired:
                 rc, tail = "timeout", ""
@@ -768,7 +970,7 @@ def score(scan, got, truth, cfg):
     add("hoist", "set_down", 0.6, (lin(sdb.get("bottom_z"), 0.02, 0.15) + lin(sdb.get("tilt_deg"), 5.0, 20.0)
                                    + yes(all(c is not None and c <= spec["rope_length_m"] - 0.1 for c in slack))) / 3 if sdb else 0.0, dict(bucket=sdb, chords=slack))
 
-    # ---- the bay mission in the real bay, driven by the agent's controller, twice: outcomes only
+    # ---- the bay mission in the real bay, driven by the agent's controller, on each day of the fixed set: outcomes only
     eps = got.get("control") or []
     eps = eps if isinstance(eps, list) else [eps]
     cs = cfg["control"]["score"]
@@ -777,7 +979,8 @@ def score(scan, got, truth, cfg):
     dishonest = sorted(n for n, c in honest.items() if c and not c.get("ok", True))
 
     def episode_checks(co):
-        """One episode's checks: (name, weight, score, detail)."""
+        """One episode's checks: (name, weight, score, detail). The details are logged: none carries a value of the day
+        (the water, or the lever's angle, which is the day's while nothing turns it)."""
         co = co or {}
         aborted = bool(co.get("abort")) or "error" in co or not co
         ok = 0.0 if aborted else 1.0
@@ -787,7 +990,7 @@ def score(scan, got, truth, cfg):
         done_t = num(co.get("done_t"))
         out = [
             ("controller_ran", 0.5, yes(not aborted), co.get("abort") or (co.get("error") or "")[-300:] or None),
-            ("steam_released", 1.0, ok * yes(co.get("steam_end") is False), dict(lever_deg=co.get("lever_deg"), off_t=co.get("steam_off_t"))),
+            ("steam_released", 1.0, ok * yes(co.get("steam_end") is False), dict(closed_t=co.get("lever_closed_t"), off_t=co.get("steam_off_t"))),
             ("fire_out", 1.5, ok * yes(co.get("fire_end") is False), dict(t=co.get("fire_out_t"), poured=co.get("poured_l"))),
             ("station_cleared", 1.5, ok * min(1.0, nz(co.get("parts_in_crate"), 0) / n_parts), co.get("parts")),
             ("in_time", 1.0, ok * (lin(done_t, cs["time_full_s"], cs["time_zero_s"]) if done_t is not None else 0.0), dict(done_t=done_t, end=co.get("end"))),
@@ -795,7 +998,7 @@ def score(scan, got, truth, cfg):
              dict(t=co.get("liftoff_t"), tilt_max=co.get("liftoff_tilt_max"))),
             ("swing", 0.6, ok * lin(co.get("swing_max"), cs["swing_full_m"], cs["swing_zero_m"]) if lifted else 0.0, co.get("swing_max")),
             ("water_kept", 1.0, ok * lin(co.get("spilt_l"), cs["spill_full_l"], cs["spill_zero_l"]) if lifted else 0.0,
-             dict(spilt=co.get("spilt_l"), poured=co.get("poured_l"), water0=co.get("water0_l"))),
+             dict(spilt=co.get("spilt_l"), poured=co.get("poured_l"))),
             ("parts_not_dropped", 0.4, ok * lin(nz(co.get("parts_dropped"), n_parts), 0.0, 2.0), co.get("parts_dropped")),
             ("no_losses", 1.0, ok * yes(not lost and not co.get("crash") and not co.get("dropped")),
              dict(lost=lost, crash=co.get("crash"), dropped=co.get("dropped"))),
@@ -809,10 +1012,10 @@ def score(scan, got, truth, cfg):
     per_ep = [episode_checks(co) for co in eps] or [episode_checks({})]
 
     def mission_section(gated):
-        """The mission's checks over the two runs: (checks as (name, weight, score, detail), section score, progress).
+        """The mission's checks over the missions' runs: (checks as (name, weight, score, detail), section score, progress).
         With the progress gate the checks a run earns without doing its jobs count only as far as it did them: the
         bucket's (BUCKET_CHECKS) in a run that put the fire out, the safety checks (SAFETY_CHECKS) in proportion to the
-        run's progress, consistency in proportion to the two runs' mean progress."""
+        run's progress, consistency in proportion to the runs' mean progress."""
         progress = []
         runs = []
         for lst in per_ep:
@@ -944,7 +1147,7 @@ def score(scan, got, truth, cfg):
 
 # With the progress gate, the mission's checks a run earns without doing its jobs count only as far as it did them: the
 # bucket's three (lifting the bucket and hovering earns them) only in a run that put the fire out, the four safety
-# checks (doing nothing earns them) in proportion to the run's progress, consistency to the two runs' mean progress. A
+# checks (doing nothing earns them) in proportion to the run's progress, consistency to the missions' mean progress. A
 # run that does every job loses nothing by the gate.
 BUCKET_CHECKS = ("liftoff_level", "swing", "water_kept")
 SAFETY_CHECKS = ("parts_not_dropped", "no_losses", "no_collisions", "separation")
@@ -983,6 +1186,8 @@ def anchor_for(config, anchor, meta):
 # --------------------------------------------------------------------------------------------- main
 def main():
     config, (anchor, meta) = stage_config(), read_anchor()
+    truth = json.load(open(os.path.join(HERE, "truth.json")))
+    fixed = load_fixed_set(part_names=truth["groups"]["settle"]["items"])  # (before anything of the submission is read)
     sub = os.path.join(os.environ.get("ALE_HOME", "/home/user"), "submission")
     scene = next((os.path.join(sub, n) for n in ("scene.usda", "scene.usd", "scene.usdc")
                   if os.path.isfile(os.path.join(sub, n)) and not os.path.islink(os.path.join(sub, n))), None)
@@ -1002,10 +1207,10 @@ def main():
     for name in PROBE_FILES:
         stage_file(work, name)
     bay_layer = stage_file(work, os.path.join("hidden", "bay_true.usda"))
-    truth = json.load(open(os.path.join(HERE, "truth.json")))
     privileged, mismatch = token_state(snap)
     cfg_probe = json.load(open(os.path.join(HERE, "grader_config.json")))
-    cfg_probe.update(bay=bay_from_truth(truth), bay_facts=json.load(open(os.path.join(HIDDEN, "bay_facts.json"))), bay_layer=bay_layer)
+    cfg_probe.update(bay=bay_from_truth(truth), bay_facts=json.load(open(os.path.join(HIDDEN, "bay_facts.json"))), bay_layer=bay_layer,
+                     missions=[m["day"] for m in fixed["missions"]])  # (the days, for the probe alone: its own 0600 copy)
     if privileged:  # (only then: the key is absent otherwise, never false)
         cfg_probe["privileged"] = True
     write_probe_config(work, cfg_probe)
@@ -1027,10 +1232,7 @@ def main():
     if not scan["ok"]:
         write_verdict(ratio_rewards(0.0, anchor, cap=cap, metric_name=meta["metric"], higher_is_better=True, full_at=full_at, extra=extra))
         return
-    stream = seed_rng()  # (fresh OS entropy, in this process's memory only)
-    seeds = {g: stream.seed(63) for g in GROUPS if g != "control"}
-    seeds["control"] = [stream.seed(63) for _ in range(int(config.get("control", {}).get("episodes", 2)))]
-    got = run_probes(scene, work, int(config.get("probe_timeout_s", 900)), int(config.get("probe_retries", 1)), seeds, config, stream, snap,
+    got = run_probes(scene, work, int(config.get("probe_timeout_s", 900)), int(config.get("probe_retries", 1)), fixed, config, snap,
                      cfg_probe=cfg_probe, truth=truth)
     measured, checks, section_scores, combos = score(scan, got, truth, config)
     for c in checks:
@@ -1041,11 +1243,15 @@ def main():
     extra.update(combos)
     log("acceptance under each combination:", json.dumps({k: v for k, v in combos.items() if k.startswith("acceptance.")}))
     extra["probe_errors"] = float(sum(1 for g in got.values() for d in (g if isinstance(g, list) else [g]) if "error" in (d or {})))
-    locks = [(ep or {}).get("lock") or {} for ep in (got.get("control") or [])]
+    runs = [ep or {} for ep in (got.get("control") or [])]
+    locks = [ep.get("lock") or {} for ep in runs]
     if locks:
         extra["probes_total"] = float(sum(nz(lk.get("probes_total"), 0) for lk in locks))
         extra["probes_passed"] = float(sum(nz(lk.get("probes_passed"), 0) for lk in locks))
         extra["match_lock_ok"] = float(all(nz(lk.get("match_lock_ok"), 0) >= 1.0 for lk in locks))
+    if runs:  # the program's network: the guard that held (1: the seccomp filter, 0: detection) and the runs it aborted
+        extra["egress_guard_seccomp"] = float(all(ep.get("egress_mode") == "seccomp" for ep in runs))
+        extra["egress_hits"] = float(sum(nz(ep.get("egress_hits"), 0) for ep in runs))
     log("acceptance_score", round(measured, 4))
     write_verdict(ratio_rewards(measured, anchor, cap=cap, metric_name=meta["metric"], higher_is_better=True, full_at=full_at, extra=extra))
 

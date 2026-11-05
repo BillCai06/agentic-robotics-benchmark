@@ -8,7 +8,7 @@ under the hull and a cargo hook frame `Body/Hook` for a rope); the others are in
 
 | model | empty [kg] | MTOW [kg] | thrust max [N] | asset |
 |---|---|---|---|---|
-| `crazyflie` | 0.027 | 0.04 | 1 | `Bitcraze/Crazyflie` |
+| `crazyflie` | 0.027 | 0.042 | 0.6 | `Bitcraze/Crazyflie` |
 | `arl_robot_1` | 1.250 | 2.20 | 45 | `NTNU/ARL-Robot-1` |
 | `quadcopter` | 0.900 | 1.60 | 32 | `IsaacSim/Quadcopter` |
 | `arb_quad_450` | 1.150 | 2.40 | 48 | `airframes/arb_quad_450` |

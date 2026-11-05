@@ -6,9 +6,10 @@
 # chains, the fleet, the OmniGraph logic for the hazard rules) and the fleet's program (run.sh). The grader runs none
 # of the agent's scene code: it opens the stage in its own Isaac Sim processes as an unprivileged account and measures
 # it (layout, rest and masses, the valve and the plume, the bucket on its ropes under the grader's own moves, the
-# fleet's design), then runs the agent's program twice behind a wire in the grader's own stage of the real bay (the
-# agent's four robots mounted in it, the plant's rope rig, the day's random parts, vehicle pose, lever and pan) and
-# measures the outcomes. Needs one NVIDIA RTX GPU.
+# fleet's design), then runs the agent's program behind a wire, with no internet access, on the two days of the fixed
+# hidden set (tests/hidden/fixed_set.json: each day's parts, vehicle pose, lever, pan, water and gusts, the same for
+# every submission) in the grader's own stage of the real bay (the agent's four robots mounted in it, the plant's rope
+# rig) and measures the outcomes. Needs one NVIDIA RTX GPU.
 
 schema_version = "1.4+ale.1"
 artifacts = ["/home/user/submission"]
@@ -25,17 +26,20 @@ memory_mb = 32768
 gpus = 1
 
 # Setup (environment/setup/setup.sh: stage ~/given, < 1 min) has no field: the engine bounds it at a fixed 1800 s.
-# [agent] timeout_sec: 8 h. [verifier] timeout_sec: a canary, the scan, five probe groups and two mission runs in the
-# real bay, each in a fresh Isaac Sim process. Measured on one RTX 4090 with 8 cores (2026-11-04): the reference's verify
-# took 35 min (validate-2af90a2c: the first Isaac Sim start compiles shaders for about 8 min; its two missions, done at
-# 373 s and 426 s, took 9.5 and 11 min of wall clock); a submission whose two missions both run to their 600 s limit
-# (12.5 min each at 21 ms a control step) takes about 45 min.
+# [agent] timeout_sec: 8 h. [verifier] timeout_sec: a canary, the scan, five probe groups and the fixed hidden set's two
+# missions in the real bay, each in a fresh Isaac Sim process. Measured on one RTX 4090 with 8 cores (2026-11-04, on
+# round 2's random days): the reference's verify took 35 min (validate-2af90a2c: the first Isaac Sim start compiles
+# shaders for about 8 min; its two missions, done at 373 s and 426 s, took 9.5 and 11 min of wall clock); a submission
+# whose two missions both run to their 600 s limit (12.5 min each at 21 ms a control step) takes about 45 min. The
+# simulator's pace depends on the host's load (19 to 55 ms a control step measured on the shared authoring host), so a
+# run's budget is the program's own reply time (control.reply_budget_s, 30 min), and the wall clock only caps a run at
+# 90 min (control.episode_wall_cap_s): two runs at that cap plus the scene part fit in 3 h.
 [agent]
 timeout_sec = 28800
 network_mode = "no-network"
 
 [verifier]
-timeout_sec = 5400
+timeout_sec = 10800
 # Separate verification (2026-11-04): a fresh verifier sandbox from the same image, which the agent never touched;
 # only the declared artifact (/home/user/submission) is restored into it. In a shared sandbox, programs the agent
 # leaves earlier on root's PATH (the base image's /usr/local/bin is the agent's) would run as root at verify.

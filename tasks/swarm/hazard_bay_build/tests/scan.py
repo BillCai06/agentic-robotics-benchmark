@@ -213,7 +213,7 @@ def scan(scene, catalog=None):
     if not os.path.isfile(scene):
         return dict(ok=False, errors=[f"no scene file at {scene}"], notes=notes, facts=facts)
     if not os.path.isfile(os.path.join(sub, "run.sh")):
-        notes.append("no run.sh in the submission: the hoist mission will have no controller")
+        notes.append("no run.sh in the submission: the bay mission will have no controller")
     try:
         layers, assets, unresolved = UsdUtils.ComputeAllDependencies(scene)
     except Exception as exc:  # noqa: BLE001
