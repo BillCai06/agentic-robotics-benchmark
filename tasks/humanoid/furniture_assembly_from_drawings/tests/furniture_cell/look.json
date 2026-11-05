@@ -1,0 +1,367 @@
+{
+ "format": "furniture-cell-look/1",
+ "note": "The agent cameras' look (render.py): Filament view options; the image light (ibl.ktx in the decor folder: the mean of three OVRTX light probes of the room at z = 1.0 m, at (3.0, 2.3), (1.6, 3.6) and (4.4, 3.6), the room without the robots, the boards and the cell's furniture, the sun and the ceiling panels unseen by the probes, merged from two exposures, the sunlit patches and the lamps' emissive surfaces painted out (the lights below carry their light), prefiltered with cmgen); the lights by name, as MuJoCo's Filament takes them (spot lights in candela, the sun in lux; Filament's camera exposes at EV100 15, the demo's OVRTX camera at 7.6): the sun; per ceiling panel a spot that casts soft shadows (a 256 px shadow map of its own); per sunlit cell of the floor and the kitting table's top an upward shadow-free spot (the light the patches throw back up); the strengths of the sun, the panel spots, the patch spots and the image light fitted, in linear units, to OVRTX renders of each light group's direct and indirect light; the PBR terms of the untextured materials, or the legacy specular of textured and very dark ones; colour gains per material (r, g, b on the linear albedo); the background seen through the window. Calibrated per class (floor, walls, furniture, boards, robots, decor) and per channel against OVRTX stills of the four agent cameras on eleven states of the seed-7 reference runs (2026-11-03): every class within 1.5 % in mean linear luminance and 3 % per channel.",
+ "view": {
+  "numeric": {
+   "filament.ao.enabled": 0,
+   "filament.shadows.type": 3,
+   "filament.shadows.map_size": 2048,
+   "filament.phong.specular_multiplier": 0.2
+  },
+  "text": {
+   "filament.cg.tone_mapping": "filmic"
+  }
+ },
+ "ibl": {
+  "file": "ibl.ktx",
+  "intensity": 9049.1
+ },
+ "clear_color": [
+  0.85,
+  0.88,
+  0.92
+ ],
+ "lights": {
+  "sun": {
+   "intensity": 3276927.1,
+   "color": [
+    1.0,
+    0.94,
+    0.85
+   ],
+   "shadow": true
+  },
+  "panel0": {
+   "intensity": 163297.2,
+   "color": [
+    1.0,
+    0.95,
+    0.88
+   ],
+   "shadow": true,
+   "bulb_m": 0.45,
+   "shadow_map": 256,
+   "cutoff": 75.0,
+   "range": 20.0
+  },
+  "panel1": {
+   "intensity": 163297.2,
+   "color": [
+    1.0,
+    0.95,
+    0.88
+   ],
+   "shadow": true,
+   "bulb_m": 0.45,
+   "shadow_map": 256,
+   "cutoff": 75.0,
+   "range": 20.0
+  },
+  "bounce_floor0": {
+   "intensity": 83601.3,
+   "color": [
+    1.0,
+    0.5514,
+    0.2739
+   ],
+   "shadow": false,
+   "cutoff": 50.0,
+   "range": 20.0
+  },
+  "bounce_floor1": {
+   "intensity": 33051.7,
+   "color": [
+    1.0,
+    0.5514,
+    0.2739
+   ],
+   "shadow": false,
+   "cutoff": 50.0,
+   "range": 20.0
+  },
+  "bounce_floor2": {
+   "intensity": 89758.3,
+   "color": [
+    1.0,
+    0.5514,
+    0.2739
+   ],
+   "shadow": false,
+   "cutoff": 50.0,
+   "range": 20.0
+  },
+  "bounce_floor3": {
+   "intensity": 99155.0,
+   "color": [
+    1.0,
+    0.5514,
+    0.2739
+   ],
+   "shadow": false,
+   "cutoff": 50.0,
+   "range": 20.0
+  },
+  "bounce_floor4": {
+   "intensity": 78416.7,
+   "color": [
+    1.0,
+    0.5514,
+    0.2739
+   ],
+   "shadow": false,
+   "cutoff": 50.0,
+   "range": 20.0
+  },
+  "bounce_table0": {
+   "intensity": 91336.8,
+   "color": [
+    1.0,
+    0.5518,
+    0.2258
+   ],
+   "shadow": false,
+   "cutoff": 50.0,
+   "range": 20.0
+  },
+  "bounce_table1": {
+   "intensity": 97955.6,
+   "color": [
+    1.0,
+    0.5518,
+    0.2258
+   ],
+   "shadow": false,
+   "cutoff": 50.0,
+   "range": 20.0
+  },
+  "bounce_table2": {
+   "intensity": 75893.2,
+   "color": [
+    1.0,
+    0.5518,
+    0.2258
+   ],
+   "shadow": false,
+   "cutoff": 50.0,
+   "range": 20.0
+  }
+ },
+ "materials": {
+  "melamine_mat": {
+   "roughness": 0.32
+  },
+  "raw_edge_mat": {
+   "roughness": 0.88
+  },
+  "hardboard_mat": {
+   "roughness": 0.85
+  },
+  "hole_mat": {
+   "roughness": 0.9
+  },
+  "dowel_mat": {
+   "roughness": 0.7
+  },
+  "sideboard_mat": {
+   "roughness": 0.42
+  },
+  "table_mat": {
+   "roughness": 0.48
+  },
+  "table_leg_mat": {
+   "specular": 0.1
+  },
+  "batten_mat": {
+   "roughness": 0.95
+  },
+  "cart_bed_mat": {
+   "specular": 0.15
+  },
+  "cart_rail_mat": {
+   "roughness": 0.95
+  },
+  "a/metal": {
+   "roughness": 0.38
+  },
+  "b/metal": {
+   "roughness": 0.38
+  },
+  "a/black": {
+   "roughness": 0.45
+  },
+  "b/black": {
+   "roughness": 0.45
+  },
+  "decor_CouchLeather_7f134b": {
+   "specular": 0.25
+  },
+  "decor_Plant_Inside_59c9d1": {
+   "specular": 0.2
+  },
+  "decor_Carpets_373494": {
+   "specular": 0.3
+  }
+ },
+ "gains": {
+  "a/black": [
+   0.2314,
+   0.3133,
+   0.4251
+  ],
+  "a/metal": [
+   1.14,
+   1.2155,
+   1.1623
+  ],
+  "b/black": [
+   0.2498,
+   0.3324,
+   0.4729
+  ],
+  "b/metal": [
+   1.0025,
+   1.0972,
+   1.1149
+  ],
+  "batten_mat": [
+   1.3874,
+   1.3376,
+   1.2239
+  ],
+  "cart_bed_mat": [
+   1.2599,
+   0.9864,
+   0.8461
+  ],
+  "cart_rail_mat": [
+   0.8429,
+   0.8728,
+   0.9058
+  ],
+  "decor_BG_Building_6a775b": [
+   0.7121,
+   0.7812,
+   0.8866
+  ],
+  "decor_Carpets_373494": [
+   0.6208,
+   0.6882,
+   0.7089
+  ],
+  "decor_CeilingLamp_0609c7": [
+   0.7121,
+   0.7812,
+   0.8866
+  ],
+  "decor_CouchLeather_7f134b": [
+   0.5002,
+   0.5105,
+   0.5288
+  ],
+  "decor_Door_eb1013": [
+   0.6181,
+   0.6542,
+   0.6941
+  ],
+  "decor_PaintingSet_bee53b": [
+   0.7121,
+   0.7812,
+   0.8866
+  ],
+  "decor_Paintings_eb359f": [
+   0.8121,
+   0.9066,
+   1.1963
+  ],
+  "decor_Plant_2_2e1cff": [
+   0.7121,
+   0.7812,
+   0.8866
+  ],
+  "decor_Plant_Inside_59c9d1": [
+   0.6669,
+   0.725,
+   0.8125
+  ],
+  "decor_Wall_clock_258d9e": [
+   0.7121,
+   0.7812,
+   0.8866
+  ],
+  "decor_hall_floor": [
+   2.0132,
+   2.9237,
+   3.9484
+  ],
+  "decor_oak_floor": [
+   0.9987,
+   1.0786,
+   1.0643
+  ],
+  "decor_plaster_ceiling": [
+   0.8684,
+   0.9143,
+   0.9119
+  ],
+  "decor_plaster_wall": [
+   0.8716,
+   0.9162,
+   0.9139
+  ],
+  "decor_white_trim": [
+   0.7435,
+   0.7514,
+   0.7328
+  ],
+  "decor_window_board": [
+   0.8684,
+   0.9143,
+   0.9119
+  ],
+  "decor_window_frame": [
+   0.8684,
+   0.9143,
+   0.9119
+  ],
+  "dowel_mat": [
+   0.7579,
+   0.8164,
+   0.8363
+  ],
+  "hardboard_mat": [
+   1.0947,
+   1.1447,
+   1.3404
+  ],
+  "hole_mat": [
+   0.7579,
+   0.8164,
+   0.8363
+  ],
+  "melamine_mat": [
+   0.7366,
+   0.7999,
+   0.8233
+  ],
+  "raw_edge_mat": [
+   0.7579,
+   0.8164,
+   0.8363
+  ],
+  "sideboard_mat": [
+   1.8094,
+   1.6358,
+   1.531
+  ],
+  "table_leg_mat": [
+   0.02,
+   0.02,
+   0.02
+  ],
+  "table_mat": [
+   0.7752,
+   0.8726,
+   0.8621
+  ]
+ }
+}

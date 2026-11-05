@@ -1,0 +1,60 @@
+# furniture_assembly_from_drawings (Physical Execution, humanoid; built 2026-10-30 by Yuanfang Peng).
+#
+# A furniture-assembly service on site: two Unitree G1 humanoids (29 DoF, Dex3-1 hands) must build the B930 flat-pack
+# bookcase (two side panels, top, bottom, fixed shelf and a hardboard back, joined by dowels) exactly as its drawings
+# show and stand it where the drawings' floor plan puts it. The parts lie as unpacked, in different places and
+# orientations every episode; the manufacturer's drawing set (parts list, part drawings, wordless assembly steps, floor
+# plan) is the only description of the furniture, and two-person steps need both robots. The agent delivers assemble.py
+# (solve(cell): a camera-only program; two ceiling RGB-D cameras and a head RGB-D camera per robot, noisy localisation,
+# joint encoders and tactile load; no part poses, no part identities, no joint states on the wire), run as an
+# unprivileged account on hidden-seed episodes of the grader's MuJoCo cell over a JSON-lines RPC, in a separate verifier
+# sandbox that holds the submission and nothing else of the agent's. Score = the mean over the episodes of the
+# bookcase's credited weight / 9 (the six dowel joints, the back panel, the placement), an episode with a safety
+# violation scoring 0. During the agent phase a practice lab serves practice episodes of the same cell (never
+# privileged, budget-limited) on a Unix socket. The oracle submits the privileged reference assembler with a token.
+# Grader knobs live in tests/grader_config.json.
+
+schema_version = "1.4+ale.1"
+# Where the agent leaves its work (assemble.py and its helper modules).
+artifacts = ["/home/user/submission"]
+
+[task]
+name = "grounded-intelligence-initiative/furniture_assembly_from_drawings"
+
+[metadata]
+# One of the benchmark's platform keys (tasks/platforms.json); the folder lives at tasks/humanoid/<name>/. The metric
+# (assembly_score, higher) lives in tests/anchor.json.
+platform = "humanoid"
+tags = ["assembly", "furniture", "flat-pack", "assembly-drawings", "humanoid", "unitree-g1", "multi-robot", "bimanual",
+        "mobile-manipulation", "mujoco", "code-as-policy", "camera-only", "rgbd", "practice-lab", "hidden-seed"]
+
+[environment]
+cpus = 8
+memory_mb = 16384
+
+# setup (no field: the engine bounds it at a fixed 1800 s): the agent's givens and the practice lab (its server builds
+# one cell as a self-test before it listens; well under a minute). [agent] timeout_sec: 4 h, practice included.
+# [verifier] timeout_sec: the import check, then 3 hidden episodes, each a cell build plus the program within its 3000 s
+# program-time cap, which does not count the cell's simulation (1500 s simulated at most) and rendering (900 frames at
+# most); at the bounds an episode takes about 4300 s of wall clock here and up to about 5800 s on a machine that renders
+# at 2.3 s per frame, hence 6 h for the three. The verifier sandbox's start and tests/test.sh's copy of the givens
+# (seconds) count against it too. The oracle's episodes run the reference assembler inside one privileged call (about
+# 5 min each).
+[agent]
+timeout_sec = 14400
+network_mode = "no-network"
+
+# Separate verification: the grader runs as root in a fresh verifier sandbox from the task image that the agent never
+# touched, with only the declared artifact (the submission, restored root-owned) in it, so nothing else the agent left
+# (a file, a process, a program planted on root's PATH) reaches it. environment/setup/setup.sh does not run there (no
+# ~/given, no practice lab): tests/test.sh builds the grader's root-owned copy of the givens (/opt/arb) itself, from
+# tests/setup_payload/ and the image's robot model. The agent's program runs during verify, so the verifier gets the
+# agent's resources (CPU rendering: no GPU).
+[verifier]
+timeout_sec = 21600
+environment_mode = "separate"
+
+[verifier.environment]
+cpus = 8
+memory_mb = 16384
+gpus = 0

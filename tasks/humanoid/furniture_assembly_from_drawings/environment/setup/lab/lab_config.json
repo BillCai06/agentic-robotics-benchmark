@@ -1,0 +1,10 @@
+{
+  "note": "The practice lab's episode budgets (lab_server.py passes this object to the cell). They must equal the grading run's (tests/grader_config.json), so that practice is the graded episode on another seed: simulated-time cap, camera frames, ticks per step call, settle time before t = 0, the program-time cap (the wall clock minus the cell's simulation and rendering) and silence. practice_episodes_max bounds the practice episodes of one agent phase (a persisted counter).",
+  "sim_cap_s": 1500.0,
+  "camera_budget_frames": 900,
+  "max_ticks_per_step": 500,
+  "settle_s": 0.5,
+  "program_time_cap_s": 3000.0,
+  "silence_s": 120.0,
+  "practice_episodes_max": 60
+}
