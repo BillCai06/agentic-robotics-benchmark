@@ -1,38 +1,38 @@
 {
   "metric": "acceptance_score",
   "direction": "higher",
-  "value": 0.9537,
-  "full_at": 0.92,
-  "source": "The privileged reference (solution/: solve.sh with build_scene.py, controller.py and vehicle.py, and the oracle token, so the bay mission's observations carry the true state; solution/ unchanged since bddeddc), measured by full verifies of this grader as the engine's oracle pass runs it (solve.sh as the agent, then tests/test.sh as root with the submission in the agent's home, the verdict through ROBOTICS_GRADER_VERDICT_PATH; the last one is ale validate's own oracle pass), in the task image on one RTX 4090 with 8 cores each, 2026-11-04, branch hard/pr31. The value is the lowest of the eight full verifies recorded when the owner set it (the anchor rule, the owner's decision of 2026-11-04): 0.9537, the full verify on 2271f1c (scene sections 1.0 but hoist 0.952, the twin's swing-decay check; mission 0.974). All eight recorded, acceptance_score (combine mission_gate, progress_gate true): 0.9584, 0.9803, 0.9627 (the three sizing verifies on bddeddc), 0.9594 (the leak audit's, the reference behind a spy wrapper, on bddeddc), 0.9537 (2271f1c), 0.9769 and 0.9742 (596374b, the second behind a spy wrapper), 0.9606 (validate-5e2c3b6a's oracle pass on 7db2ab5); privileged_mode 1, every mission done with 6 of 6 parts, reward 1.0 each. The later grader changes leave these numbers as they are: the kit from main (a908b21) scores nothing, and the bucket's checks, gated on the fire being out since 2026-11-04, lose nothing in a run that puts it out, as every reference run does.",
-  "reference_commit": "hard/pr31 2271f1c (the lowest full verify; solution/reference/ as of bddeddc, unchanged since)",
-  "note": "full_at 0.92 as sized from the measured spread on 2026-11-04 (design 2.5) and kept by the owner with the lower value: ten mission runs of the reference on fresh 63-bit seeds (T2b: tests/review/run_mission.py, all done, 6 of 6 parts, no collision; single-run missions 0.884 to 0.988), every pair of them as a two-run mission section by the grader's own score(), times each full verify's scene sections: with the eight full verifies, 368 acceptances, mean 0.946, sd 0.025. The lowest of them (0.8866, the pair with the run that spilt 1.56 L) earns the full reward at full_at 0.92 (as does any acceptance from 0.8774 up). With this value the same rule would allow 0.93 (mean - 2 sd = 0.8965 alone allows 0.94, where that lowest pair would earn 0.989, under validate's 0.995; at 0.93 it earns 0.9996). The spread is in the mission (the pour's spill, 0 to 1.6 L; the time, done at 320 to 400 s) and in the hoist probe's swing-decay check, which the reference's own twin fails on some draws (decay 1.69 against the band's 1.6). Under another combination (tests/review/scoring_options.md) the anchor and full_at are in by_combine.",
+  "value": 0.9564,
+  "full_at": 0.98,
+  "source": "The privileged reference (solution/: solve.sh with build_scene.py, controller.py and vehicle.py, and the oracle token, so the bay mission's observations carry the true state), frozen at hard/pr31 200b2da before the fixed hidden set was selected, measured by full verifies of this grader on that set (tests/hidden/fixed_set.json of bc3c091: missions b20e-01 and b20e-02, the scene probes at seed 0) the separate verifier's way: environment/setup/setup.sh, solve.sh as the agent, then the agent's home left with the submission alone (root-owned, no ~/given, no staged solution) and tests/test.sh as root in the staged tests folder, the verdict through ROBOTICS_GRADER_VERDICT_PATH; each in a fresh task container (arb-eval-prebuild/pr31v2:1) with one RTX 4090 and 8 cores, on apollo, 2026-11-06: two at once, one on each GPU, and a third beside them, the reference behind the leak audit's spy wrapper (recheck). All three scored acceptance_score 0.956417 (combine mission_gate, progress_gate true), every metric of the three verdicts identical: the five scene sections 1.0 each (layout, physics, steam, hoist, fleet; every check 1.0), the mission section 0.9564 (b20e-01 done at 324.5 s, b20e-02 at 365.0 s, 6 of 6 parts in the crate each, the fire out at 100.0 s and 90.2 s with 1.1 L poured and at most 0.005 L spilt; in_time 0.851, swing 0.536 from swings of 0.143 and 0.221 m, no_collisions 0.9 for one touch of the vehicle's wheel on the crate in b20e-01, every other check 1.0); privileged_mode 1, egress guard seccomp, the match lock held (1885 of 2071 probes). Each verify took 29 min: one Isaac Sim start compiling shaders for 7 to 9 min (the canary's or the first probe's), the two missions 7.8 to 8.3 min each (about 23 ms a control step).",
+  "reference_commit": "hard/pr31 bc3c091 (the fixed hidden set, on which the full verifies ran; solution/ frozen at 200b2da, unchanged since)",
+  "note": "full_at 0.98: the verifies agree to 4 decimals (to the last digit, as every check does), the rule's case for 0.98. Nothing in a verify draws from OS entropy or the clock any more (the scene probes at seed 0, each mission's noise seed and lock key from the set) and the mission is a lockstep exchange, so the reference repeats exactly, whatever the load: in development one day ran three times, two at once in one container and one on the other GPU, identical in every number, and one selection candidate ran twice, with and without the reference's own log in different slots, identical. The 2 % below the value is left for what other hardware or a later engine could change. Under another combination (tests/review/scoring_options.md) the anchor and full_at are in by_combine.",
   "by_combine": {
     "mission_gate": {
-      "value": 0.9537,
-      "full_at": 0.92
+      "value": 0.9564,
+      "full_at": 0.98
     },
     "weighted": {
-      "value": 0.9764,
-      "full_at": 0.96
+      "value": 0.9765,
+      "full_at": 0.98
     },
     "mission_0.8": {
-      "value": 0.9675,
-      "full_at": 0.94
+      "value": 0.9651,
+      "full_at": 0.98
     },
     "mission_gate.progress_gate": {
-      "value": 0.9537,
-      "full_at": 0.92
+      "value": 0.9564,
+      "full_at": 0.98
     },
     "weighted.progress_gate": {
-      "value": 0.9764,
-      "full_at": 0.96
+      "value": 0.9765,
+      "full_at": 0.98
     },
     "mission_0.8.progress_gate": {
-      "value": 0.9675,
-      "full_at": 0.94
+      "value": 0.9651,
+      "full_at": 0.98
     }
   },
-  "by_combine_note": "The anchor and full_at under each combination of grader_config.json (`combine`, with `.progress_gate` when `progress_gate` is true); the grader uses the entry of the combination in use (the top-level pair is that of the default, mission_gate.progress_gate). Each value is the lowest of the same eight full verifies under that combination: mission_gate 0.9537 and weighted 0.9764 (0.976359) from the verify on 2271f1c, mission_0.8 0.9675 (0.96754) from the leak audit's on bddeddc. full_at as sized on 2026-11-04 by the rule in the note and kept with the lower values, as the owner kept the default's: weighted 0.96 (the rule still gives 0.96), mission_0.8 0.94 (the rule now allows 0.95). The progress gate changes none of the reference's numbers: it completes all three jobs in every run, the fire out.",
-  "history": "Before 2026-11-04's decision the value was 0.9584, the lowest of the three sizing verifies only (by_combine weighted 0.979, mission_0.8 0.9717); the later verifies (2271f1c, 596374b, the leak audit's, validate-5e2c3b6a's) were recorded beside it and not folded in.",
-  "recheck": "ale validate on this anchor's own commit (validate-2af90a2c, hard/pr31 540c35b, the engine at 1cdbc02 with graphics, one RTX 4090): the oracle pass scored 0.9132 (hoist 0.936, the twin's tip-angle check failed: tilt 43.2 deg against the truth's 25.9; mission 0.9393: privileged, both missions done with 6 of 6 parts, at 373 s and 425.5 s, one of them with two contacts of the vehicle), reward 1.0 (ratio 0.9575, over full_at 0.92). It is below the value. Folded in, the same rule would give value 0.9132 with full_at 0.96 (414 acceptances, mean 0.944, sd 0.026, the lowest 0.8803): a full reward from 0.8767 up against this anchor's 0.8774, so the rewards would differ by under 0.1 %. Not folded in: the value is the one the owner set."
+  "by_combine_note": "The anchor and full_at under each combination of grader_config.json (`combine`, with `.progress_gate` when `progress_gate` is true); the grader uses the entry of the combination in use (the top-level pair is that of the default, mission_gate.progress_gate). Each value is the lowest of the same three full verifies under that combination, from the verdicts' acceptance.* metrics, rounded to 4 decimals: mission_gate 0.956417, weighted 0.976465, mission_0.8 0.965134, the same three with the progress gate, which changes none of the reference's numbers (it completes all three jobs in both runs). The verifies agree under every combination, so full_at is 0.98 for each by the same rule.",
+  "history": "Round 2 (2026-11-04 to 2026-11-05), when each verify drew its own days from round 2's narrower ranges (the vehicle within 0.15 m and 8 degrees of its bay, the pan within 0.30 m, the lever 0-30 degrees, 2-4 upright parts a table, one 7 m/s gust) and its own hoist-probe moves: value 0.9537, full_at 0.92 (the lowest of eight full verifies of the reference, the owner's decision of 2026-11-04; by_combine weighted 0.9764 / 0.96, mission_0.8 0.9675 / 0.94); before that decision 0.9584, the lowest of the three sizing verifies. Those verifies ranged from 0.9132 (ale validate's oracle pass on 540c35b) to 0.9803, the spread coming from the days and the hoist probe's draws; with the fixed set there is no such spread left.",
+  "recheck": "The third full verify above is the recheck, and the leak audit: the same reference behind a run.sh that started a spy beside the controller, as the agent's account, for both missions. Every internet socket it tried was refused by the seccomp filter (AF_INET and AF_INET6, TCP and UDP, to the internet and to 127.0.0.1 and ::1, raw ICMP, packet, netlink, vsock; Unix sockets worked); every read of the grader's files was refused (/opt/ale/tests: the set, the config, the grader, the anchor; the probe's folders in the verify's work folder: the config with the days, the probes' code, the real bay's layer); of the other accounts' processes (root's and the probe's) environ, fd, mem and maps were refused and the command lines, readable as on any Linux, held nothing of the set. It scored acceptance_score 0.956417, every metric as the two above. ale validate on this anchor's commit is the maintainers' to run; its oracle pass is the same full verify on the same set."
 }
