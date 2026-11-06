@@ -80,6 +80,8 @@ def main():
     ap.add_argument("--frames-out", default=None, metavar="DIR")
     ap.add_argument("--frames-at", default=None, metavar="PLAN")
     ap.add_argument("--frames-sensors", default="all", metavar="IDS")
+    ap.add_argument("--probe-set", action="append", default=[], metavar="DOTTED.KEY=JSON",
+                    help="a maintainer's bench: set a key of the probe's config (e.g. sensors.bench.lag_check_every=10)")
     a = ap.parse_args()
     config = json.load(open(os.path.join(TESTS, "grader_config.json")))
     truth = json.load(open(os.path.join(TESTS, "truth.json")))
@@ -137,6 +139,13 @@ def main():
             plan = json.load(open(a.frames_at)) if os.path.isfile(a.frames_at) else json.loads(a.frames_at)
         ids = "all" if a.frames_sensors == "all" else [x for x in a.frames_sensors.split(",") if x]
         cfg_probe["frames_out"] = {"dir": os.path.join(work, "out", f"frames_{a.index}"), "plan": dict(plan, sensors=ids)}
+    for kv in a.probe_set:
+        key, val = kv.split("=", 1)
+        node = cfg_probe
+        parts = key.split(".")
+        for k in parts[:-1]:
+            node = node.setdefault(k, {})
+        node[parts[-1]] = json.loads(val)
     verify.write_probe_config(work, cfg_probe)
     print(f"[mission] work {work}; mission {a.index} ({mission['id']}) of {a.set_file}; privileged={privileged} mismatch={mismatch}", flush=True)
     if a.settle:
@@ -181,8 +190,9 @@ def main():
             for m, files in by_set.items():
                 np.savez_compressed(os.path.join(a.frames_out, f"{m}.npz"), **{sid: np.load(f) for sid, f in files.items()})
                 n += 1
-            if os.path.isfile(os.path.join(src, "index.jsonl")):
-                shutil.copy(os.path.join(src, "index.jsonl"), os.path.join(a.frames_out, "index.jsonl"))
+            for f in ("index.jsonl", "manifest.json"):
+                if os.path.isfile(os.path.join(src, f)):
+                    shutil.copy(os.path.join(src, f), os.path.join(a.frames_out, f))
             shutil.rmtree(src, ignore_errors=True)
         summary["frames_exported"] = n
     if a.compare:
@@ -196,7 +206,7 @@ def main():
                                    day_sha256=day_digest(spec["missions"][a.index]["day"])),
                       submission_sha256=hashes, privileged=privileged, options=dict(time_limit=a.time_limit, settle=a.settle, no_token=a.no_token,
                                                                                      program_env=a.program_env, sensors=a.sensors,
-                                                                                     frames_out=a.frames_out, frames_at=a.frames_at),
+                                                                                     frames_out=a.frames_out, frames_at=a.frames_at, probe_set=a.probe_set),
                       summary=summary, data=data)
         with open(a.out, "w") as f:
             json.dump(record, f, indent=1, default=str)

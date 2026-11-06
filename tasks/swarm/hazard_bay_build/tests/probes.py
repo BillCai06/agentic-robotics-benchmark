@@ -327,6 +327,7 @@ def canary_render(out):
     t0 = time.time()
     out["dress"] = mission_stage.dress(path, {}, scfg["look"])
     s = Scene(path)
+    out["look_physics"] = look_physics(s)[:8]
     s.start()
     out["open_s"] = round(time.time() - t0, 2)
     plan_, poses = {"sensors": [], "not_streamed": []}, {}
@@ -368,9 +369,22 @@ def canary_render(out):
             checks[sd["id"]] = dict(kind=kind, ok=bool(good > 0.1 and np.all(np.isfinite(fr))), valid_share=round(good, 3))
     out["checks"] = checks
     out["clock_ok"] = bool(warm and rig.stats["lag_anomalies"] == 0)
-    out["ok"] = bool(out["clock_ok"] and all(c["ok"] for c in checks.values()))
+    out["ok"] = bool(out["clock_ok"] and all(c["ok"] for c in checks.values()) and not out["look_physics"])
     out["gpu"] = gpu_memory()
     rig.close()
+
+
+def look_physics(s):
+    """The prims under the look and the grader's sensors that carry a physics schema in the open stage (none: the dress
+    removed the hall's; a stage that still has one is not opened for the mission)."""
+    import mission_stage
+    bad = []
+    for top in (mission_stage.LOOK, mission_stage.SENSORS):
+        tp = s.prim(top)
+        for p in (Usd.PrimRange(tp, Usd.TraverseInstanceProxies()) if tp.IsValid() else []):
+            if mission_stage._physics_names(p) or mission_stage._physics_typed(p):
+                bad.append(p.GetPath().pathString)
+    return bad
 
 
 def gpu_memory():
@@ -1059,6 +1073,10 @@ def control(out):
     out["setup_stage"] = "open"
     t0 = time.time()
     s = Scene(stage_path)
+    if sensors_on:
+        bad = look_physics(s)
+        if bad:
+            raise RuntimeError(f"physics under the look in the open stage: {bad[:4]}")
     control_sim.prepare(s.stage, hidden=day, fleet_root=info["fleet_root"], rope_root=info["rope_root"])
     s.start()
     timing["open_s"] = round(time.time() - t0, 2)
@@ -1070,14 +1088,15 @@ def control(out):
     out["mission"] = sim.mission()
     timing["init_s"] = round(time.time() - t0, 2)
     rig, mission_extra, export = None, {}, None
-    pv_at = {}  # (a maintainer's frame export: the true state at each capture step)
+    pv_at, own_at = {}, {}  # (a maintainer's frame export: the true state and the robots' own numbers at each capture step)
     if sensors_on:
         out["setup_stage"] = "sensors"
         t0 = time.time()
         bodies = BodyPoses(s, sim)
         fx = CFG.get("frames_out")  # (review/run_mission.py --frames-out: never set by the grader)
         if fx:
-            export = sensor_rig.Export(fx["dir"], fx.get("plan"), event_times=lambda: event_times(sim), truth_at=lambda n: pv_at.get(n))
+            export = sensor_rig.Export(fx["dir"], fx.get("plan"), event_times=lambda: event_times(sim), truth_at=lambda n: pv_at.get(n),
+                                       own_at=lambda n: own_at.get(n))
         rig = sensor_rig.SensorRig(s.sim, s.stage, plan_, scfg, frames_dir, SEED, bodies=bodies, needle=needle_of(s, out["dress"]["needle"]),
                                    pressure=sim.pressure, log=lambda *a: print("[sensors]", *a, flush=True), export=export)
         rig.open_slots(sensor_rig.manifest(plan_, scfg))
@@ -1115,9 +1134,13 @@ def control(out):
                 uj = {n: (sim.av[n].get_dof_positions()[0], sim.av[n].get_dof_velocities()[0]) for n in UAVS if uav_dofs[n]}
                 vacuum = bool(sim.ugv is not None and sim.ugv["held"] is not None)
                 w = wo.build(obs, ugv_truth, uj, vacuum, frames)
+                if export is not None and t % rig.every == 0:
+                    own_at[t // rig.every] = dict(time=w["time"], uav=w["uav"], ugv=w.get("ugv"))
+                    for old in [c for c in own_at if c < t // rig.every - 64]:
+                        del own_at[old]
                 if privileged:
                     w["privileged"] = privileged_state(sim)
-                    if export is not None and t % (rig.every if rig else 6) == 0:
+                    if export is not None and t % rig.every == 0:
                         pv_at[t // rig.every] = w["privileged"]
                         for old in [c for c in pv_at if c < t // rig.every - 64]:
                             del pv_at[old]

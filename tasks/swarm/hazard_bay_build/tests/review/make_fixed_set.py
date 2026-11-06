@@ -32,6 +32,12 @@ lost or crashed, the bucket never dropped, no abort or error, the day's parts ex
 more than 2 cm during the pre-roll. Every result must come from the frozen reference (`--frozen`: sha256sum lines of
 the reference's files; each one the submission holds must match). Writes the set with a `source` that lists every
 candidate's outcome.
+
+Round 4 (spec section 4.2): a candidate is considered only if it passes the observability check first
+(`check_observability.py`, run on every candidate of the batch before any candidate runs: `<results>/<id>.obs.json`,
+its code hashed into `--frozen` as `tests/review/check_observability.py`); one that fails it is dropped before it
+runs and recorded with the failing row. More than one candidate in six failing the check stops the selection: the
+thresholds or the generator are revisited before a new batch is drawn. `--no-observability` selects as round 3 did.
 """
 
 import argparse
@@ -364,9 +370,25 @@ def cmd_select(a):
     check_missions([{k: m[k] for k in ("id", "noise_seed", "lock_key", "day")} for m in cands["missions"]])
     frozen = read_frozen(a.frozen)
     kept, lines = [], []
+    obs_failed, obs_hash = 0, None
     for m in cands["missions"]:
         path = os.path.join(a.results, f"{m['id']}.json")
         label = f"{m['id']} (draw seed {m['draw_seed']})"
+        if not a.no_observability and len(kept) < a.k:  # (the observability check, run on every candidate before any ran)
+            op = os.path.join(a.results, f"{m['id']}.obs.json")
+            if not os.path.isfile(op):
+                raise SystemExit(f"{m['id']} has no observability result ({op}): run check_observability.py on the batch first")
+            obs = json.load(open(op))
+            want = next((v for k, v in frozen.items() if k.endswith("check_observability.py")), None)
+            if want is None or obs.get("check_file_sha256") != want:
+                raise SystemExit(f"{op}: not the frozen observability check")
+            obs_hash = obs.get("check_sha256")
+            if not obs.get("ok"):
+                obs_failed += 1
+                worst = "; ".join(f"row {k}: {json.dumps({kk: vv for kk, vv in obs['rows'][k].items() if kk in ('share', 'px2', 'px', 'n', 'needle_px', 'dial_px')})}"
+                                  for k in obs.get("failed", [])[:3])
+                lines.append(f"{label}: not considered, a target not observable ({worst})")
+                continue
         if len(kept) >= a.k:
             if os.path.isfile(path):
                 why = fails(json.load(open(path)))
@@ -393,6 +415,11 @@ def cmd_select(a):
         else:
             kept.append(m)
             lines.append(f"{label}: kept")
+    if obs_failed > len(cands["missions"]) / 6.0:
+        for line in lines:
+            print(line)
+        raise SystemExit(f"{obs_failed} of {len(cands['missions'])} candidates failed the observability check: revisit the thresholds or the "
+                         "generator before a new batch is drawn")
     if len(kept) < a.k:
         for line in lines:
             print(line)
@@ -408,7 +435,11 @@ def cmd_select(a):
               "the mission's lock key and noise seed, no time limit); kept: the first " + str(a.k) + " that passed the criterion fixed "
               "before any ran: the run ends done (all three jobs, everything still), 6 of 6 parts in the crate, steam and fire out, "
               "no robot lost or crashed, the bucket never dropped, no abort or error, the day's parts exactly the stage's, no part "
-              "moved more than 2 cm during the pre-roll. Candidates: " + " | ".join(lines) + ".")
+              "moved more than 2 cm during the pre-roll"
+              + ("" if a.no_observability else
+                 f"; every candidate first passed the pre-registered observability check (tests/review/check_observability.py, its code "
+                 f"and thresholds sha256 {obs_hash}), run on the whole batch before any candidate ran")
+              + ". Candidates: " + " | ".join(lines) + ".")
     out = dict(format=SET_FORMAT, scene_probes={g: 0 for g in SCENE_PROBES}, missions=missions, source=source)
     with open(a.out, "w") as f:
         json.dump(out, f, indent=1)
@@ -432,6 +463,7 @@ def main():
     s.add_argument("--k", type=int, default=2)
     s.add_argument("--frozen", required=True)
     s.add_argument("--out", required=True)
+    s.add_argument("--no-observability", action="store_true")
     a = ap.parse_args()
     dict(draw=cmd_draw, corners=cmd_corners, select=cmd_select)[a.cmd](a)
 

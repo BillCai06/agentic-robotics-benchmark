@@ -14,10 +14,13 @@ by the grader in the real bay, and how the frames reach the program.
   intrinsics (pinhole, square pixels, clipping 0.01-100 m), and one equirectangular range camera per lidar head;
   posed at each capture from the body's true pose (PhysX tensor views, read only) composed with the mount. Nothing of
   the agent's camera prims reaches the renderer.
-- **The schedule**: every `every` control steps all sensors are captured together (one `SimulationContext.render()`,
-  physics held off); a read returns the previous render (one capture period old), which the frame clock (a grader-only
-  depth product looking at a quad moved to 1 + 0.25 (n mod 64) m) proves: frames are stamped with the capture the
-  clock decodes, and a mismatch is counted (`lag_anomalies`).
+- **The schedule**: every `every` control steps all sensors are captured together: one Replicator orchestrator step
+  (`rep.orchestrator.step(rt_subframes=1, delta_time=0)`, physics held off: `/app/player/playSimulations` false around
+  it), after which every product's read shows that capture (measured in P1: a plain `SimulationContext.render()` read
+  showed the render 2 to 7 renders back, varying; the orchestrator's was fresh in every read). The frame clock (a
+  grader-only depth product looking at a quad moved to 1 + 0.25 (n mod 64) m) proves it: frames are stamped with the
+  capture the clock decodes, a mismatch is counted (`lag_anomalies`). The processed frame set is held for one capture
+  period and written to its slots at the next capture step: delivered `delay` steps after its capture.
 - **Processing**: thermal = the instance segmentation mapped to the stated temperatures (the fire pan hot while it
   burns, then cooling) + NETD noise; depth = z-depth in range + noise; lidar = the range image sampled at the beams +
   noise; RGB = the renderer's sRGB, repacked RGBA -> RGB. Every frame's noise from its own stream
@@ -38,6 +41,11 @@ import struct
 import time
 
 import numpy as np
+
+try:  # (OpenCV's SIMD repack of an RGBA frame to RGB: a tenth of NumPy's strided copy)
+    import cv2
+except ImportError:
+    cv2 = None
 
 HEADER = struct.Struct("<8sQQQdIIIIQ")  # magic, seq, n, t, time, width, height, channels, dtype, payload bytes
 HEADER_BYTES = 64
@@ -88,8 +96,13 @@ class Slot:
         """Frame n (captured at step t, time tm) into this slot. `arr` is the frame (an RGBA image is cut to RGB)."""
         self.seq += 1
         struct.pack_into("<Q", self.mm, 8, self.seq)
-        a = arr[..., :3] if (self.c == 3 and arr.ndim == 3 and arr.shape[2] == 4) else arr
-        np.copyto(self.payload, a.reshape(self.shape), casting="unsafe")
+        if self.c == 3 and arr.ndim == 3 and arr.shape[2] == 4:
+            if cv2 is not None and arr.dtype == np.uint8 and arr.flags.c_contiguous:
+                cv2.cvtColor(arr, cv2.COLOR_RGBA2RGB, dst=self.payload)
+            else:
+                np.copyto(self.payload, arr[..., :3], casting="unsafe")
+        else:
+            np.copyto(self.payload, arr.reshape(self.shape), casting="unsafe")
         struct.pack_into("<QQd", self.mm, 16, int(n), int(t), float(tm))
         self.seq += 1
         struct.pack_into("<Q", self.mm, 8, self.seq)
@@ -451,7 +464,15 @@ class SensorRig:
                           stale=0, bytes=0)
         self.digest = {s["id"]: hashlib.blake2b(digest_size=8) for s in self.sens}
         self.export = export
+        self.bench = dict(cfg.get("bench") or {})
         self.Gf, self.UsdGeom = Gf, UsdGeom
+        import carb
+        import omni.replicator.core as rep
+        self.settings, self.rep = carb.settings.get_settings(), rep
+        self.read_mode = cfg.get("read", "orchestrator")
+        self.near = float(cfg["clip_m"][0])
+        self.lag = 0 if self.read_mode == "orchestrator" else 1  # (the capture a read shows: n - lag)
+        self.held = None  # (the processed frame set waiting for its delivery step)
 
     # -- the frame clock ------------------------------------------------------------------------------------------
     def _clock_scene(self, ck):
@@ -494,6 +515,9 @@ class SensorRig:
             self.slots.append([Slot(os.path.join(self.frames_dir, f"{s['stem']}.{j}"), sm["width"], sm["height"], sm["channels"], sm["dtype"])
                                for j in range(int(self.cfg["slots"]))])
         write_excl(os.path.join(self.frames_dir, "manifest.json"), json.dumps(man, indent=1).encode())
+        if self.export is not None:  # (the export keeps the manifest beside its frames)
+            with open(os.path.join(self.export.dir, "manifest.json"), "w") as f:
+                json.dump(man, f, indent=1)
 
     # -- posing ---------------------------------------------------------------------------------------------------
     def pose_all(self, n):
@@ -551,7 +575,7 @@ class SensorRig:
             ri, ci = s["grid"]
             img = np.asarray(arr, dtype=np.float32)
             img = img.reshape(img.shape[0], img.shape[1]) if img.ndim == 3 else img
-            r = img[np.ix_(ri, ci)]
+            r = img[np.ix_(ri, ci)] + self.near  # (the renderer's distance_to_camera runs from the near clipping plane)
             lo, hi = sm["range_m"]
             ok = np.isfinite(r) & (r >= lo) & (r <= hi)
             rn = r + float(sm["noise"]["sigma_m"]) * rng.standard_normal(r.shape, dtype=np.float32)
@@ -559,8 +583,16 @@ class SensorRig:
         raise ValueError(s["kind"])
 
     def render(self):
+        """One capture: the orchestrator's step (every product's read then shows it), or a plain app update."""
         t0 = time.perf_counter()
-        self.ctx.render()
+        if self.read_mode == "orchestrator":
+            self.settings.set_bool("/app/player/playSimulations", False)  # (as SimulationContext.render does: no physics)
+            try:
+                self.rep.orchestrator.step(rt_subframes=1, delta_time=0.0, pause_timeline=False)
+            finally:
+                self.settings.set_bool("/app/player/playSimulations", True)
+        else:
+            self.ctx.render()
         return 1000.0 * (time.perf_counter() - t0)
 
     def warm_up(self, max_updates=400):
@@ -576,7 +608,8 @@ class SensorRig:
             first = ms if first is None else first
             reads = self.P.read()
             dec = self._clock_decode(reads[-1][0])
-            ok = dec is not None and prev_n is not None and dec == prev_n % self.clock_ck["modulo"]
+            want = n if self.lag == 0 else prev_n
+            ok = dec is not None and want is not None and dec == want % self.clock_ck["modulo"]
             for (arr, _), s in zip(reads[:-1], self.sens):
                 sm = s["stream"]
                 if arr is None or not getattr(arr, "size", 0):
@@ -615,12 +648,14 @@ class SensorRig:
         st["pose_ms"].append(1000.0 * (t1 - t0))
         st["render_ms"].append(r_ms)
         st["read_ms"].append(1000.0 * (t3 - t2))
-        if n == 0:  # (step 0 renders capture 0; its read is the warm-up's, discarded)
+        if n == 0 and self.lag:  # (one render a capture: step 0's read is the warm-up's, discarded)
             return self.delivered
-        expect = n - 1
+        expect = n - self.lag
         m = expect
         if dec is None or dec != expect % self.clock_ck["modulo"]:
             st["lag_anomalies"] += 1
+            if len(st.setdefault("anomalies", [])) < 20:
+                st["anomalies"].append([int(n), dec])
             if dec is not None:  # the capture the clock shows: the latest one with that index
                 cands = [c for c in self.rec if c % self.clock_ck["modulo"] == dec and c <= n]
                 m = max(cands) if cands else expect
@@ -634,6 +669,14 @@ class SensorRig:
         for i, ((arr, info), s) in enumerate(zip(reads[:-1], self.sens)):
             frames.append(self.process(i, s, arr, info, m))
         t4 = time.perf_counter()
+        if self.lag == 0:  # (fresh: this capture is held one period, the held one delivered now)
+            (m, cap, frames), self.held = (self.held if self.held is not None else (None, None, None)), (m, cap, frames)
+            self.last_m = self.held[0]
+            if m is None:
+                st["cpu_ms"].append(1000.0 * (t4 - t3))
+                if self.bench:
+                    self._bench(n, self.held[0], reads)
+                return self.delivered
         slot = m % int(self.cfg["slots"])
         nbytes = 0
         for i, (s, fr) in enumerate(zip(self.sens, frames)):
@@ -648,13 +691,78 @@ class SensorRig:
         st["write_ms"].append(1000.0 * (t5 - t4))
         st["frame_sets"] += 1
         st["bytes"] = nbytes
-        self.last_m = m
+        self.last_m = max(self.last_m, m)
         self.delivered = {"n": int(m), "t": int(cap["t"]), "time": cap["time"], "slot": int(slot)}
         if self.export is not None:
             self.export.offer(m, cap, self.sens, frames)
-        for old in [c for c in self.rec if c < m - 4]:
+        for old in [c for c in self.rec if c < m - 8]:
             del self.rec[old]
+        if self.bench:
+            self._bench(n, self.held[0] if self.lag == 0 else m, reads)
         return self.delivered
+
+    # -- a maintainer's bench (`sensors.bench` in the probe's config; the grader never sets it) ----------------------
+    def _bench(self, n, m, reads):
+        """lag_check_every N: at every Nth capture render the same state again and read (B); the next capture's
+        ordinary read (C) must show that render in every depth-like product, bit for bit (the one-capture lag is the
+        same for every product). lidar_check_at [captures]: each lidar's noise-free ranges at those captures against
+        PhysX ray casts that hit a static collider of the real bay."""
+        b = self.bench
+        lc = b.setdefault("_lag", dict(points=0, fresh_b=0, equal=0, differ=0, by_kind={}))
+        every = int(b.get("lag_check_every") or 0)
+        if every and n >= 2 and n % every == 0:  # (the same state again: a fresh read of every product must not differ)
+            a_reads = [(np.array(a) if a is not None else None, i) for a, i in reads]
+            self.render()
+            rb = self.P.read()
+            lc["points"] += 1
+            lc["fresh_b"] += int(self._clock_decode(rb[-1][0]) == (n - self.lag) % self.clock_ck["modulo"])
+            for (arr, _), (barr, _), s in zip(a_reads[:-1], rb[:-1], self.sens):
+                if s["kind"] == "rgb":
+                    continue
+                same = arr is not None and barr is not None and np.array_equal(np.asarray(arr), np.asarray(barr))
+                lc["equal" if same else "differ"] += 1
+                k = lc["by_kind"].setdefault(s["kind"], [0, 0])
+                k[0 if same else 1] += 1
+        if m in set(b.get("lidar_check_at") or []):
+            b.setdefault("_lidar", []).append(self._lidar_check(m, reads))
+
+    def _lidar_check(self, m, reads):
+        from omni.physx import get_physx_scene_query_interface
+        sq = get_physx_scene_query_interface()
+        out = []
+        for (arr, _), s in zip(reads[:-1], self.sens):
+            if s["kind"] != "lidar":
+                continue
+            sm = s["stream"]
+            ri, ci = s["grid"]
+            img = np.asarray(arr, dtype=np.float32)
+            img = img.reshape(img.shape[0], img.shape[1]) if img.ndim == 3 else img
+            r = img[np.ix_(ri, ci)] + self.near
+            bp, bq = self.bodies(s["stage_body"])
+            o = bp + rotm(bq) @ np.array(s["pos_in_body"])
+            R = rotm(qmul(bq, np.array(s["quat_in_body"])))
+            e = np.radians(beams(sm)[1])
+            a = 2 * np.pi * np.arange(sm["width"]) / sm["width"]
+            errs, n_hit, n_both, n_static = [], 0, 0, 0
+            for c in range(0, sm["height"], max(1, sm["height"] // 8)):
+                for k in range(0, sm["width"], 8):
+                    d = R @ np.array([math.cos(e[c]) * math.cos(a[k]), math.cos(e[c]) * math.sin(a[k]), math.sin(e[c])])
+                    h = sq.raycast_closest(tuple(float(v) for v in o), tuple(float(v) for v in d), float(sm["range_m"][1]))
+                    if not h or not h.get("hit"):
+                        continue
+                    n_hit += 1
+                    col = str(h.get("collision") or h.get("rigidBody") or "")
+                    if not col.startswith("/World/Facility/") or col.startswith("/World/Facility/Items"):
+                        continue
+                    n_static += 1
+                    if np.isfinite(r[c, k]) and r[c, k] > 0:
+                        n_both += 1
+                        errs.append(float(r[c, k]) - float(h["distance"]))
+            ae = np.abs(np.array(errs)) if errs else np.zeros(1)
+            out.append(dict(sensor=s["id"], capture=m, rays_hit=n_hit, static=n_static, both=n_both,
+                            median_m=round(float(np.median(ae)), 4), p95_m=round(float(np.percentile(ae, 95)), 4), max_m=round(float(ae.max()), 4),
+                            within_2cm=round(float(np.mean(ae <= 0.02)), 4), mean_signed_m=round(float(np.mean(errs)) if errs else 0.0, 4)))
+        return out
 
     def summary(self):
         st = self.stats
@@ -663,9 +771,11 @@ class SensorRig:
             return dict(mean=round(float(np.mean(v)), 2), p90=round(float(np.percentile(v, 90)), 2), max=round(float(np.max(v)), 1)) if v else None
         return dict(sensors=len(self.sens), products=len(self.P.items), frame_sets=st["frame_sets"], render_ms=mp(st["render_ms"]),
                     read_ms=mp(st["read_ms"]), cpu_ms=mp(st["cpu_ms"]), write_ms=mp(st["write_ms"]), pose_ms=mp(st["pose_ms"]),
-                    bytes_per_set=st["bytes"], lag_anomalies=st["lag_anomalies"], lag_seen=st["lag_seen"], stale=st["stale"],
+                    bytes_per_set=st["bytes"], lag_anomalies=st["lag_anomalies"], lag_seen=st["lag_seen"], anomalies=st.get("anomalies", []),
+                    stale=st["stale"], read_mode=self.read_mode,
                     digests={k: v.hexdigest() for k, v in self.digest.items()}, warm_up=getattr(self, "warm", None), create_s=self.create_s,
-                    pinned=self.P.pinned, absent=sorted(self.P.absent))
+                    pinned=self.P.pinned, absent=sorted(self.P.absent), product_rtx=self.P.first_attrs,
+                    bench={k: v for k, v in self.bench.items() if k in ("_lag", "_lidar")} or None)
 
     def close(self):
         for row in self.slots or []:
@@ -679,12 +789,13 @@ class Export:
     `plan`: every (every Nth frame set), windows_s ([[t0, t1], ...]: every frame set in them), events ({name: [before_s,
     after_s]} around the moments `event_times()` reports), sensors (ids, or all)."""
 
-    def __init__(self, out_dir, plan_, event_times=None, truth_at=None):
+    def __init__(self, out_dir, plan_, event_times=None, truth_at=None, own_at=None):
         self.dir = out_dir
         os.makedirs(out_dir, exist_ok=True)
         self.plan = plan_ or {}
         self.event_times = event_times or (lambda: {})
         self.truth_at = truth_at or (lambda m: None)
+        self.own_at = own_at or (lambda m: None)  # (the robots' own numbers at the capture step: what a program has)
         self.buf = []  # (m, time, frames) of the last frame sets, for the windows before an event
         self.saved = set()
         self.index = open(os.path.join(out_dir, "index.jsonl"), "a")
@@ -715,7 +826,8 @@ class Export:
                 continue
             for sid, f in bfr:
                 np.save(os.path.join(self.dir, f"{bm:06d}_{sid}.npy"), f)
-            self.index.write(json.dumps(dict(n=bm, t=bcap["t"], time=bt, sensors=[sid for sid, _ in bfr], truth=self.truth_at(bm))) + "\n")
+            self.index.write(json.dumps(dict(n=bm, t=bcap["t"], time=bt, sensors=[sid for sid, _ in bfr], own=self.own_at(bm),
+                                             truth=self.truth_at(bm))) + "\n")
             self.index.flush()
             self.saved.add(bm)
             self.n += 1

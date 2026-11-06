@@ -415,13 +415,14 @@ camera at the lidar prim's pose, read at the beams' directions), each product se
 "performance", `omni:rtx:post:motionblur:enabled` false, `omni:rtx:post:dof:enabled` false,
 `omni:rtx:post:histogram:enabled` false (no automatic exposure), `omni:rtx:rt:ecoMode:enabled` false; the RGB frames
 are the `rgb` annotator's output, depth `distance_to_image_plane`, the lidars' ranges `distance_to_camera`, thermal
-the `instance_id_segmentation` mapped to the temperatures above. A render never steps the physics
-(`SimulationContext.render()`). One control step:
+the `instance_id_segmentation` mapped to the temperatures above. A capture is one Replicator orchestrator step
+(`rep.orchestrator.step(rt_subframes=1, delta_time=0, pause_timeline=False)` with `/app/player/playSimulations` off
+around it), after which every product's read shows that capture; it never steps the physics. One control step:
 
 1. the observation of the step: the noise drawn, the odometry's random walks moved on;
 2. at a capture step (t = 0, 6, 12, ...), after the observation's numbers: every streaming sensor posed from its body
-   and rendered once; the frame set captured 6 steps earlier is written to its slots and named in this step's
-   observation;
+   and rendered once, its frames processed and held; the frame set captured 6 steps earlier is written to its slots
+   and named in this step's observation;
 3. your action: the thrusts clamped (What you command), the vehicle's targets written, the grip applied;
 4. two physics steps of 1/120 s. Before each: the thrust and the wind on each flying robot's root body (no thrust on a
    lost one), the wind on the bucket, the lever kept where it is unless a robot has touched it within 0.5 s, the held

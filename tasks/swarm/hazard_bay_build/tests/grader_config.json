@@ -589,10 +589,11 @@
     "setup_timeout_s": 1200
   },
   "sensors": {
-    "note": "The bay mission's sensors (control.md, The sensors; tests/sensor_rig.py): every streamed sensor captured together every `every` control steps and delivered `delay` steps later in `slots` slot files; per robot the first cap.cameras cameras and cap.lidars lidars stream; the grader's cameras clip at clip_m; every render product pinned to `render` (the lidar heads and the frame clock, depth-only products, to range_settings); the thermal model; the gauge's scale; the lidar heads' render grid; the frame clock; the vehicle's odometry and the flying robots' encoders (tests/wire_obs.py); the real bay's look (mission_stage.dress); the render canary's fixed sensors. The per-model stream data are in catalog.sensors.*.stream.",
+    "note": "The bay mission's sensors (control.md, The sensors; tests/sensor_rig.py): every streamed sensor captured together every `every` control steps (read: one Replicator orchestrator step per capture, every product fresh; 'render': one plain render, a read then lags) and delivered `delay` steps later in `slots` slot files; per robot the first cap.cameras cameras and cap.lidars lidars stream; the grader's cameras clip at clip_m; every render product pinned to `render` (the lidar heads and the frame clock, depth-only products, to range_settings); the thermal model; the gauge's scale; the lidar heads' render grid; the frame clock; the vehicle's odometry and the flying robots' encoders (tests/wire_obs.py); the real bay's look (mission_stage.dress); the render canary's fixed sensors. The per-model stream data are in catalog.sensors.*.stream.",
     "every": 6,
     "delay": 6,
     "slots": 2,
+    "read": "orchestrator",
     "cap": {
       "cameras": 4,
       "lidars": 1

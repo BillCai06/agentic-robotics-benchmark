@@ -443,9 +443,10 @@ def dress(path, info, look):
     out = {}
     # the hall, physics-free
     UsdGeom.Xform.Define(st, LOOK)
-    hall = UsdGeom.Xform.Define(st, f"{LOOK}/Hall").GetPrim()
-    hall.GetReferences().AddReference(look["hall"])
-    out["hall_api_removed"], out["hall_prims_off"] = strip_physics(st, f"{LOOK}/Hall")
+    if look.get("hall"):  # (a maintainer's bench may leave the hall out: review/run_mission.py --probe-set)
+        hall = UsdGeom.Xform.Define(st, f"{LOOK}/Hall").GetPrim()
+        hall.GetReferences().AddReference(look["hall"])
+        out["hall_api_removed"], out["hall_prims_off"] = strip_physics(st, f"{LOOK}/Hall")
     # the photographs' two lights
     for L in look.get("lights") or []:
         lp = f"{LOOK}/Lights/{L['name']}"
