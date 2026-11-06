@@ -49,16 +49,17 @@ from the front, at least 40 px across the dial.
 
 **R9 — Honest sensors.** Every camera that counts is a `UsdGeom.Camera` with `arb:sensor_model` naming a catalog
 entry, and the camera's focal length and apertures are that entry's (within 2 %). Its mass counts toward the robot's.
+In the bay mission each camera that counts streams at its catalog resolution, up to four cameras and one lidar a robot
+(`control.md`, The sensors).
 
 **R10 — State.** Each robot's root prim carries `arb:disabled` (bool, false at the start); the hazard rules in
 `bay_brief.md` drive it, with `arb:steam_active` on `/World/Facility/SteamLine` and `arb:fire_active` on
 `/World/Facility/FirePan`, all written by the stage's own OmniGraph logic.
 
-**R11 — Seeing each other.** Each flying robot carries a lidar from the catalog (declared with `arb:sensor_model`):
-in the bay mission it is the only way a flying robot sees the other two, and your program gets nothing else about them.
-Think about what each robot must see (the others, the bucket below it, the pan) when you place its sensors: a camera
-reports the bucket only while the bucket's bottom centre is in its field of view, and it is taken where your scene puts
-it relative to the robot's root body (on an arm link it does not follow the arm: `control.md`).
+**R11 — Seeing each other.** Each flying robot carries a lidar from the catalog (declared with `arb:sensor_model`): in
+the bay mission its scan is how the fleet measures where the others are; the robots' own positions drift
+(`control.md`). Place every robot's sensors for what it must see: the others, the bucket below, the pan ahead, the
+lever, the dial, the tables' tops and the crate. A sensor rides on the body it is mounted on.
 
 **R12 — The program.** The fleet does the whole job under your program, `control.md`: the valve closed, the fire
 put out (a synchronised take-off, a level lift, a carry with little swing and little spill, the pour), every part off

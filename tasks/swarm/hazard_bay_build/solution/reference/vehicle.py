@@ -823,9 +823,16 @@ class Planner:
         return sum(math.dist(path[i], path[i + 1]) for i in range(len(path) - 1)) if path else 1e9
 
 
+def held_part(pv):
+    """The part the suction tool holds, by its wire name, from the true state (privileged.parts.*.held), or None: the
+    observation's own `ugv.vacuum` says only that it holds one."""
+    return next((n for n, q in pv["parts"].items() if q["held"]), None)
+
+
 class Privileged:
     """The reference's program on the true state (obs['privileged']). `s` is a plain dict (the controller deep-copies
-    it for repeated queries); every step is a dict in s['steps'] that keeps its own progress."""
+    it for repeated queries); every step is a dict in s['steps'] that keeps its own progress. The held part's name
+    comes from the true state (`held_part`), at the same instant the observation's `ugv.vacuum` reports."""
 
     def __init__(self, kin, mis, wheels):
         self.kin, self.mis, self.wheels = kin, mis, wheels
@@ -951,7 +958,7 @@ class Privileged:
             xy, psi, _, _ = self.pose(pv)
             st0 = s["steps"][0] if s["steps"] else {}
             log(f"status t={obs['time']:.1f} {st0.get('kind')} {st0.get('why', '')} phase={st0.get('phase')} at ({xy[0]:.2f}, {xy[1]:.2f}) "
-                f"heading {math.degrees(psi):.1f} lever {pv['lever']['deg']:.1f} holding {obs['ugv'].get('holding')} grip {s['grip']}")
+                f"heading {math.degrees(psi):.1f} lever {pv['lever']['deg']:.1f} holding {held_part(pv)} grip {s['grip']}")
         wheels = self.wheels(0.0, 0.0)
         for _ in range(4):  # (a step that is done at once lets the next one act in the same control step)
             if not s["steps"]:
@@ -1296,8 +1303,8 @@ class Privileged:
             if st["k"] >= len(st["path"]) - 1:
                 st.setdefault("t_last", obs["time"])
                 done = done or obs["time"] - st["t_last"] > 1.5
-            if obs["ugv"].get("holding") is not None or done:
-                st["phase"] = "held" if obs["ugv"].get("holding") is not None else "missed"
+            if held_part(pv) is not None or done:
+                st["phase"] = "held" if held_part(pv) is not None else "missed"
                 st["t_held"] = obs["time"]
                 if st["phase"] == "held":  # (the grip link's frame as it took the part, and the part's own axis that stands up)
                     st["G_hold"] = self.grip_frame(pv, self.joints(obs))[1].tolist()
@@ -1305,7 +1312,7 @@ class Privileged:
                     k = int(np.argmax(np.abs(pR[2, :])))
                     s.setdefault("rest", {})[name] = [k, 1.0 if pR[2, k] > 0 else -1.0]
                 tool = self.tool_world(s, pv, obs)
-                log(f"t={obs['time']:.1f} {name}: {st['phase']} ({obs['ugv'].get('holding')}) {obs['time'] - st['t0']:.1f} s into the pick; "
+                log(f"t={obs['time']:.1f} {name}: {st['phase']} ({held_part(pv)}) {obs['time'] - st['t0']:.1f} s into the pick; "
                     f"tool at {np.round(tool, 3).tolist()}, part top {np.round(st['top'], 3).tolist()}, box {part['lo']} {part['hi']}")
             return False
         if st["phase"] == "missed":
@@ -1616,7 +1623,7 @@ class Privileged:
         """To the crate's nearest open side (none outside the burning pan's ring: the vehicle holds the part and waits,
         the step's clock stopped), the part down where it fits, let go, check it landed inside; back out, except after
         the last part."""
-        held = obs["ugv"].get("holding")
+        held = held_part(pv)
         if "phase" not in st:
             if held is None:
                 return True
@@ -1818,7 +1825,7 @@ class Privileged:
             return stop, obs["time"] - st["t0"] >= st["seconds"]
         if k == "arm_line":
             if "path" not in st:
-                target = CARRY if (st["to"] == "tuck" and obs["ugv"].get("holding")) else TUCK
+                target = CARRY if (st["to"] == "tuck" and held_part(pv)) else TUCK
                 st["path"], w = self.line_path(s, pv, obs, self.carry_point(pv, target), np.array([0.0, 0.0, 1.0]), step=0.05)
                 st["k"] = 0
             return stop, self.follow(st, s, obs, st.get("speed", ARM_FAST), tol=0.06)

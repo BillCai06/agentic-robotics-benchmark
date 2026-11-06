@@ -22,6 +22,22 @@ heights as authored), its footprint centred as the layout check measures it (the
 Each flying robot gets the plant's rope (`bay_rig`) from the agent's own hook anchor (the hook joint's body and local
 position) to the bucket's ring facing its pad.
 
+`dress(path, info, look)` then makes the stage what the robots' sensors see (control.md, The sensors), changing
+nothing the simulation reads:
+
+- the hall: Isaac's `Simple_Warehouse` referenced at `/World/Look/Hall` at the identity (as the reference twin does), every
+  physics schema under it removed in the mission layer (its collision API schemas deleted, not switched off); its own
+  two lights come with it, and the photographs' two (a dome light of 300, a distant light of 1800 at 4 degrees) are
+  added under `/World/Look/Lights`;
+- every light under the robots switched off (intensity 0; a light prim also made invisible): the real bay's lights alone
+  light it;
+- the plant's rope links bound to the real bay's black, with the material purpose `full` (render only);
+- the pads' coplanar 1 mm strokes lifted apart by 0.1-0.3 mm (they have no colliders), so that they no longer z-fight;
+- the gauge's needle given a transform op at the head of its op order (identity), which the probe turns with the
+  pressure at each capture.
+
+The physics of `/World/Facility` and of the robots is not touched (`check` proves it on the built stage).
+
 pxr only, nothing executed; the grader's control probe builds it (as the probe account, into its own folder) before
 Kit opens it.
 """
@@ -32,7 +48,7 @@ import math
 import os
 import sys
 
-from pxr import Gf, Sdf, Usd, UsdGeom, UsdPhysics
+from pxr import Gf, Sdf, Usd, UsdGeom, UsdLux, UsdPhysics, UsdShade
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import bay_rig  # noqa: E402
@@ -381,6 +397,133 @@ def build(agent_scene, bay_layer, facts, out_path):
                 hooks={r: sv["robots"][r]["hook"] for r in UAVS}, collections_confined=cut)
 
 
+LOOK, SENSORS = "/World/Look", "/World/Sensors"
+NEEDLE_OP = "arb_gauge"
+
+
+def _physics_names(p):
+    """The physics API schemas applied to a prim (by name: UsdPhysics', PhysX's, deformables, particles)."""
+    return [a for a in p.GetAppliedSchemas() if a.startswith(("Physics", "Physx")) or any(k in a for k in ("Deformable", "Particle", "Attachment"))]
+
+
+def _physics_typed(p):
+    t = p.GetTypeName()
+    return t.startswith(("Physics", "Physx")) or _is_graph(p)
+
+
+def strip_physics(st, root):
+    """Every physics schema under `root` removed in the edit target, not switched off: each applied physics API schema
+    deleted from the prim's list, each typed physics prim and graph deactivated (an instance holding one is made
+    editable first). Returns (API schemas removed, prims deactivated)."""
+    n_api = n_typed = 0
+    for p in list(Usd.PrimRange(st.GetPrimAtPath(root), Usd.TraverseInstanceProxies())):
+        if not p.IsValid():
+            continue
+        names, typed = _physics_names(p), _physics_typed(p)
+        if not names and not typed:
+            continue
+        q = _editable(st, p.GetPath().pathString)
+        if typed:
+            q.SetActive(False)
+            n_typed += 1
+            continue
+        for a in names:
+            q.RemoveAppliedSchema(a)
+            n_api += 1
+    return n_api, n_typed
+
+
+def dress(path, info, look):
+    """Make the built mission stage at `path` what the robots' sensors see (the module's docstring); returns what it
+    did. `look`: the grader's `sensors.look` (the hall's asset, the lights, the rope material, the pads' lift, the
+    gauge)."""
+    layer = Sdf.Layer.FindOrOpen(path)
+    st = Usd.Stage.Open(layer)
+    st.SetEditTarget(layer)
+    out = {}
+    # the hall, physics-free
+    UsdGeom.Xform.Define(st, LOOK)
+    hall = UsdGeom.Xform.Define(st, f"{LOOK}/Hall").GetPrim()
+    hall.GetReferences().AddReference(look["hall"])
+    out["hall_api_removed"], out["hall_prims_off"] = strip_physics(st, f"{LOOK}/Hall")
+    # the photographs' two lights
+    for L in look.get("lights") or []:
+        lp = f"{LOOK}/Lights/{L['name']}"
+        if L["type"] == "DomeLight":
+            lt = UsdLux.DomeLight.Define(st, lp)
+        else:
+            lt = UsdLux.DistantLight.Define(st, lp)
+            lt.CreateAngleAttr(float(L.get("angle", 0.53)))
+            rot = Gf.Rotation(Gf.Vec3d(0, 0, 1), float(L.get("rotate_z_deg", 0.0))) * Gf.Rotation(Gf.Vec3d(1, 0, 0), float(L.get("rotate_x_deg", 0.0)))
+            UsdGeom.Xformable(lt).AddOrientOp().Set(Gf.Quatf(rot.GetQuat()))
+        lt.CreateIntensityAttr(float(L["intensity"]))
+    # no light under the robots
+    off = []
+    for r in ROBOTS:
+        root = st.GetPrimAtPath(f"{FLEET}/{r}")
+        for p in list(Usd.PrimRange(root, Usd.TraverseInstanceProxies())) if root.IsValid() else []:
+            if not p.HasAPI(UsdLux.LightAPI):
+                continue
+            q = _editable(st, p.GetPath().pathString)
+            UsdLux.LightAPI(q).CreateIntensityAttr(0.0)
+            if q.IsA(UsdLux.BoundableLightBase) or q.IsA(UsdLux.NonboundableLightBase):
+                UsdGeom.Imageable(q).MakeInvisible()
+            off.append(q.GetPath().pathString)
+    out["robot_lights_off"] = off
+    # the plant's ropes black, for rendering only
+    mat = UsdShade.Material(st.GetPrimAtPath(look["rope_material"]))
+    bound = 0
+    for rr in (info.get("rope_root") or {}).values():
+        for p in Usd.PrimRange(st.GetPrimAtPath(rr)):
+            if p.IsA(UsdGeom.Gprim):
+                UsdShade.MaterialBindingAPI.Apply(p).Bind(mat, UsdShade.Tokens.fallbackStrength, UsdShade.Tokens.full)
+                bound += 1
+    out["rope_geoms_bound"] = bound
+    # the pads' strokes lifted apart (visual prims: no collider under the pads)
+    lo, hi = [float(v) for v in look.get("pads_lift_m", (0.0001, 0.0003))]
+    lifted = 0
+    pads = st.GetPrimAtPath(look.get("pads", "/World/Facility/Pads"))
+    for pad in (pads.GetChildren() if pads.IsValid() else []):
+        strokes = [p for p in Usd.PrimRange(pad) if p.IsA(UsdGeom.Gprim) and not p.HasAPI(UsdPhysics.CollisionAPI)]
+        for k, p in enumerate(strokes):
+            lift = lo + (hi - lo) * (k / (len(strokes) - 1) if len(strokes) > 1 else 0.0)
+            op = next((o for o in UsdGeom.Xformable(p).GetOrderedXformOps() if o.GetOpType() == UsdGeom.XformOp.TypeTranslate), None)
+            if op is None:
+                op = UsdGeom.Xformable(p).AddTranslateOp(opSuffix="arb_lift")
+                op.Set(Gf.Vec3d(0.0, 0.0, lift))
+            else:
+                v = op.Get()
+                op.Set(type(v)(v[0], v[1], v[2] + lift))
+            lifted += 1
+    out["pad_strokes_lifted"] = lifted
+    # the gauge's needle: a head op the probe turns
+    needle = st.GetPrimAtPath(look["needle"])
+    xf = UsdGeom.Xformable(needle)
+    old_ops = xf.GetOrderedXformOps()
+    hop = xf.AddTransformOp(UsdGeom.XformOp.PrecisionDouble, NEEDLE_OP)
+    hop.Set(Gf.Matrix4d(1.0))
+    xf.SetXformOpOrder([hop] + old_ops, xf.GetResetXformStack())
+    m = xf.ComputeLocalToWorldTransform(Usd.TimeCode.Default()).RemoveScaleShear()
+    z = m.TransformDir(Gf.Vec3d(0, 0, 1))
+    rest = math.degrees(math.atan2(z[0], z[2]))  # (from vertical, clockwise seen from the bay: toward +x)
+    dial = UsdGeom.BBoxCache(Usd.TimeCode.Default(), PURPOSES, useExtentsHint=False).ComputeWorldBound(st.GetPrimAtPath(look["dial"])).ComputeAlignedRange()
+    centre = [(a + b) / 2 for a, b in zip(dial.GetMin(), dial.GetMax())]
+    out["needle"] = dict(path=look["needle"], op=f"xformOp:transform:{NEEDLE_OP}", rest_deg=round(rest, 4), axis_point=[round(float(v), 6) for v in centre])
+    if look.get("deinstance_robots"):
+        n = 0
+        for r in ROBOTS:
+            for _ in range(16):
+                inst = [p for p in Usd.PrimRange(st.GetPrimAtPath(f"{FLEET}/{r}"), Usd.TraverseInstanceProxies()) if p.IsInstance() and not p.IsInstanceProxy()]
+                if not inst:
+                    break
+                for p in inst:
+                    p.SetInstanceable(False)
+                    n += 1
+        out["robots_deinstanced"] = n
+    layer.Save()
+    return out
+
+
 def confine_collections(st):
     """A collection on the agent's prims that takes in the whole stage (`includeRoot`; a collision group's own or one
     it includes) would take in the real bay too, and PhysX honours it: the agent's collision filtering would reach the
@@ -456,6 +599,32 @@ def check(path, info=None):
     out["groups_reaching_real_bay"] = [p.GetPath().pathString for p in st.Traverse(Usd.TraverseInstanceProxies())
                                        if p.GetTypeName() == "PhysicsCollisionGroup" and _under(p.GetPath().pathString, MOUNT)
                                        and any(Usd.CollectionAPI(p, "colliders").ComputeMembershipQuery().IsPathIncluded(r) for r in real)]
+    # the dress (when there is one): no physics and no graph under the look and the sensors, one physics scene, no
+    # light under the robots, the plant's ropes bound for rendering
+    look_phys = []
+    for top in (LOOK, SENSORS):
+        tp = st.GetPrimAtPath(top)
+        for p in (Usd.PrimRange(tp, Usd.TraverseInstanceProxies()) if tp.IsValid() else []):
+            if _physics_names(p) or _physics_typed(p):
+                look_phys.append(p.GetPath().pathString)
+    out["dressed"] = st.GetPrimAtPath(f"{LOOK}/Hall").IsValid()
+    out["look_physics"] = look_phys[:20]
+    out["n_look_physics"] = len(look_phys)
+    out["one_physics_scene"] = len(out["scenes"]) == 1
+    lit = []
+    for r in ROBOTS:
+        rp = st.GetPrimAtPath(f"{FLEET}/{r}")
+        for p in (Usd.PrimRange(rp, Usd.TraverseInstanceProxies()) if rp.IsValid() else []):
+            if p.HasAPI(UsdLux.LightAPI) and (UsdLux.LightAPI(p).GetIntensityAttr().Get() or 0.0) > 0.0:
+                lit.append(p.GetPath().pathString)
+    out["robot_lights_on"] = lit
+    unbound = {}
+    for r in UAVS:
+        root = (info or {}).get("rope_root", {}).get(r) or f"{roots[r]}/{ROPE_NAME}"
+        rp = st.GetPrimAtPath(root)
+        geoms = [p for p in (Usd.PrimRange(rp) if rp.IsValid() else []) if p.IsA(UsdGeom.Gprim)]
+        unbound[r] = sum(1 for p in geoms if not UsdShade.MaterialBindingAPI(p).GetDirectBindingRel(UsdShade.Tokens.full).GetTargets())
+    out["rope_geoms_unbound"] = unbound
     return out
 
 

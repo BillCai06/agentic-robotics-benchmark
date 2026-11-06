@@ -1,7 +1,7 @@
 {
   "probe_timeout_s": 900,
   "probe_retries": 1,
-  "canary_timeout_s": 1500,
+  "canary_timeout_s": 2400,
   "scan_timeout_s": 300,
   "max_submission_bytes": 2147483648,
   "scoring_cap": 1.5,
@@ -92,7 +92,13 @@
         "focal": 4.0,
         "hap": 11.26,
         "vap": 7.04,
-        "mass": 0.06
+        "mass": 0.06,
+        "stream": {
+          "format": "uint8",
+          "channels": 3,
+          "unit": "sRGB",
+          "noise": null
+        }
       },
       "CAM-RGB-M": {
         "type": "rgb",
@@ -103,7 +109,13 @@
         "focal": 8.0,
         "hap": 11.26,
         "vap": 7.04,
-        "mass": 0.065
+        "mass": 0.065,
+        "stream": {
+          "format": "uint8",
+          "channels": 3,
+          "unit": "sRGB",
+          "noise": null
+        }
       },
       "CAM-RGB-T": {
         "type": "rgb",
@@ -114,7 +126,13 @@
         "focal": 16.0,
         "hap": 11.26,
         "vap": 7.04,
-        "mass": 0.09
+        "mass": 0.09,
+        "stream": {
+          "format": "uint8",
+          "channels": 3,
+          "unit": "sRGB",
+          "noise": null
+        }
       },
       "CAM-RGB-S": {
         "type": "rgb",
@@ -125,7 +143,13 @@
         "focal": 3.6,
         "hap": 4.8,
         "vap": 3.6,
-        "mass": 0.012
+        "mass": 0.012,
+        "stream": {
+          "format": "uint8",
+          "channels": 3,
+          "unit": "sRGB",
+          "noise": null
+        }
       },
       "THERM-A": {
         "type": "thermal",
@@ -136,7 +160,15 @@
         "focal": 1.7,
         "hap": 1.92,
         "vap": 1.44,
-        "mass": 0.015
+        "mass": 0.015,
+        "stream": {
+          "format": "float32",
+          "channels": 1,
+          "unit": "K",
+          "noise": {
+            "sigma_k": 0.1
+          }
+        }
       },
       "THERM-B": {
         "type": "thermal",
@@ -147,7 +179,15 @@
         "focal": 13.0,
         "hap": 7.68,
         "vap": 6.14,
-        "mass": 0.11
+        "mass": 0.11,
+        "stream": {
+          "format": "float32",
+          "channels": 1,
+          "unit": "K",
+          "noise": {
+            "sigma_k": 0.05
+          }
+        }
       },
       "THERM-C": {
         "type": "thermal",
@@ -158,7 +198,15 @@
         "focal": 9.0,
         "hap": 7.68,
         "vap": 6.14,
-        "mass": 0.095
+        "mass": 0.095,
+        "stream": {
+          "format": "float32",
+          "channels": 1,
+          "unit": "K",
+          "noise": {
+            "sigma_k": 0.05
+          }
+        }
       },
       "TOF-D": {
         "type": "depth",
@@ -169,7 +217,20 @@
         "focal": 2.0,
         "hap": 2.88,
         "vap": 2.16,
-        "mass": 0.04
+        "mass": 0.04,
+        "stream": {
+          "format": "float32",
+          "channels": 1,
+          "unit": "m",
+          "noise": {
+            "sigma_m": 0.004,
+            "rel": 0.005
+          },
+          "range_m": [
+            0.15,
+            4.0
+          ]
+        }
       },
       "STEREO-X": {
         "type": "depth",
@@ -180,7 +241,19 @@
         "focal": 2.1,
         "hap": 5.0,
         "vap": 2.8,
-        "mass": 0.075
+        "mass": 0.075,
+        "stream": {
+          "format": "float32",
+          "channels": 1,
+          "unit": "m",
+          "noise": {
+            "quad_m": 0.00155
+          },
+          "range_m": [
+            0.3,
+            10.0
+          ]
+        }
       },
       "LIDAR-2D": {
         "type": "lidar",
@@ -190,7 +263,25 @@
         "vap": null,
         "mass": 0.16,
         "range_m": 25.0,
-        "vfov_deg": 0.0
+        "vfov_deg": 0.0,
+        "stream": {
+          "format": "float32",
+          "channels": 1,
+          "unit": "m",
+          "rows": 1,
+          "columns": 1440,
+          "elevation_deg": [
+            0.0,
+            0.0
+          ],
+          "noise": {
+            "sigma_m": 0.02
+          },
+          "range_m": [
+            0.15,
+            25.0
+          ]
+        }
       },
       "LIDAR-3D": {
         "type": "lidar",
@@ -200,7 +291,25 @@
         "vap": null,
         "mass": 0.35,
         "range_m": 30.0,
-        "vfov_deg": 90.0
+        "vfov_deg": 90.0,
+        "stream": {
+          "format": "float32",
+          "channels": 1,
+          "unit": "m",
+          "rows": 32,
+          "columns": 1024,
+          "elevation_deg": [
+            45.0,
+            -45.0
+          ],
+          "noise": {
+            "sigma_m": 0.02
+          },
+          "range_m": [
+            0.3,
+            30.0
+          ]
+        }
       }
     },
     "airframes": {
@@ -476,7 +585,159 @@
       "consistency_zero": 0.3
     },
     "reply_budget_s": 1800,
-    "episode_wall_cap_s": 5400,
+    "episode_wall_cap_s": 7200,
     "setup_timeout_s": 1200
+  },
+  "sensors": {
+    "note": "The bay mission's sensors (control.md, The sensors; tests/sensor_rig.py): every streamed sensor captured together every `every` control steps and delivered `delay` steps later in `slots` slot files; per robot the first cap.cameras cameras and cap.lidars lidars stream; the grader's cameras clip at clip_m; every render product pinned to `render` (the lidar heads and the frame clock, depth-only products, to range_settings); the thermal model; the gauge's scale; the lidar heads' render grid; the frame clock; the vehicle's odometry and the flying robots' encoders (tests/wire_obs.py); the real bay's look (mission_stage.dress); the render canary's fixed sensors. The per-model stream data are in catalog.sensors.*.stream.",
+    "every": 6,
+    "delay": 6,
+    "slots": 2,
+    "cap": {
+      "cameras": 4,
+      "lidars": 1
+    },
+    "clip_m": [
+      0.01,
+      100.0
+    ],
+    "render": {
+      "omni:rtx:rendermode": "RealTimePathTracing",
+      "omni:rtx:post:aa:op": "dlss",
+      "omni:rtx:post:dlss:execMode": "performance",
+      "omni:rtx:post:motionblur:enabled": false,
+      "omni:rtx:post:dof:enabled": false,
+      "omni:rtx:post:histogram:enabled": false,
+      "omni:rtx:rt:ecoMode:enabled": false
+    },
+    "range_settings": {
+      "omni:rtx:rendermode": "RealTimePathTracing",
+      "omni:rtx:post:aa:op": "none",
+      "omni:rtx:post:dlss:execMode": "performance",
+      "omni:rtx:post:motionblur:enabled": false,
+      "omni:rtx:post:dof:enabled": false,
+      "omni:rtx:post:histogram:enabled": false,
+      "omni:rtx:rt:ecoMode:enabled": false
+    },
+    "thermal": {
+      "ambient_k": 293.15,
+      "burning_k": 723.15,
+      "cool_to_k": 313.15,
+      "tau_s": 8.0,
+      "hot_prim": "/World/Facility/FirePan"
+    },
+    "gauge": {
+      "zero_deg": -135.0,
+      "deg_per_bar": 21.875
+    },
+    "lidar": {
+      "backend": "equirect",
+      "px_per_column": 1,
+      "rows_per_band": 1,
+      "rows_2d": 63
+    },
+    "clock": {
+      "at": [
+        700.0,
+        0.0,
+        10.0
+      ],
+      "box_m": 40.0,
+      "quad_m": 4.0,
+      "d0_m": 1.0,
+      "step_m": 0.25,
+      "modulo": 64,
+      "clip_m": [
+        0.5,
+        30.0
+      ]
+    },
+    "odometry": {
+      "odo_scale": 0.02,
+      "gyro_scale": 0.01,
+      "odo_walk_m_sqrt_m": 0.02,
+      "gyro_white_deg_s": 0.387,
+      "vel_body_m_s": 0.02,
+      "pose_white_m": 0.005,
+      "uav_joint_rad": 0.001
+    },
+    "look": {
+      "hall": "/opt/assets/isaac/Isaac/Environments/Simple_Warehouse/warehouse.usd",
+      "lights": [
+        {
+          "type": "DomeLight",
+          "name": "Dome",
+          "intensity": 300.0
+        },
+        {
+          "type": "DistantLight",
+          "name": "Sun",
+          "intensity": 1800.0,
+          "angle": 4.0,
+          "rotate_z_deg": 35.0,
+          "rotate_x_deg": -50.0
+        }
+      ],
+      "rope_material": "/World/Looks/black",
+      "pads": "/World/Facility/Pads",
+      "pads_lift_m": [
+        0.0001,
+        0.0003
+      ],
+      "needle": "/World/Facility/SteamLine/Gauge/needle",
+      "dial": "/World/Facility/SteamLine/Gauge/Dial",
+      "deinstance_robots": false
+    },
+    "canary": {
+      "sensors": [
+        {
+          "model": "CAM-RGB-M",
+          "eye": [
+            -2.8,
+            2.2,
+            0.95
+          ],
+          "target": [
+            -0.6,
+            3.22,
+            1.2
+          ]
+        },
+        {
+          "model": "THERM-C",
+          "eye": [
+            2.6,
+            -0.4,
+            2.5
+          ],
+          "target": [
+            2.6,
+            1.9,
+            0.07
+          ]
+        },
+        {
+          "model": "TOF-D",
+          "eye": [
+            -1.24,
+            2.61,
+            0.95
+          ],
+          "target": [
+            -1.2,
+            3.35,
+            0.6
+          ]
+        },
+        {
+          "model": "LIDAR-3D",
+          "eye": [
+            0.0,
+            -1.5,
+            1.0
+          ]
+        }
+      ]
+    }
   }
 }

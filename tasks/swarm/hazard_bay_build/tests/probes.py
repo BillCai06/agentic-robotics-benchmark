@@ -2,7 +2,7 @@
 bucket hangs and swings on its ropes, how the agent's controller flies the hoist, and what the fleet is built from.
 
     python3 probes.py <scene> <out.json> <group> [<seed>]
-    groups: layout settle steam hoist control fleet
+    groups: canary canary_render layout settle steam hoist control fleet
 
 The grader passes the seed in the environment (`ARB_SEED`; the command line is readable by every account), a maintainer
 may pass it as the fourth argument. The scene probes run at the fixed hidden set's seeds (0, the seed truth.json was
@@ -10,6 +10,14 @@ measured with); the seed draws their random amounts (the steam test's points, th
 fleet's arm configurations). The control group runs one mission of the set: its day is the `missions` entry of the
 probe's own config file (`ARB_GRADER_CFG`) that `ARB_MISSION` names (a maintainer may instead name a file holding one
 day in `ARB_DAY_FILE`), and its seed draws the sensors' noise.
+
+The control group's wire carries no ground truth (control.md, What you observe): each robot's own state as its
+onboard systems estimate it (`wire_obs.py`: the legacy observation of `ControlSim.observe()` filtered, the vehicle's
+odometry replaced, never recomputed) and a reference to the latest frame set its declared sensors delivered
+(`sensor_rig.py`: the grader's cameras in the real bay, dressed by `mission_stage.dress`, rendered every 6 steps,
+written to slot files in the frames folder root made for the mission, `ARB_FRAMES_DIR`). The canary_render group
+renders the dressed real bay alone (no robots) with one camera of each kind, a lidar head and the frame clock: the
+renderer compiles there, before any of the agent's scene is involved.
 
 Everything is read from PhysX or from the stage as authored, never from anything the scene reports about itself except
 the state attributes the interface declares (`arb:steam_active`, `arb:fire_active`, `arb:disabled`), and everything is
@@ -295,6 +303,108 @@ def canary(out):
                cuda_device=carb.settings.get_settings().get("/physics/cudaDevice"),
                sensors_ext=bool(omni.kit.app.get_app().get_extension_manager().is_extension_enabled("isaacsim.sensors.physics")),
                kit_dir=os.environ.get("ARB_KIT_DIR"))
+
+
+@group("canary_render")
+def canary_render(out):
+    """The renderer on the grader's own stage of the real bay (`SCENE` is its layer), dressed as for the mission, with
+    no robots: one camera of each catalog kind at its catalog size from the config's fixed poses (the parking bay at the
+    dial, the approach hover at the pan), a LIDAR-3D head and the frame clock. Checked: full, non-black, non-uniform
+    RGB; the burning pan hot in thermal; depth and ranges finite where something is drawn; the clock decoding. Records
+    the first render's time (on an empty cache: the compile) and the device memory."""
+    import mission_stage
+    import sensor_rig
+    from pxr import Sdf
+    scfg = CFG["sensors"]
+    cat = CFG["catalog"]["sensors"]
+    path = os.path.splitext(OUT)[0] + "_stage.usda"
+    if os.path.exists(path):
+        os.remove(path)
+    layer = Sdf.Layer.CreateNew(path)
+    layer.subLayerPaths.append(SCENE)
+    layer.defaultPrim = "World"
+    layer.Save()
+    t0 = time.time()
+    out["dress"] = mission_stage.dress(path, {}, scfg["look"])
+    s = Scene(path)
+    s.start()
+    out["open_s"] = round(time.time() - t0, 2)
+    plan_, poses = {"sensors": [], "not_streamed": []}, {}
+    for k, c in enumerate(scfg["canary"]["sensors"]):
+        sm = sensor_rig.stream_of(c["model"], cat[c["model"]])
+        q = sensor_rig.look_at(c["eye"], c["target"]) if sm["kind"] != "lidar" else np.array([1.0, 0.0, 0.0, 0.0])
+        body = f"/canary/{k}"
+        poses[body] = (np.array(c["eye"], dtype=float), q)
+        plan_["sensors"].append(dict(index=k, id=f"s{k:02d}", stem=f"s{k:02d}", robot="canary", prim=body, stage_prim=body, model=c["model"],
+                                     kind=sm["kind"], body=body, stage_body=body, pos_in_body=[0.0, 0.0, 0.0], quat_in_body=[1.0, 0.0, 0.0, 0.0],
+                                     stream=sm))
+    fdir = os.path.splitext(OUT)[0] + "_frames"
+    os.makedirs(fdir, exist_ok=True)
+    for f in os.listdir(fdir):
+        os.remove(os.path.join(fdir, f))
+    needle = needle_of(s, out["dress"]["needle"])
+    rig = sensor_rig.SensorRig(s.sim, s.stage, plan_, scfg, fdir, SEED, bodies=lambda b: poses[b], needle=needle,
+                               pressure=lambda: 8.0, log=lambda *a: print("[canary_render]", *a, flush=True))
+    rig.open_slots(sensor_rig.manifest(plan_, scfg))
+    t0 = time.time()
+    warm = rig.warm_up()
+    out["warm_up"] = rig.warm
+    out["first_render_s"] = round(rig.warm["first_render_ms"] / 1000.0, 1)
+    for k in range(0, 2 * rig.every + 1):  # (two captures: the second delivers the first)
+        rig.step(k, k * 2 * DT, True)
+    out["frames"] = rig.summary()
+    checks = {}
+    for i, sd in enumerate(plan_["sensors"]):
+        fr = rig.slots[i][0].payload
+        kind = sd["kind"]
+        if kind == "rgb":
+            v = np.asarray(fr, dtype=np.float32)
+            checks[sd["id"]] = dict(kind=kind, ok=bool(v.max() > 0 and v.std() > 2.0), max=float(v.max()), std=round(float(v.std()), 2))
+        elif kind == "thermal":
+            hot = int(np.sum(fr > 700.0))
+            checks[sd["id"]] = dict(kind=kind, ok=hot > 0, hot_px=hot, max_k=round(float(fr.max()), 2))
+        else:
+            good = float(np.mean(fr > 0))
+            checks[sd["id"]] = dict(kind=kind, ok=bool(good > 0.1 and np.all(np.isfinite(fr))), valid_share=round(good, 3))
+    out["checks"] = checks
+    out["clock_ok"] = bool(warm and rig.stats["lag_anomalies"] == 0)
+    out["ok"] = bool(out["clock_ok"] and all(c["ok"] for c in checks.values()))
+    out["gpu"] = gpu_memory()
+    rig.close()
+
+
+def gpu_memory():
+    """The device's free and total memory (torch), and the renderer's own account of its use."""
+    rec = {}
+    try:
+        import torch
+        free, total = torch.cuda.mem_get_info()
+        rec.update(free_gb=round(free / 2 ** 30, 2), total_gb=round(total / 2 ** 30, 2))
+    except Exception as exc:  # noqa: BLE001
+        rec["torch_error"] = str(exc)[:200]
+    try:
+        import omni.hydra.engine.stats as es
+        rec["renderer"] = [{k: v for k, v in d.items() if isinstance(v, (int, float, str))} for d in es.get_device_info()]
+    except Exception as exc:  # noqa: BLE001
+        rec["renderer_error"] = str(exc)[:200]
+    try:
+        with open("/proc/self/status") as f:
+            for line in f:
+                if line.startswith(("VmRSS:", "VmHWM:")):
+                    rec[line.split(":")[0].lower() + "_mb"] = round(int(line.split()[1]) / 1024.0, 1)
+    except OSError:
+        pass
+    return rec
+
+
+def needle_of(s, nd):
+    """The gauge needle's head op (mission_stage.dress) in the open stage, with its parent's frame."""
+    prim = s.prim(nd["path"])
+    op = next((o for o in UsdGeom.Xformable(prim).GetOrderedXformOps() if o.GetName() == nd["op"]), None)
+    if op is None:
+        return None
+    parent = UsdGeom.XformCache().GetParentToWorldTransform(prim)
+    return dict(op=op, rest_deg=float(nd["rest_deg"]), axis_point=nd["axis_point"], parent=parent, parent_inv=parent.GetInverse())
 
 
 @group("layout")
@@ -906,9 +1016,17 @@ def control(out):
     relays the wire through two pipes (`ARB_WIRE_DIR`): this process never runs the agent's code. It keeps the bay's
     rules itself and measures the outcomes against the real bay's facts (`bay` in the grader's config)."""
     import mission_stage
+    import sensor_rig
+    import wire_obs
     wire = os.environ.get("ARB_WIRE_DIR")
     if not wire:
         out["error"] = "no wire to a controller"
+        return
+    scfg = CFG.get("sensors") or {}
+    sensors_on = not CFG.get("sensors_off")  # (off: a maintainer's development run only, review/run_mission.py --sensors off)
+    frames_dir = os.environ.get("ARB_FRAMES_DIR")
+    if sensors_on and not (frames_dir and os.path.isdir(frames_dir)):
+        out["error"] = "no frames folder for the sensors"
         return
     if os.environ.get("ARB_DAY_FILE"):  # (a maintainer's day: one day, or a mission entry holding one)
         with open(os.environ["ARB_DAY_FILE"]) as f:
@@ -922,6 +1040,7 @@ def control(out):
     day = control_sim.normalise_day(day)
     facts = CFG["bay_facts"]
     stage_path = os.path.splitext(OUT)[0] + "_mission.usda"
+    out["setup_stage"] = "build"
     t0 = time.time()
     try:
         info = mission_stage.build(SCENE, CFG["bay_layer"], facts, stage_path)
@@ -931,26 +1050,78 @@ def control(out):
         return
     out["real_bay"] = info
     timing = dict(build_s=round(time.time() - t0, 2))
+    plan_ = None
+    if sensors_on:  # the stage as the sensors see it, and which of the fleet's sensors stream (pxr, before Kit opens it)
+        t0 = time.time()
+        out["dress"] = mission_stage.dress(stage_path, info, scfg["look"])
+        plan_ = sensor_rig.plan(Usd.Stage.Open(stage_path), info["fleet_root"], CFG["catalog"]["sensors"], scfg, unmount=unmount)
+        timing["dress_s"] = round(time.time() - t0, 2)
+    out["setup_stage"] = "open"
     t0 = time.time()
     s = Scene(stage_path)
     control_sim.prepare(s.stage, hidden=day, fleet_root=info["fleet_root"], rope_root=info["rope_root"])
     s.start()
     timing["open_s"] = round(time.time() - t0, 2)
+    out["setup_stage"] = "sim"
     t0 = time.time()
     cfg = dict(CFG.get("control_sim") or {}, fleet_root=info["fleet_root"], rope_root=info["rope_root"],
                item_alias=CFG.get("item_alias") or None, table_tops=facts["table_tops"], pan_nominal=facts["pan"]["center"])
     sim = control_sim.ControlSim(s, CFG["catalog"], cfg, CFG["bay"], day, seed=SEED, log=lambda *a: print("[control]", *a, flush=True))
     out["mission"] = sim.mission()
     timing["init_s"] = round(time.time() - t0, 2)
+    rig, mission_extra, export = None, {}, None
+    pv_at = {}  # (a maintainer's frame export: the true state at each capture step)
+    if sensors_on:
+        out["setup_stage"] = "sensors"
+        t0 = time.time()
+        bodies = BodyPoses(s, sim)
+        fx = CFG.get("frames_out")  # (review/run_mission.py --frames-out: never set by the grader)
+        if fx:
+            export = sensor_rig.Export(fx["dir"], fx.get("plan"), event_times=lambda: event_times(sim), truth_at=lambda n: pv_at.get(n))
+        rig = sensor_rig.SensorRig(s.sim, s.stage, plan_, scfg, frames_dir, SEED, bodies=bodies, needle=needle_of(s, out["dress"]["needle"]),
+                                   pressure=sim.pressure, log=lambda *a: print("[sensors]", *a, flush=True), export=export)
+        rig.open_slots(sensor_rig.manifest(plan_, scfg))
+        mission_extra = {"sensors": {"dir": frames_dir, "manifest": "manifest.json", "every": rig.every, "delay": rig.delay,
+                                     "slots": int(scfg["slots"])}}
+        timing["sensors_s"] = round(time.time() - t0, 2)
+        out["setup_stage"] = "warmup"
+        if not rig.warm_up():
+            raise RuntimeError(f"the sensors did not warm up: {rig.warm}")
+        timing["warmup_s"] = rig.warm["s"]
+        out["streamed"] = [dict(id=x["id"], robot=x["robot"], prim=x["prim"], model=x["model"]) for x in plan_["sensors"]]
+        out["not_streamed"] = plan_["not_streamed"]
+    uav_dofs = {n: list(sim.av[n].shared_metatype.dof_names) for n in UAVS}
+    wo = wire_obs.WireObs(SEED, sim.dt, ugv_start=out["mission"]["ugv"]["start"][:2] if sim.ugv else None, uav_dofs=uav_dofs,
+                          mission_extra=mission_extra, cfg=scfg.get("odometry"))
+    out["setup_stage"] = "ready"
     t0 = time.time()
     privileged = bool(CFG.get("privileged"))
     m = None
     try:
         with open(os.path.join(wire, "obs.fifo"), "w") as fo, open(os.path.join(wire, "act.fifo")) as fi:
             def policy(t, obs):
+                frames = None
+                if rig is not None:
+                    try:
+                        frames = rig.step(t, obs["time"], bool(sim.fire))
+                    except Exception:  # noqa: BLE001 - (a render failure mid-run ends the run, as any error after the first step)
+                        out["render_error"] = traceback.format_exc()[-1200:]
+                        raise
+                ugv_truth = None
+                if sim.ugv is not None:
+                    p, q, yaw = sim.ugv_pose()
+                    v6 = sim.ugv["gv"].get_root_velocities()[0]
+                    ugv_truth = ((float(p[0]), float(p[1])), float(yaw), (float(v6[0]), float(v6[1])))
+                uj = {n: (sim.av[n].get_dof_positions()[0], sim.av[n].get_dof_velocities()[0]) for n in UAVS if uav_dofs[n]}
+                vacuum = bool(sim.ugv is not None and sim.ugv["held"] is not None)
+                w = wo.build(obs, ugv_truth, uj, vacuum, frames)
                 if privileged:
-                    obs["privileged"] = privileged_state(sim)
-                fo.write(json.dumps({"t": t, "obs": obs}) + "\n")
+                    w["privileged"] = privileged_state(sim)
+                    if export is not None and t % (rig.every if rig else 6) == 0:
+                        pv_at[t // rig.every] = w["privileged"]
+                        for old in [c for c in pv_at if c < t // rig.every - 64]:
+                            del pv_at[old]
+                fo.write(json.dumps({"t": t, "obs": w}) + "\n")
                 fo.flush()
                 line = fi.readline()
                 if not line:
@@ -976,6 +1147,71 @@ def control(out):
     timing["run_s"] = round(time.time() - t0, 2)
     timing["ms_per_step"] = round(1000.0 * timing["run_s"] / max(1, m.get("steps") or 1), 2)
     out["timing"] = timing
+    out["setup_stage"] = "run"
+    if rig is not None:
+        out["frames"] = dict(rig.summary(), gpu=gpu_memory())
+        if export is not None:
+            out["frames"]["exported"] = export.n
+        rig.close()
+
+
+def unmount(path):
+    """A mission-stage path as the agent's scene names it (`/Agent/...` -> `/World/...`)."""
+    p = str(path)
+    return "/World" + p[len("/Agent"):] if p == "/Agent" or p.startswith("/Agent/") else p
+
+
+class BodyPoses:
+    """The true world pose of a robot's body from PhysX's tensor views (read only): an articulation link found by its
+    prim path (names repeat: a Jackal with a Gen3 has two `base_link`s), else a rigid-body view of its own."""
+
+    def __init__(self, s, sim):
+        self.s, self.sim, self.where, self.own = s, sim, {}, {}
+        self.arts = dict(sim.av)
+        if sim.ugv is not None:
+            self.arts["UGV"] = sim.ugv["gv"]
+
+    def _find(self, path):
+        for name, av in self.arts.items():
+            paths = None
+            try:
+                paths = list(av.link_paths[0])
+            except Exception:  # noqa: BLE001 - (no path list: names, where they are unique)
+                paths = None
+            if paths is not None:
+                if path in paths:
+                    return ("art", av, paths.index(path))
+                continue
+            names = list(av.shared_metatype.link_names)
+            leaf = path.split("/")[-1]
+            if names.count(leaf) == 1 and path.startswith(self.sim.fleet + "/" + name + "/"):
+                return ("art", av, names.index(leaf))
+        v = self.s.view.create_rigid_body_view(path)
+        return ("rb", v, 0)
+
+    def __call__(self, path):
+        w = self.where.get(path)
+        if w is None:
+            w = self.where[path] = self._find(path)
+        kind, v, i = w
+        tf = v.get_link_transforms()[0][i] if kind == "art" else v.get_transforms()[i]
+        p, q = tf_pq(tf)
+        return p, q / np.linalg.norm(q)
+
+
+def event_times(sim):
+    """The moments a maintainer's frame export plans around (the grader's own record): lift-off, the pour's start,
+    the fire out, the lever closed; each part's grips and releases."""
+    m = sim.metrics
+    out = {k: [m[f"{k}_t"]] for k in ("liftoff", "pour_start", "fire_out", "lever_closed") if m.get(f"{k}_t") is not None}
+    held = sim.ugv["held"] if sim.ugv is not None else None
+    last = getattr(sim, "_arb_held_last", None)
+    ev = getattr(sim, "_arb_held_events", {"grip": [], "release": []})
+    if held != last:
+        ev["grip" if held is not None else "release"].append(round(sim.t, 3))
+        sim._arb_held_last, sim._arb_held_events = held, ev
+    out.update(ev)
+    return out
 
 
 # --------------------------------------------------------------------------------------------- the fleet's design
@@ -1087,7 +1323,7 @@ def fleet(out):
 
 
 if __name__ == "__main__":
-    {g.group_name: g for g in (canary, layout, settle, steam, hoist, control, fleet)}[GROUP]()
+    {g.group_name: g for g in (canary, canary_render, layout, settle, steam, hoist, control, fleet)}[GROUP]()
     RESULT["done"] = True
     with open(OUT, "w") as f:
         json.dump(RESULT, f)

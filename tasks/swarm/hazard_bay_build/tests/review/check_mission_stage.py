@@ -9,7 +9,12 @@ that takes in a collider of the real bay. With --synthetic it also builds edited
 that the builder copes: a hook joint outside `Rope`, a physics material outside the fleet bound to the vehicle's wheels,
 a joint from the vehicle to the scene's floor, two collision groups that take in the whole stage (`includeRoot` on
 the group, or on a collection the group includes) with the vehicle's arm filtered against them, and a collision group
-inside an instanceable reference (the builder must edit it without failing).
+inside an instanceable reference (the builder must edit it without failing); and, for the sensors' dress
+(`mission_stage.dress`), a fleet whose robots' meshes are instanceable and a light under a robot (switched off).
+Every stage is also dressed and checked: the physics of the stage before the dress and after it are the same (every
+prim with a physics schema, its schemas, its physics attributes, its bound physics material); no physics schema and no
+graph under `/World/Look` or `/World/Sensors`; one physics scene; no light under the robots; the plant's ropes bound
+for rendering. The hall's asset must resolve: run it in the task image (`/opt/assets`).
 Nothing here is part of the grade; the task's grader never runs it.
 """
 
@@ -23,10 +28,28 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 TESTS = os.path.dirname(HERE)
 sys.path.insert(0, TESTS)
 import mission_stage  # noqa: E402
-from pxr import Gf, Sdf, Usd, UsdPhysics, UsdShade  # noqa: E402
+from pxr import Gf, Sdf, Usd, UsdGeom, UsdLux, UsdPhysics, UsdShade  # noqa: E402
 
 FACTS = json.load(open(os.path.join(TESTS, "hidden", "bay_facts.json")))
 BAY = os.path.join(TESTS, "hidden", "bay_true.usda")
+LOOK = json.load(open(os.path.join(TESTS, "grader_config.json")))["sensors"]["look"]
+
+
+def physics_print(path):
+    """Everything of a stage the simulation reads: per prim with a physics schema (or a typed physics prim) its
+    schemas, its physics attributes' values and its bound physics material."""
+    st = Usd.Stage.Open(path)
+    out = {}
+    for p in st.Traverse(Usd.TraverseInstanceProxies()):
+        names = sorted(mission_stage._physics_names(p))
+        typed = p.GetTypeName() if mission_stage._physics_typed(p) else None
+        if not names and not typed:
+            continue
+        attrs = {a.GetName(): str(a.Get()) for a in p.GetAttributes() if a.GetName().startswith(("physics:", "physx")) and a.HasAuthoredValue()}
+        rels = {r.GetName(): [str(t) for t in r.GetTargets()] for r in p.GetRelationships() if r.GetName().startswith("physics:")}
+        mat = UsdShade.MaterialBindingAPI(p).ComputeBoundMaterial("physics")[0]
+        out[p.GetPath().pathString] = dict(active=p.IsActive(), names=names, typed=typed, attrs=attrs, rels=rels, material=str(mat.GetPath()) if mat else None)
+    return out
 
 
 def verdict(scene, out_dir, expect_pads=None, extra=None):
@@ -58,9 +81,27 @@ def verdict(scene, out_dir, expect_pads=None, extra=None):
         problems.append(f"pads {info['pads']} (expected {expect_pads})")
     for fn in extra or []:
         problems += fn(out, info)
+    before = physics_print(out)  # the dress: nothing the simulation reads changes
+    dressed = mission_stage.dress(out, info, LOOK)
+    after = physics_print(out)
+    if before != after:
+        changed = sorted(k for k in set(before) | set(after) if before.get(k) != after.get(k))
+        problems.append(f"the dress changed the physics of {len(changed)} prims: {changed[:4]}")
+    chk = mission_stage.check(out, info)
+    if chk["n_look_physics"]:
+        problems.append(f"physics or graphs under the look or the sensors: {chk['look_physics'][:4]}")
+    if not chk["one_physics_scene"]:
+        problems.append(f"physics scenes after the dress: {chk['scenes']}")
+    if chk["robot_lights_on"]:
+        problems.append(f"lights on under the robots: {chk['robot_lights_on'][:4]}")
+    if any(chk["rope_geoms_unbound"].values()):
+        problems.append(f"rope links not bound for rendering: {chk['rope_geoms_unbound']}")
+    if not dressed["hall_api_removed"]:
+        problems.append("the hall's colliders were not found (its asset did not resolve?)")
     print(json.dumps(dict(scene=scene, pads=info["pads"], shifts=info["shifts"], kept=info["kept_scopes"], dropped=info["dropped"],
                           ropes={r: {k: v for k, v in x.items() if k in ("ring", "chord", "lay", "miss", "filtered_links")} for r, x in info["ropes"].items()},
-                          bodies_active=chk["bodies_active"], problems=problems)))
+                          bodies_active=chk["bodies_active"], dress={k: v for k, v in dressed.items() if k != "robot_lights_off"},
+                          robot_lights_off=len(dressed["robot_lights_off"]), problems=problems)))
     return not problems
 
 
@@ -189,6 +230,32 @@ def synthetic(scene, out_dir):
     holder.SetInstanceable(True)
     lay.Save()
     cases.append((p, []))
+    # (g) instanceable meshes in the robots, (h) a light under a robot (the dress switches it off)
+    p = os.path.join(out_dir, "syn_instanced_lit.usda")
+    lay = Sdf.Layer.CreateNew(p)
+    lay.subLayerPaths.append(scene)
+    lay.defaultPrim = "World"
+    st = Usd.Stage.Open(lay)
+    made = 0
+    for q in list(Usd.PrimRange(st.GetPrimAtPath("/World/Fleet"))):
+        if q.IsA(UsdGeom.Mesh) and not q.HasAPI(UsdPhysics.CollisionAPI) and q.GetParent().GetName() not in ("Rope",) and made < 12:
+            holder = q.GetParent()
+            if holder.HasAPI(UsdPhysics.RigidBodyAPI) or holder.IsInstanceable():
+                continue
+            holder.SetInstanceable(True)
+            made += 1
+    lamp = UsdLux.SphereLight.Define(st, "/World/Fleet/UGV/Lamp")
+    lamp.CreateIntensityAttr(5000.0)
+    lay.Save()
+
+    def lamp_off(out, info, made=made):
+        s2 = Usd.Stage.Open(out)
+        probs = [] if made else ["no instanceable mesh holder could be made"]
+        lp = s2.GetPrimAtPath("/Agent/Fleet/UGV/Lamp")
+        if not lp.IsValid():
+            probs.append("the robot's lamp is gone")
+        return probs
+    cases.append((p, [lamp_off]))
     return cases
 
 

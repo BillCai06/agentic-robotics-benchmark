@@ -9,7 +9,8 @@
 # fleet's design), then runs the agent's program behind a wire, with no internet access, on the two days of the fixed
 # hidden set (tests/hidden/fixed_set.json: each day's parts, vehicle pose, lever, pan, water and gusts, the same for
 # every submission) in the grader's own stage of the real bay (the agent's four robots mounted in it, the plant's rope
-# rig) and measures the outcomes. Needs one NVIDIA RTX GPU.
+# rig) and measures the outcomes. The program gets no ground truth: each robot's own state and the frames of its
+# declared sensors, which the grader renders in the real bay. Needs one NVIDIA RTX GPU.
 
 schema_version = "1.4+ale.1"
 artifacts = ["/home/user/submission"]
@@ -26,20 +27,22 @@ memory_mb = 32768
 gpus = 1
 
 # Setup (environment/setup/setup.sh: stage ~/given, < 1 min) has no field: the engine bounds it at a fixed 1800 s.
-# [agent] timeout_sec: 8 h. [verifier] timeout_sec: a canary, the scan, five probe groups and the fixed hidden set's two
-# missions in the real bay, each in a fresh Isaac Sim process. Measured on one RTX 4090 with 8 cores (2026-11-06, on
-# the fixed set's two days): the reference's verify took 29 min (the first Isaac Sim start compiles shaders for 7-9 min;
-# its two missions, done at 324.5 s and 365 s, took about 8 min of wall clock each at 23 ms a control step); a
-# submission whose two missions both run to their 600 s limit (36,000 steps each) takes about 45 min. The
-# simulator's pace depends on the host's load (19 to 55 ms a control step measured on the shared authoring host), so a
-# run's budget is the program's own reply time (control.reply_budget_s, 30 min), and the wall clock only caps a run at
-# 90 min (control.episode_wall_cap_s): two runs at that cap plus the scene part fit in 3 h.
+# [agent] timeout_sec: 8 h. [verifier] timeout_sec: two canaries (physics; the real bay rendered, where the renderer's
+# pipelines compile: canary_timeout_s 2400), the scan, five probe groups and the fixed hidden set's two missions in the
+# real bay with the fleet's sensors rendered every 6 control steps, each in a fresh Isaac Sim process. The rule
+# (round 4, 2026-11-06): verifier timeout = 1.5 x the measured scene part (with the cold render canary) + 2 x
+# (control.setup_timeout_s + control.episode_wall_cap_s + 90 s), rounded up to 30 min; the wall cap = 2 x the measured
+# time of a full run (36,000 control steps) of a fleet streaming all the sensors the cap allows, with a program that
+# answers at once, + control.reply_budget_s, rounded up to 10 min. Preliminary until measured (P6): cap 7200 s,
+# timeout 21,600 s (1.5 x 40 min + 2 x (20 + 120 + 1.5) min = 343 min). The reference's verify is estimated at 60-80 min
+# (29 min in round 3, without rendering); [[P8: measured]]. A run's budget is the program's own reply time
+# (control.reply_budget_s, 30 min); the wall clock only caps a run (control.episode_wall_cap_s).
 [agent]
 timeout_sec = 28800
 network_mode = "no-network"
 
 [verifier]
-timeout_sec = 10800
+timeout_sec = 21600
 # Separate verification (2026-11-04): a fresh verifier sandbox from the same image, which the agent never touched;
 # only the declared artifact (/home/user/submission) is restored into it. In a shared sandbox, programs the agent
 # leaves earlier on root's PATH (the base image's /usr/local/bin is the agent's) would run as root at verify.

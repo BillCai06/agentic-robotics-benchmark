@@ -11,6 +11,8 @@ What a tape measure and a kitchen scale gave, and what the nameplates say. Nothi
 - **The ropes**: three, one on each ring, 10 mm wire rope, 0.30 kg/m; 1.50 m from the ring to the hook at the far
   end. In the photographs they lie on the floor beside the bucket.
 - **The valve** (nameplate): quarter-turn; breakaway torque 4 N·m at the lever.
+- **The pressure gauge** (nameplate): linear, 0 bar at its lowest tick, the needle turning clockwise (seen from the
+  front) as the pressure rises, 21.875° per bar; the photographs show it at the line's working pressure, 8 bar.
 - **The photographs**: `photos/cameras.json` — per photograph the pinhole intrinsics (focal length and sensor
   apertures in mm, image size in pixels), no distortion.
 - **The rig**: the plant's test rig is three overhead hooks on a circle 0.5 m from the bucket's axis, one above each

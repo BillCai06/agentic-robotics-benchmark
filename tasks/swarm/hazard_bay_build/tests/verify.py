@@ -12,10 +12,20 @@ for every submission): the agent's controller drives the agent's four robots in 
 measures the outcomes. The controller runs as the agent's account behind the kit's solver wire (`GuardedSolver`:
 started through `nonet_exec.py`, so that it can open no internet socket), started only once the probe has the mission
 set up (and every process of the agent's account stopped before each run and after it); this process relays the wire
-to the control probe through two pipes and applies the match lock. A canary scene goes through the same launcher
-first: when that fails, the grading environment is broken and the run ends as a task error, not as a zero. So does a
-mission that cannot be set up twice in a row, before any of the agent's code ran, for a scene that passed the scan
-and simulates on its own, and so does a missing or malformed set.
+to the control probe through two pipes and applies the match lock. The wire carries no ground truth: each robot's
+own state as its onboard systems estimate it, and a reference to the latest frame set its declared sensors delivered;
+the frames themselves (the grader's cameras and lidar heads rendered in the real bay, `sensor_rig.py`) are slot
+files in a folder root makes fresh for each mission (`work/frames`: the probe account's, 0755, readable by the agent's
+program and writable by nobody else; removed after the run), named to the probe in its environment
+(`ARB_FRAMES_DIR`). Two canaries go through the same launcher first: a trivial physics scene, and the real bay
+dressed for the sensors rendered with one camera of each kind, a lidar head and the frame clock (the renderer's
+pipelines compile there); when either fails, the grading environment is broken and the run ends as a task error, not
+as a zero. So does a mission that cannot be set up twice in a row, before any of the agent's code ran, for a scene
+that passed the scan and simulates on its own (unless both set-ups stopped at the sensors or their warm-up, after the
+render canary rendered: then the fleet's own meshes or materials did not render, and that run is aborted, every check
+0), and so does a missing or malformed set. Kit's shared folders (cache, logs, data) are emptied and made the probe
+account's (0700): the compiled pipelines persist from one probe process to the next, and the agent's program cannot
+start Kit while it is graded.
 
 Nothing in a verify draws from OS entropy or the clock: the scene probes run at the set's seeds (0: truth.json's own),
 each mission's sensor noise at its noise seed, and each mission's match lock from a stream keyed by its lock key (a
@@ -56,7 +66,7 @@ import traceback
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 HIDDEN = os.path.join(HERE, "hidden")
-PROBE_FILES = ("probes.py", "scan.py", "control_sim.py", "mission_stage.py", "bay_rig.py")
+PROBE_FILES = ("probes.py", "scan.py", "control_sim.py", "mission_stage.py", "bay_rig.py", "sensor_rig.py", "wire_obs.py")
 FIXED_SET = os.path.join(HIDDEN, "fixed_set.json")  # (root's alone: never staged for the probe, never on a command line)
 SET_FORMAT = "hazard_bay_build fixed set 1"
 NONET = os.path.join(HERE, "nonet_exec.py")  # (run as root from this root-only folder)
@@ -235,6 +245,18 @@ def lockdown(sub, work, max_bytes):
     return snap
 
 
+def kit_folders_to_probe():
+    """Kit's shared folders (emptied by the lockdown) made the probe account's alone (0700): the renderer's compiled
+    pipelines stay there from one probe process to the next (the probes' own folder arguments do not take in this
+    Kit), and nothing the agent's account runs at grading can start Kit or plant anything there."""
+    pw = pwd.getpwnam(PROBE_USER)
+    for d in ("cache", "logs", "data"):
+        path = os.path.join(KIT_SHARED, d)
+        os.makedirs(path, exist_ok=True)
+        os.chown(path, pw.pw_uid, pw.pw_gid)
+        os.chmod(path, 0o700)
+
+
 def clean_shm():
     """Remove what the agent's account left in /dev/shm. Kit's processes open shared memory there under predictable
     names (`carb-RStringInternals-<pid>` and its semaphore): one planted in advance would be opened by, or refuse,
@@ -390,10 +412,11 @@ def match_items(got_items, truth_items, tol):
     return out
 
 
-def canary(work, timeout):
+def canary(work, timeout, bay_layer=None):
     """A trivial scene through the probe launcher: a cube falling on a plane, the sensor extension loaded, a GPU
-    present (physics itself runs on the CPU, as it did for truth.json). If this does not work, the environment is at
-    fault, not the submission."""
+    present (physics itself runs on the CPU, as it did for truth.json); then (`bay_layer`) the render canary in a
+    process of its own: the real bay dressed for the sensors, one camera of each kind, a lidar head, the frame clock
+    (probes.py canary_render). If either does not work, the environment is at fault, not the submission."""
     from pxr import Gf, Usd, UsdGeom, UsdPhysics
     path = os.path.join(work, "canary.usda")
     st = Usd.Stage.CreateNew(path)
@@ -439,7 +462,31 @@ def canary(work, timeout):
         fail("no usable GPU in the sandbox (torch.cuda.is_available() is false): the grading environment is not usable")
     if not data.get("sensors_ext"):
         fail("the physics sensors extension did not load: the grading environment is not usable")
+    if bay_layer is not None:
+        data["render"] = canary_render(work, timeout, bay_layer)
     return data
+
+
+def canary_render(work, timeout, bay_layer):
+    out = os.path.join(work, "out", "canary_render.json")
+    t0 = time.time()
+    try:
+        r = as_probe([os.path.join(probe_dir(work), "probes.py"), bay_layer, out, "canary_render"], work, timeout, seed=0)
+    except subprocess.TimeoutExpired:
+        fail(f"the render canary did not finish in {timeout} s: the grading environment cannot render")
+    data = {}
+    if os.path.isfile(out):
+        try:
+            data = json.load(open(out))["groups"].get("canary_render", {})
+        except Exception:  # noqa: BLE001
+            data = {}
+    keep = {k: data.get(k) for k in ("ok", "clock_ok", "checks", "first_render_s", "open_s", "wall_s", "gpu")}
+    log(f"render canary: {round(time.time() - t0)} s", json.dumps(keep)[:600])
+    if not data or "error" in data:
+        fail(f"the render canary failed (exit {r.returncode}): {data.get('error', '')[-400:]} | stderr: {(r.stderr or '')[-800:]}")
+    if not data.get("ok"):
+        fail(f"the render canary rendered nothing usable: {json.dumps(keep)[:600]}")
+    return keep
 
 
 def flat_action(action):
@@ -647,8 +694,14 @@ def run_control(scene, work, cfg, mission, index, snap, egress="seccomp", env_pr
     path = os.path.join(work, "out", f"control_{index}.json")
     if os.path.exists(path):
         os.remove(path)
+    frames = os.path.join(work, "frames")  # the sensors' slot files: fresh for each mission, the probe's, readable by all
+    shutil.rmtree(frames, ignore_errors=True)
+    os.makedirs(frames, mode=0o755)
+    os.chown(frames, pw.pw_uid, pw.pw_gid)
+    os.chmod(frames, 0o755)
     env = probe_env(work, mission["noise_seed"])
     env["ARB_WIRE_DIR"] = wire
+    env["ARB_FRAMES_DIR"] = frames
     env["ARB_MISSION"] = str(int(index))
     proc = subprocess.Popen(probe_cmd([os.path.join(probe_dir(work), "probes.py"), scene, path, "control"]), env=env,
                             cwd=os.path.join(work, "probe_home"), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
@@ -751,6 +804,7 @@ def run_control(scene, work, cfg, mission, index, snap, egress="seccomp", env_pr
     if state["solver"] is not None:
         state["solver"].close()
     kill_agent()
+    shutil.rmtree(frames, ignore_errors=True)
     data = {}
     if os.path.isfile(path):
         try:
@@ -794,9 +848,17 @@ def run_probes(scene, work, timeout, retries, fixed, cfg, snap, cfg_probe=None, 
                 data = run_control(scene, work, cfg, mission, e, snap, egress)
                 if "error" in data and not data.get("relay_steps"):  # (a fault before the first step: once more, the same day and lock)
                     log(f"control run {e} failed before its first step:", str(data["error"])[-600:])
+                    first_stage = data.get("setup_stage")
                     data = run_control(scene, work, cfg, mission, e, snap, egress)
                     data["retried"] = True
-                    if "error" in data and data.get("setup_failed") and "error" not in (groups.get("settle") or {"error": True}):
+                    if ("error" in data and data.get("setup_failed") and first_stage in ("sensors", "warmup")
+                            and data.get("setup_stage") in ("sensors", "warmup")):
+                        # both set-ups stopped at the fleet's sensors after the render canary rendered the real bay: the
+                        # fleet's own meshes or materials do not render (the agent's doing): the run is aborted
+                        data["abort"] = (f"the fleet's sensors could not be rendered in the real bay (twice, at "
+                                         f"{data.get('setup_stage')}): {str(data['error'])[-300:]}")
+                        data["end"] = "aborted"
+                    elif "error" in data and data.get("setup_failed") and "error" not in (groups.get("settle") or {"error": True}):
                         # the mission could not be set up twice, before any of the agent's code ran, for a scene that
                         # passed the scan and simulates on its own (the settle probe): the grader's fault, not a zero
                         fail(f"control run {e}: the bay mission could not be set up in the real bay (twice) for a scene that "
@@ -1210,6 +1272,7 @@ def main():
     scene = os.path.join(snap, os.path.basename(scene))
     os.environ["PATH"] = "/usr/sbin:/usr/bin:/bin:" + os.environ.get("PATH", "")  # (system tools first; the kit runs `runuser` by its absolute path)
     probe_account(work)
+    kit_folders_to_probe()
     for name in PROBE_FILES:
         stage_file(work, name)
     bay_layer = stage_file(work, os.path.join("hidden", "bay_true.usda"))
@@ -1221,7 +1284,7 @@ def main():
         cfg_probe["privileged"] = True
     write_probe_config(work, cfg_probe)
     log("privileged mode" if privileged else ("oracle token mismatch" if mismatch else "no oracle token"))
-    canary(work, int(config.get("canary_timeout_s", 900)))
+    canary(work, int(config.get("canary_timeout_s", 900)), bay_layer=bay_layer)
     catalog = write_probe_config(work, config["catalog"], "catalog.json")  # (the scan's colliders rule: the declared models' assets)
     try:
         r = as_probe([os.path.join(probe_dir(work), "scan.py"), scene, "--json", "--catalog", catalog], work, int(config.get("scan_timeout_s", 300)))

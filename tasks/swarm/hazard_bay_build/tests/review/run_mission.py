@@ -6,6 +6,7 @@
     # as root in the task image, the staged tests at /opt/ale/tests (read-only is fine):
     python3 /opt/ale/tests/review/run_mission.py --submission /home/user/submission --set FILE --index K [--time-limit 600]
         [--settle] [--no-token] [--out result.json] [--kit-dir DIR] [--program-env NAME=VALUE ...]
+        [--sensors on|off] [--compare RECORD] [--frames-out DIR [--frames-at PLAN] [--frames-sensors IDS]]
 
 FILE is the fixed hidden set (`tests/hidden/fixed_set.json`), a batch of candidates or the development days
 (`make_fixed_set.py draw` / `corners`): anything with the set's `missions` list. The token state is the submission's
@@ -15,7 +16,16 @@ the agent's scene names them (as in a full verify); without it the real names ar
 own record, ARB_REFERENCE_LOG=<a file the agent's account may write>): the grader passes none. Prints the mission's
 outcome, the day as applied (`hidden`: how far each part moved in the pre-roll, ...), the per-check scores of this one
 run and the timing; `--out` writes them with the run's whole record and the submission's file hashes (what
-`make_fixed_set.py select` reads).
+`make_fixed_set.py select` reads), with the sensors' frame statistics (`frames`: render, read, processing and write
+times per frame set, bytes, the frame clock's anomalies, a digest per sensor).
+`--sensors off` (development only) runs the mission without rendering (no frames; the wire otherwise as graded), to
+tell the wire's filter from the renderer. `--compare RECORD` prints every outcome that differs from another run's
+record (`compare_runs.py`; the timings and the frame statistics left out). `--frames-out DIR` keeps chosen frame sets
+(`--frames-at PLAN`: a JSON object or file, {"every": N, "windows_s": [[t0, t1], ...], "events": {"grip" | "release"
+| "lever_closed" | "liftoff" | "pour_start" | "fire_out": [before_s, after_s]}}; `--frames-sensors`: ids from the
+manifest, comma-separated, or all): the probe copies them from the slots into its own folder with the true state at
+each capture step (a token run), and they are moved to DIR after the run, compressed (one .npz per frame set and an
+index.jsonl). Probe config keys only this tool sets; the grader never does.
 Several of these may run at once in one container: the probe account is created under a lock (two concurrent
 `useradd` lose one account), and the grader's stop of every process of the agent's account before and after a run is
 left out here (it would stop the other runs' controllers; a full verify runs one mission at a time and does it).
@@ -24,9 +34,11 @@ Nothing here is part of the grade; the task's grader never runs it.
 
 import argparse
 import fcntl
+import glob
 import hashlib
 import json
 import os
+import shutil
 import sys
 import tempfile
 import time
@@ -63,6 +75,11 @@ def main():
     ap.add_argument("--out", default=None)
     ap.add_argument("--kit-dir", default=None)
     ap.add_argument("--program-env", action="append", default=[], metavar="NAME=VALUE")
+    ap.add_argument("--sensors", choices=("on", "off"), default="on")
+    ap.add_argument("--compare", default=None, metavar="RECORD")
+    ap.add_argument("--frames-out", default=None, metavar="DIR")
+    ap.add_argument("--frames-at", default=None, metavar="PLAN")
+    ap.add_argument("--frames-sensors", default="all", metavar="IDS")
     a = ap.parse_args()
     config = json.load(open(os.path.join(TESTS, "grader_config.json")))
     truth = json.load(open(os.path.join(TESTS, "truth.json")))
@@ -93,7 +110,6 @@ def main():
         verify.probe_account(work)
     if a.kit_dir:
         import pwd
-        import shutil
         pw = pwd.getpwnam(verify.PROBE_USER)
         os.makedirs(os.path.join(a.kit_dir, "optix"), exist_ok=True)  # (the probe's OptiX cache, as verify.probe_account makes it)
         for d, _, files in os.walk(a.kit_dir):
@@ -113,6 +129,14 @@ def main():
         cfg_probe["control_sim"] = dict(cfg_probe.get("control_sim") or {}, time_limit_s=float(a.time_limit))
     if privileged:
         cfg_probe["privileged"] = True
+    if a.sensors == "off":
+        cfg_probe["sensors_off"] = True
+    if a.frames_out:
+        plan = {"every": 10}
+        if a.frames_at:
+            plan = json.load(open(a.frames_at)) if os.path.isfile(a.frames_at) else json.loads(a.frames_at)
+        ids = "all" if a.frames_sensors == "all" else [x for x in a.frames_sensors.split(",") if x]
+        cfg_probe["frames_out"] = {"dir": os.path.join(work, "out", f"frames_{a.index}"), "plan": dict(plan, sensors=ids)}
     verify.write_probe_config(work, cfg_probe)
     print(f"[mission] work {work}; mission {a.index} ({mission['id']}) of {a.set_file}; privileged={privileged} mismatch={mismatch}", flush=True)
     if a.settle:
@@ -131,7 +155,8 @@ def main():
     wall = time.time() - t0
     keys = ("end", "abort", "error", "timing", "done_t", "t_end", "steps", "steam_end", "steam_off_t", "lever_deg", "fire_end", "fire_out_t", "parts_in_crate",
             "n_parts", "parts", "parts_dropped", "liftoff_t", "liftoff_tilt_max", "swing_max", "spilt_l", "poured_l", "water0_l", "lost", "crash", "dropped",
-            "n_collisions", "collisions", "min_sep", "gusts", "hidden", "real_bay", "lock", "relay_steps", "reply_s", "egress_mode", "egress_hits")
+            "n_collisions", "collisions", "min_sep", "gusts", "hidden", "real_bay", "lock", "relay_steps", "reply_s", "egress_mode", "egress_hits",
+            "setup_stage", "render_error", "frames", "dress", "streamed", "not_streamed")
     summary = {k: data.get(k) for k in keys if k in data}
     summary["wall_s"] = round(wall, 1)
     summary["ms_per_step"] = round(1000.0 * wall / max(1, data.get("steps") or 1), 1)
@@ -143,12 +168,35 @@ def main():
                                           progress_gate=combos.get("section.control.progress_gate"))
     except Exception as exc:  # noqa: BLE001
         summary["checks_error"] = repr(exc)
+    if a.frames_out:  # the probe's exported frame sets, compressed, moved out of its folder
+        src = os.path.join(work, "out", f"frames_{a.index}")
+        os.makedirs(a.frames_out, exist_ok=True)
+        n = 0
+        if os.path.isdir(src):
+            import numpy as np
+            by_set = {}
+            for f in sorted(glob.glob(os.path.join(src, "*.npy"))):
+                m, sid = os.path.basename(f)[:-4].split("_", 1)
+                by_set.setdefault(m, {})[sid] = f
+            for m, files in by_set.items():
+                np.savez_compressed(os.path.join(a.frames_out, f"{m}.npz"), **{sid: np.load(f) for sid, f in files.items()})
+                n += 1
+            if os.path.isfile(os.path.join(src, "index.jsonl")):
+                shutil.copy(os.path.join(src, "index.jsonl"), os.path.join(a.frames_out, "index.jsonl"))
+            shutil.rmtree(src, ignore_errors=True)
+        summary["frames_exported"] = n
+    if a.compare:
+        sys.path.insert(0, HERE)
+        import compare_runs
+        d = compare_runs.compare(dict(data=data), json.load(open(a.compare)))
+        summary["compare"] = dict(record=os.path.abspath(a.compare), identical=not d, differences=[[k, x, y] for k, x, y in d[:40]], n=len(d))
     print(json.dumps(summary, indent=1, default=str), flush=True)
     if a.out:
         record = dict(mission=dict(index=a.index, id=mission["id"], file=os.path.abspath(a.set_file), file_sha256=sha256_file(a.set_file),
                                    day_sha256=day_digest(spec["missions"][a.index]["day"])),
                       submission_sha256=hashes, privileged=privileged, options=dict(time_limit=a.time_limit, settle=a.settle, no_token=a.no_token,
-                                                                                     program_env=a.program_env),
+                                                                                     program_env=a.program_env, sensors=a.sensors,
+                                                                                     frames_out=a.frames_out, frames_at=a.frames_at),
                       summary=summary, data=data)
         with open(a.out, "w") as f:
             json.dump(record, f, indent=1, default=str)

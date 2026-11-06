@@ -7,7 +7,10 @@ there.)
 
 The grader runs this same file before it measures anything; a scene with errors scores zero. Its notes include the
 colliders rule of the bay mission (`interface.md`): a robot that does not keep the colliders of the library models it
-declares scores 0 on the mission's no-collisions check (the catalog beside this file names the models' assets).
+declares scores 0 on the mission's no-collisions check (the catalog beside this file names the models' assets); and,
+per robot, the declared sensors that stream nothing in the bay mission (`control.md`, The sensors: only a robot's
+first four cameras and its first lidar stream, in prim order; `stream_selection` makes that choice, as the mission
+does).
 """
 
 import json
@@ -204,6 +207,47 @@ def colliders_kept(stage, root, asset_roots, declared=None, catalog=None):
                 arcs=arcs[:16])
 
 
+def stream_selection(stage, root, sensors, cameras=4, lidars=1):
+    """Which of a robot's declared sensors stream in the bay mission (`control.md`, The sensors): in prim order
+    (nothing inside an instance), the first `cameras` cameras that count (a `UsdGeom.Camera` with `arb:sensor_model`
+    naming a catalog camera, its focal length and apertures the entry's within 2 %) and the first `lidars` lidars (a
+    prim naming a catalog lidar). `sensors` is the catalog's sensor table. Returns (streamed: [(path, model)],
+    others: [(path, model, why)])."""
+    streamed, others = [], []
+    n_cam = n_lid = 0
+    for p in Usd.PrimRange(stage.GetPrimAtPath(root)):
+        a = p.GetAttribute("arb:sensor_model")
+        if not a or not a.IsValid() or not a.Get():
+            continue
+        model, path = str(a.Get()), p.GetPath().pathString
+        e = (sensors or {}).get(model)
+        if e is None:
+            others.append((path, model, "not a catalog model"))
+            continue
+        if e.get("type") == "lidar":
+            if n_lid < lidars:
+                streamed.append((path, model))
+                n_lid += 1
+            else:
+                others.append((path, model, f"beyond the robot's first {lidars} lidar{'s' if lidars != 1 else ''}"))
+            continue
+        if not p.IsA(UsdGeom.Camera):
+            others.append((path, model, "not a UsdGeom.Camera"))
+            continue
+        c = UsdGeom.Camera(p)
+        f, h, v = c.GetFocalLengthAttr().Get(), c.GetHorizontalApertureAttr().Get(), c.GetVerticalApertureAttr().Get()
+        if not (f and h and v and e.get("focal") and abs(f - e["focal"]) <= 0.02 * e["focal"] and abs(h - e["hap"]) <= 0.02 * e["hap"]
+                and abs(v - e["vap"]) <= 0.02 * e["vap"]):
+            others.append((path, model, "its intrinsics are not the catalog's"))
+            continue
+        if n_cam < cameras:
+            streamed.append((path, model))
+            n_cam += 1
+        else:
+            others.append((path, model, f"beyond the robot's first {cameras} cameras"))
+    return streamed, others
+
+
 def scan(scene, catalog=None):
     """The check; `catalog` (the catalog's data, `catalog/catalog.json`) adds the declared models to the colliders rule."""
     errors, notes, facts = [], [], {}
@@ -314,6 +358,13 @@ def scan(scene, catalog=None):
                                      tagged_cameras=tagged, declared=decl, colliders=kept)
         if not tagged:
             notes.append(f"{root} carries no camera with arb:sensor_model")
+        if catalog and catalog.get("sensors"):
+            streamed, others = stream_selection(stage, root, catalog["sensors"])
+            beyond = [o for o in others if o[2].startswith("beyond")]
+            facts["robots"][name]["streamed"] = [p for p, _ in streamed]
+            if beyond:
+                notes.append(f"{root}: in the bay mission only its first four cameras and first lidar stream (in prim order): "
+                             f"{', '.join(p for p, _, _ in beyond)} stream nothing")
         if not kept["ok"]:
             what = [f"{kept['n_missing']} removed", f"{kept['n_disabled']} switched off or made triggers", f"{kept['n_shrunk']} shrunk"]
             eg = (kept["missing"] + kept["disabled"] + kept["shrunk"])[:2]

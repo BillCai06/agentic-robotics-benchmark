@@ -38,8 +38,9 @@ grader runs, as a separate process behind a wire.
 
 How the valve or a robot is put together below these prims (which bodies, which joints, what the articulation root
 is) is yours to decide. Other prims (lights, the hall, your helpers, NVIDIA Flow volumes for the fire and the steam)
-may go anywhere under `/World`; the grader measures bodies and the state attributes and never renders, so looks are
-yours to decide.
+may go anywhere under `/World`; the scene checks measure bodies and the state attributes and never render, so the
+bay's looks are yours to decide. In the bay mission the grader renders the real bay and your four robots as composed
+for the robots' sensors: a robot's looks (meshes, materials) are what the other robots' cameras see (`control.md`).
 
 ## The ropes
 
@@ -59,8 +60,9 @@ rope as it hangs, sags, carries and swings, against the real bay's rig (`require
   under each robot: a catalog name. The named model's asset must be what the robot is built from (the grader checks
   the referenced files).
 - `arb:sensor_model` (string) on each sensor prim that counts: a catalog name; cameras are `UsdGeom.Camera` prims with
-  that entry's intrinsics; a lidar is any prim with the entry's name. What a robot senses in the bay mission
-  (`control.md`) is what it carries here.
+  that entry's intrinsics; a lidar is any prim with the entry's name, and its scan is in its prim's frame. What a robot
+  senses in the bay mission (`control.md`, The sensors) is what it carries here: its first four cameras and its first
+  lidar stream.
 - Put every declaration and every sensor prim outside instanceable prims: the grader does not read inside instances.
 
 ## State attributes

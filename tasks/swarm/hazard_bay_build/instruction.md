@@ -26,6 +26,7 @@ You have **8 hours** of wall time for the whole job. Have a usable scene and a p
 | `~/given/catalog/` | airframes, sensors, ground vehicles and arms you may build the fleet from, with their data (`catalog.json`: the same, as data) |
 | `~/given/interface.md` | how the grader reads your scene: stage settings, the prim paths it looks for, the ropes, the rules |
 | `~/given/check_structure.py` | checks a scene against `interface.md` (paths, files, ropes, graph nodes); it scores nothing |
+| `~/given/frame_reader.py` | reads the bay mission's sensor frames (`control.md`, The sensors); copy it into your submission to use it |
 | `/opt/assets/isaac/` | a part of NVIDIA's Isaac Sim asset library, offline (robots, objects, environments) |
 | `/opt/assets/arb/` | the task's own assets: four multirotor airframes; two NVIDIA Flow volume effects (a fire, a steam plume) for the pictures, if you want them |
 
@@ -34,8 +35,8 @@ simulates and measures).
 
 Software: Isaac Sim 6.2 and Isaac Lab 3.0 with Python 3.12 in `/opt/venv` (run Python as `/opt/venv/bin/python3`;
 it is not on your `PATH`), PyTorch, NumPy, OpenCV, one NVIDIA GPU with RTX rendering, so you can render your own
-scene and compare it with the photographs. Isaac Sim's settings already point its asset root at
-`/opt/assets/isaac`. There is no network.
+scene and compare it with the photographs, as the grader renders your robots' sensors in the bay mission. Isaac Sim's
+settings already point its asset root at `/opt/assets/isaac`. There is no network.
 
 ## What you deliver
 
@@ -46,7 +47,8 @@ In `/home/user/submission/`:
   bay does must be in the stage itself: geometry, physics (the ropes are chains of rigid bodies), and OmniGraph action
   graphs for the hazard rules. The grader runs none of your scene's code.
 - `run.sh` and whatever it starts: your fleet's program for the bay mission, speaking the wire in `control.md`
-  (`/opt/venv/bin/python3` with NumPy and `pxr` is there). The grader runs it as a separate process, as your account,
+  (`/opt/venv/bin/python3` with NumPy, OpenCV, PyTorch and `pxr` is there; the GPU is shared with the simulator's
+  renderer). The grader runs it as a separate process, as your account,
   in a read-only copy of your submission folder, with no network. Grading happens in a fresh copy of this environment
   that holds only `/home/user/submission/`: `~/given` and anything else you leave in your home are not there, so put
   everything `run.sh` needs inside the submission (copy what you use from `~/given`); `/opt/venv` and `/opt/assets/`
@@ -75,8 +77,8 @@ mission's is the last section's score.
 - **The fleet's design (0.10)**: the requirements in `requirements.md`, each checked from the stage and the catalog.
 - **The mission (it multiplies the scene's score)**: your program runs the fleet, as dynamic bodies under its
   commands, through the whole job in the real bay (the grader's own stage of the bay as it really is, with your four
-  robots in it as your stage builds them and the plant's rope rig), twice, on two days of its own; the grader keeps the
-  bay's rules and measures only the outcomes: the steam released, the fire out, the parts in the crate, the time, the
+  robots in it as your stage builds them and the plant's rope rig), twice, on two days of its own; the grader renders
+  what the robots' sensors see, keeps the bay's rules and measures only the outcomes: the steam released, the fire out, the parts in the crate, the time, the
   lift, the swing, the water spilt, the losses, the collisions, the separation, and how alike the two runs were
   (`control.md`).
 
