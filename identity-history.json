@@ -78,6 +78,12 @@
     "spec_hash": "sha256:95b824570ebf68cda4aa08382f7d95b3e4ee0110eefc03191a9cccd1eda8dc7e"
   },
   {
+    "content_digest": "sha256:6f412248f6a8ff325ae35da3bec3ab881ca890efa81c92090afebdba734bef2a",
+    "since": "2026-11-05T16:35:59Z",
+    "slug": "furniture_assembly_from_drawings",
+    "spec_hash": "sha256:6222d85efac6f26f5080591098aeb1583f9a3287d5d3e0c589502a9ee6757a73"
+  },
+  {
     "content_digest": "sha256:b8bb82c9141ccc02e47ba3702d92aefee17c1106fdde3e1192ac49c3215fe072",
     "since": "2026-11-04T10:13:10Z",
     "slug": "hot3d_sharpa_retarget",
