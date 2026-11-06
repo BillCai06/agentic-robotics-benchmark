@@ -845,12 +845,16 @@ class Export:
     """A maintainer's frame export (`review/run_mission.py --frames-out`; the grader never sets it): chosen frame
     sets copied from the delivered frames into the probe's own folder, each with the true state at its capture step.
     `plan`: every (every Nth frame set), windows_s ([[t0, t1], ...]: every frame set in them), events ({name: [before_s,
-    after_s]} around the moments `event_times()` reports), sensors (ids, or all)."""
+    after_s]} around the moments `event_times()` reports), between ([event a, event b, N]: every Nth frame set from a's
+    first moment to b's, open while b has not come), sensors (ids, "all", or a selector {robot: [...], model: [...],
+    prim_contains: [...]}, each key optional). `groups`: a list of such plans, each with its own sensors; a frame set is
+    kept with the union of the sensors its groups want."""
 
     def __init__(self, out_dir, plan_, event_times=None, truth_at=None, own_at=None):
         self.dir = out_dir
         os.makedirs(out_dir, exist_ok=True)
         self.plan = plan_ or {}
+        self.groups = list(self.plan.get("groups") or [self.plan])
         self.event_times = event_times or (lambda: {})
         self.truth_at = truth_at or (lambda m: None)
         self.own_at = own_at or (lambda m: None)  # (the robots' own numbers at the capture step: what a program has)
@@ -859,32 +863,53 @@ class Export:
         self.index = open(os.path.join(out_dir, "index.jsonl"), "a")
         self.n = 0
 
-    def _want(self, m, t):
-        p = self.plan
-        if p.get("every") and m % int(p["every"]) == 0:
+    def _sel(self, g, s):
+        ids = g.get("sensors", self.plan.get("sensors"))
+        if not ids or ids == "all":
             return True
-        if any(a <= t <= b for a, b in p.get("windows_s") or []):
+        if isinstance(ids, dict):
+            return ((not ids.get("robot") or s["robot"] in ids["robot"]) and (not ids.get("model") or s["model"] in ids["model"])
+                    and (not ids.get("prim_contains") or any(x in s["prim"] for x in ids["prim_contains"])))
+        return s["id"] in ids
+
+    def _want_group(self, g, m, t, ev):
+        if g.get("every") and m % int(g["every"]) == 0:
             return True
-        for name, (before, after) in (p.get("events") or {}).items():
-            for te in self.event_times().get(name) or []:
+        if any(a <= t <= b for a, b in g.get("windows_s") or []):
+            return True
+        for name, (before, after) in (g.get("events") or {}).items():
+            for te in ev.get(name) or []:
                 if te - before <= t <= te + after:
                     return True
+        if g.get("between"):
+            a, b, k = g["between"]
+            ta, tb = (ev.get(a) or [None])[0], (ev.get(b) or [None])[0]
+            if ta is not None and t >= ta and (tb is None or t <= tb) and m % int(k) == 0:
+                return True
         return False
 
+    @staticmethod
+    def _copy(f):
+        a = np.asarray(f)
+        return np.ascontiguousarray(a[..., :3]) if a.ndim == 3 and a.shape[2] == 4 and a.dtype == np.uint8 else np.array(a)  # (RGB as delivered)
+
     def offer(self, m, cap, sens, frames):
-        ids = self.plan.get("sensors")
-        keep = [(s, f) for s, f in zip(sens, frames) if not ids or ids == "all" or s["id"] in ids]
         t = cap["time"] if cap["time"] is not None else 0.0
-        self.buf.append((m, t, cap, [(s["id"], np.array(f)) for s, f in keep]))
-        horizon = max([0.0] + [float(b) for b, _ in (self.plan.get("events") or {}).values()])
+        self.buf.append((m, t, cap, [(s, self._copy(f)) for s, f in zip(sens, frames) if any(self._sel(g, s) for g in self.groups)]))
+        horizon = max([0.0] + [float(b) for g in self.groups for b, _ in (g.get("events") or {}).values()])
         while self.buf and self.buf[0][1] < t - horizon - 0.2:
             self.buf.pop(0)
+        ev = self.event_times()
         for bm, bt, bcap, bfr in list(self.buf):
-            if bm in self.saved or not self._want(bm, bt):
+            if bm in self.saved:
                 continue
-            for sid, f in bfr:
+            want = [g for g in self.groups if self._want_group(g, bm, bt, ev)]
+            if not want:
+                continue
+            keep = [(s["id"], f) for s, f in bfr if any(self._sel(g, s) for g in want)]
+            for sid, f in keep:
                 np.save(os.path.join(self.dir, f"{bm:06d}_{sid}.npy"), f)
-            self.index.write(json.dumps(dict(n=bm, t=bcap["t"], time=bt, sensors=[sid for sid, _ in bfr], own=self.own_at(bm),
+            self.index.write(json.dumps(dict(n=bm, t=bcap["t"], time=bt, sensors=[sid for sid, _ in keep], own=self.own_at(bm),
                                              truth=self.truth_at(bm))) + "\n")
             self.index.flush()
             self.saved.add(bm)

@@ -93,9 +93,8 @@ READY                                       <- within 40 s of launch
   Your program may work then too, but it shares the machine (8 cores and the GPU) with the simulator. A run that lasts
   its full 600 s (36,000 steps, about one step in twenty asked twice, 6,000 frame sets) leaves your program about 47 ms
   per reply on average, or about 0.27 s per frame set if it answers the other steps in 5 ms. (A run is also stopped, as
-  aborted, 120 minutes of wall clock after it started, whatever the time went into; the simulator takes about
-  [[P7: minutes]] minutes for a full run of a fleet that streams all the sensors the cap allows, its frames at
-  their full size.)
+  aborted, 210 minutes of wall clock after it started, whatever the time went into; the simulator takes about
+  90 minutes for a full run of a fleet that streams all the sensors the cap allows, its frames at their full size.)
 - **Steps.** Control steps come at 60 Hz of simulation time (two physics steps of 1/120 s each). `t` counts them from
   0; `obs.time` is the simulation clock. A step's observation is taken before its action is applied (Rehearsing).
 - **A step may be asked more than once with the same `t`.** About one step in twenty is asked twice, in an order

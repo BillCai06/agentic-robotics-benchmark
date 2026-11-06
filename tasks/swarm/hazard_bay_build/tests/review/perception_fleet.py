@@ -5,7 +5,10 @@ two more cameras on the vehicle, so that a fleet of the reference's design can s
 
 Added to `/World/Fleet/UGV` (the reference's mast camera kept):
 - an eye-in-hand `CAM-RGB-S` on the Gen3's last link (`end_effector_link`), looking along the tool axis (the link's +Z);
-- a `CAM-RGB-W` on the mast, looking forward (the Jackal's +X) and 30 degrees down.
+- a `CAM-RGB-W` on the mast, looking forward (the Jackal's +X) and 10 degrees down (the spec's 30 degrees would leave the
+  dial out of its frame at the valve stand: the dial is 22 degrees above the mast there, the frame's top edge 11 degrees
+  above at 30 degrees down; 10 degrees down keeps the dial, the lever's grip at its open stop (30 degrees up), Table B's
+  parts from its stands (down to 39 degrees down) and the crate in frame: 51 degrees down to 31 up).
 Each with the catalog's intrinsics and its catalog mass added to the body it rides on (the chassis' collision body,
 as the reference build adds the mast camera's; the tool link's own mass). The vehicle then streams three cameras;
 the flying robots keep their four cameras and LIDAR-3D. The variant must still pass scan.py and the fleet probe's
@@ -58,11 +61,11 @@ def main():
     # eye-in-hand: the camera's -Z along the link's +Z (the tool axis), its +Y along the link's -Y; 4 cm off the axis
     camera(st, f"{ee.GetPath()}/EyeInHand", "CAM-RGB-S", (0.04, 0.0, -0.02), [(1, 0, 0), (0, -1, 0), (0, 0, -1)])
     m_ee = add_mass(ee, CAT["CAM-RGB-S"]["mass"])
-    # the mast: forward (+X of the Jackal's base_link) and 30 degrees down; just below the reference's mast camera
+    # the mast: forward (+X of the Jackal's base_link) and 10 degrees down; just below the reference's mast camera
     base = st.GetPrimAtPath(f"{UGV}/Base/base_link")
     ref_cam = st.GetPrimAtPath(f"{UGV}/Base/base_link/Camera")
     z = UsdGeom.Xformable(ref_cam).GetLocalTransformation().ExtractTranslation()[2] - 0.05
-    a = math.radians(30.0)
+    a = math.radians(10.0)
     look = np.array([math.cos(a), 0.0, -math.sin(a)])
     up = np.array([math.sin(a), 0.0, math.cos(a)])
     right = np.cross(look, up)
