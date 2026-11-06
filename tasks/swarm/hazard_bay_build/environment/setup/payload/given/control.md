@@ -241,8 +241,9 @@ renders in the real bay, from the sensor's own pose at the moment of capture, as
 - **Lidars.** A lidar's frame is a range image of rows × columns beams. Beam (row c, column k) points along
   (cos e cos a, cos e sin a, sin e) in the lidar prim's frame, with a_k = k · 360° / columns (counter-clockwise about
   the prim's +Z, from its +X) and, for `LIDAR-3D`, e_c = +45° − c · 90° / 31 (row 0 the highest beam), for `LIDAR-2D`
-  e = 0. A range is measured from the prim's origin to the first drawn surface along the beam, your own robot's body
-  included; 0 means no return (nothing within the range below).
+  e = 0. A range is measured from the prim's origin to the first drawn surface along the beam beyond the model's
+  minimum range (nothing nearer is drawn for a lidar: its own housing round the prim's origin does not block it), your
+  own robot's body included; 0 means no return (nothing within the range below).
 
 | model | frame (W × H, or rows × columns) | format (row-major, little-endian) | noise added | range |
 |---|---|---|---|---|
@@ -413,7 +414,8 @@ Replicator render products, one per streaming camera and one per lidar (a 360° 
 camera at the lidar prim's pose, read at the beams' directions), each product set to: `omni:rtx:rendermode`
 "RealTimePathTracing", `omni:rtx:post:aa:op` "dlss" ("none" for the lidars), `omni:rtx:post:dlss:execMode`
 "performance", `omni:rtx:post:motionblur:enabled` false, `omni:rtx:post:dof:enabled` false,
-`omni:rtx:post:histogram:enabled` false (no automatic exposure), `omni:rtx:rt:ecoMode:enabled` false; the RGB frames
+`omni:rtx:post:tonemap:operator` "acesApproximation" and `omni:rtx:post:tonemap:exposureKey` 0.25 (a fixed exposure:
+Kit's automatic exposure, `/rtx/post/histogram/enabled`, is off), `omni:rtx:rt:ecoMode:enabled` false; the RGB frames
 are the `rgb` annotator's output, depth `distance_to_image_plane`, the lidars' ranges `distance_to_camera`, thermal
 the `instance_id_segmentation` mapped to the temperatures above. A capture is one Replicator orchestrator step
 (`rep.orchestrator.step(rt_subframes=1, delta_time=0, pause_timeline=False)` with `/app/player/playSimulations` off

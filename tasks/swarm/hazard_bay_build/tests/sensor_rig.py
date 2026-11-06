@@ -325,10 +325,12 @@ class Products:
     ANNOT = {"rgb": "rgb", "thermal": "instance_id_segmentation", "depth": "distance_to_image_plane", "range": "distance_to_camera",
              "clock": "distance_to_image_plane"}
 
-    def __init__(self, stage, specs, settings, log=print):
+    def __init__(self, stage, specs, settings, log=print, update=None):
         import omni.replicator.core as rep
         from pxr import Gf, Sdf, UsdGeom
         self.rep, self.stage, self.log = rep, stage, log
+        self.update = update  # (an app update that holds physics off: Replicator's node types may register late)
+        self.retries = 0
         if not stage.GetPrimAtPath(SCOPE).IsValid():
             UsdGeom.Scope.Define(stage, SCOPE)
         self.items = []
@@ -352,13 +354,27 @@ class Products:
             rp = rep.create.render_product(path, (int(sp["width"]), int(sp["height"])), name=f"arb_{sp['name']}")
             rpp = rp.path if hasattr(rp, "path") else str(rp)
             kw = {"init_params": {"colorize": False}} if sp["kind"] == "thermal" else {}
-            an = rep.AnnotatorRegistry.get_annotator(self.ANNOT[sp["kind"]], **kw)
+            an = self._annotator(self.ANNOT[sp["kind"]], kw)
             an.attach([rp])
             done, absent = pin_settings(stage, rpp, sp.get("settings") or settings)
             self.pinned[sp["kind"]] = done
             self.absent |= set(absent)
             self.items.append(dict(spec=sp, path=path, op=op, rp=rp, rp_path=rpp, an=an))
         self.first_attrs = product_rtx_attrs(stage, self.items[0]["rp_path"]) if self.items else {}
+
+    def _annotator(self, name, kw, tries=20):
+        """An annotator; when its node type is not registered yet, the app updated once with physics held off, and again
+        (Replicator registers its graph nodes with the app's updates; in P2 a Kit cache another account had written kept
+        them from registering at all: verify makes Kit's folders the probe account's alone)."""
+        for k in range(tries):
+            try:
+                return self.rep.AnnotatorRegistry.get_annotator(name, **kw)
+            except Exception:  # noqa: BLE001
+                if k == tries - 1 or self.update is None:
+                    raise
+                self.retries += 1
+                self.update()
+        raise RuntimeError(name)
 
     def set_pose(self, i, p, q):
         """Camera i to world position p, orientation q (w, x, y, z)."""
@@ -442,7 +458,11 @@ class SensorRig:
                 W, H, ri, ci, yaw = range_grid(sm, cfg["lidar"])
                 s["grid"] = (ri, ci)
                 s["yaw"] = yaw
-                specs.append(dict(name=s["id"], kind="range", width=W, height=H, clip=cfg["clip_m"], settings=cfg.get("range_settings")))
+                # (a lidar draws nothing nearer than its minimum range: its own housing round the prim's origin
+                # included; the renderer's distance_to_camera runs from that near plane, added back in `process`)
+                s["near"] = float(sm["range_m"][0])
+                specs.append(dict(name=s["id"], kind="range", width=W, height=H, clip=(s["near"], cfg["clip_m"][1]),
+                                  settings=cfg.get("range_settings")))
             else:
                 specs.append(dict(name=s["id"], kind=s["kind"], width=sm["width"], height=sm["height"], focal=sm["focal"], hap=sm["hap"],
                                   clip=cfg["clip_m"]))
@@ -450,7 +470,7 @@ class SensorRig:
         specs.append(dict(name="Clock", kind="clock", width=4, height=4, focal=50.0, hap=5.0, clip=ck["clip_m"], settings=cfg.get("range_settings")))
         self._clock_scene(ck)
         t0 = time.time()
-        self.P = Products(stage, specs, cfg["render"], log=log)
+        self.P = Products(stage, specs, cfg["render"], log=log, update=sim_ctx.render)
         self.create_s = round(time.time() - t0, 2)
         self.P.set_pose(len(specs) - 1, self.clock_eye, self.clock_q)
         self.needle = needle  # (the needle's head op and its rest angle: mission_stage.dress)
@@ -471,8 +491,7 @@ class SensorRig:
         self.settings, self.rep = carb.settings.get_settings(), rep
         self.read_mode = cfg.get("read", "orchestrator")
         self.near = float(cfg["clip_m"][0])
-        self.lag = 0 if self.read_mode == "orchestrator" else 1  # (the capture a read shows: n - lag)
-        self.held = None  # (the processed frame set waiting for its delivery step)
+        self.ready = {}  # (processed frame sets by capture, waiting for their delivery step)
 
     # -- the frame clock ------------------------------------------------------------------------------------------
     def _clock_scene(self, ck):
@@ -575,7 +594,7 @@ class SensorRig:
             ri, ci = s["grid"]
             img = np.asarray(arr, dtype=np.float32)
             img = img.reshape(img.shape[0], img.shape[1]) if img.ndim == 3 else img
-            r = img[np.ix_(ri, ci)] + self.near  # (the renderer's distance_to_camera runs from the near clipping plane)
+            r = img[np.ix_(ri, ci)] + s["near"]  # (the renderer's distance_to_camera runs from the near clipping plane)
             lo, hi = sm["range_m"]
             ok = np.isfinite(r) & (r >= lo) & (r <= hi)
             rn = r + float(sm["noise"]["sigma_m"]) * rng.standard_normal(r.shape, dtype=np.float32)
@@ -596,11 +615,12 @@ class SensorRig:
         return 1000.0 * (time.perf_counter() - t0)
 
     def warm_up(self, max_updates=400):
-        """Before the wire opens: pose everything at t = 0, render until two consecutive reads are full, non-black and
-        the clock decodes the render before (the first render on a cold cache compiles here, on the set-up's time)."""
+        """Before the wire opens: pose everything at t = 0, render until two consecutive reads are full, the clock
+        shows that render or the one before and some RGB frame is not black (the renderer warm; a camera of the fleet's that
+        sits inside geometry may stay black: that is its view). The first render on a cold cache compiles here, on the
+        set-up's time."""
         t0 = time.time()
-        good, k, first = 0, 0, None
-        prev_n = None
+        good, k, first, why = 0, 0, None, None
         for k in range(1, max_updates + 1):
             n = 32 + (k % 32)  # (the warm-up's own clock values, away from the run's first ones)
             self.pose_all(n)
@@ -608,19 +628,28 @@ class SensorRig:
             first = ms if first is None else first
             reads = self.P.read()
             dec = self._clock_decode(reads[-1][0])
-            want = n if self.lag == 0 else prev_n
-            ok = dec is not None and want is not None and dec == want % self.clock_ck["modulo"]
+            want = n
+            ok = dec is not None and (n - dec) % self.clock_ck["modulo"] in (0, 1)  # (fresh or one render behind)
+            rgb_lit = rgb_any = False
             for (arr, _), s in zip(reads[:-1], self.sens):
                 sm = s["stream"]
                 if arr is None or not getattr(arr, "size", 0):
                     ok = False
-                elif s["kind"] == "rgb" and (np.asarray(arr).ndim != 3 or arr.shape[0] != sm["height"] or int(np.asarray(arr)[..., :3].max()) == 0):
-                    ok = False
-            prev_n = n
+                elif s["kind"] == "rgb":
+                    rgb_any = True
+                    if np.asarray(arr).ndim != 3 or arr.shape[0] != sm["height"] or arr.shape[1] != sm["width"]:
+                        ok = False
+                    elif int(np.asarray(arr)[..., :3].max()) > 0:
+                        rgb_lit = True
+            if rgb_any and not rgb_lit:
+                ok = False
+            why = dict(clock=dec, want=None if want is None else want % self.clock_ck["modulo"], rgb_lit=rgb_lit,
+                       empty=[s["id"] for (arr, _), s in zip(reads[:-1], self.sens) if arr is None or not getattr(arr, "size", 0)])
             good = good + 1 if ok else 0
             if good >= 2:
                 break
-        self.warm = dict(updates=k, first_render_ms=round(first or 0.0, 1), s=round(time.time() - t0, 2), ok=good >= 2)
+        self.warm = dict(updates=k, first_render_ms=round(first or 0.0, 1), s=round(time.time() - t0, 2), ok=good >= 2,
+                         last=why if good < 2 else None)
         return self.warm["ok"]
 
     def observe_step(self, time_s, fire):
@@ -630,7 +659,14 @@ class SensorRig:
 
     def step(self, k, time_s, fire):
         """The probe's frame step at control step k (call at every step; it acts at k = 0 mod every). Returns the
-        latest frame set delivered ({n, t, time, slot}) or None."""
+        latest frame set delivered ({n, t, time, slot}) or None.
+
+        At capture step 6n the read shows the capture the frame clock decodes, m: n (fresh: the orchestrator's read for
+        the reference fleet in P2) or n - 1 (one render behind: the orchestrator's read for a fleet streaming 21
+        products in P1). It is processed as capture m unless m was processed already, and the frame set due now, n - 1,
+        is delivered from what was processed: this step's read (m = n - 1) or the previous step's (m = n then). A frame
+        set that is not there when it is due (the clock older, or not decoded) is an anomaly: the newest one that is
+        newer than the last delivered goes out instead, stamped with its own capture (`lag_anomalies`)."""
         self.observe_step(time_s, fire)
         if k % self.every:
             return self.delivered
@@ -640,6 +676,8 @@ class SensorRig:
         self.pose_all(n)
         t1 = time.perf_counter()
         r_ms = self.render()
+        if n == 0:  # (capture 0 rendered twice: a read one render behind then shows it, not the warm-up)
+            r_ms += self.render()
         t2 = time.perf_counter()
         reads = self.P.read()
         t3 = time.perf_counter()
@@ -648,83 +686,103 @@ class SensorRig:
         st["pose_ms"].append(1000.0 * (t1 - t0))
         st["render_ms"].append(r_ms)
         st["read_ms"].append(1000.0 * (t3 - t2))
-        if n == 0 and self.lag:  # (one render a capture: step 0's read is the warm-up's, discarded)
+        mod = self.clock_ck["modulo"]
+        m = None
+        if dec is not None:
+            cands = [c for c in self.rec if c % mod == dec and c <= n]
+            m = max(cands) if cands else None
+        st["lag_seen"][str(None if m is None else n - m)] = st["lag_seen"].get(str(None if m is None else n - m), 0) + 1
+        if m is not None and m > self.last_m:  # (a capture not processed yet)
+            cap = self.rec.get(m) or dict(t=m * self.every, time=None)
+            frames = [self.process(i, s, arr, info, m) for i, ((arr, info), s) in enumerate(zip(reads[:-1], self.sens))]
+            self.ready[m] = (cap, frames)
+            self.last_m = m
+        t4 = time.perf_counter()
+        st["cpu_ms"].append(1000.0 * (t4 - t3))
+        if self.bench:
+            self._bench(n, reads)
+        due = n - 1
+        if due < 0:
             return self.delivered
-        expect = n - self.lag
-        m = expect
-        if dec is None or dec != expect % self.clock_ck["modulo"]:
+        last = self.delivered["n"] if self.delivered else -1
+        have = [c for c in self.ready if last < c <= due]
+        if due not in self.ready:
             st["lag_anomalies"] += 1
             if len(st.setdefault("anomalies", [])) < 20:
-                st["anomalies"].append([int(n), dec])
-            if dec is not None:  # the capture the clock shows: the latest one with that index
-                cands = [c for c in self.rec if c % self.clock_ck["modulo"] == dec and c <= n]
-                m = max(cands) if cands else expect
-            lag = n - m
-            st["lag_seen"][str(lag)] = st["lag_seen"].get(str(lag), 0) + 1
-        if m <= self.last_m:  # (nothing newer than what was delivered)
+                st["anomalies"].append([int(n), dec, m])
+        if not have:
             st["stale"] += 1
             return self.delivered
-        cap = self.rec.get(m) or dict(t=m * self.every, time=None)
-        frames = []
-        for i, ((arr, info), s) in enumerate(zip(reads[:-1], self.sens)):
-            frames.append(self.process(i, s, arr, info, m))
-        t4 = time.perf_counter()
-        if self.lag == 0:  # (fresh: this capture is held one period, the held one delivered now)
-            (m, cap, frames), self.held = (self.held if self.held is not None else (None, None, None)), (m, cap, frames)
-            self.last_m = self.held[0]
-            if m is None:
-                st["cpu_ms"].append(1000.0 * (t4 - t3))
-                if self.bench:
-                    self._bench(n, self.held[0], reads)
-                return self.delivered
-        slot = m % int(self.cfg["slots"])
+        c = max(have)
+        cap, frames = self.ready[c]
+        slot = c % int(self.cfg["slots"])
         nbytes = 0
         for i, (s, fr) in enumerate(zip(self.sens, frames)):
-            self.slots[i][slot].write(m, cap["t"], cap["time"] if cap["time"] is not None else 0.0, fr)
+            self.slots[i][slot].write(c, cap["t"], cap["time"] if cap["time"] is not None else 0.0, fr)
             nbytes += self.slots[i][slot].nbytes
         t5 = time.perf_counter()
         for i, s in enumerate(self.sens):  # (a stride-sampled sum of each delivered frame, rolled into one digest per sensor)
             flat = self.slots[i][slot].payload.reshape(-1)
             stride = max(1, flat.size // 4096)
-            self.digest[s["id"]].update(struct.pack("<Qd", m, float(flat[::stride].astype(np.float64).sum())))
-        st["cpu_ms"].append(1000.0 * (t4 - t3))
+            self.digest[s["id"]].update(struct.pack("<Qd", c, float(flat[::stride].astype(np.float64).sum())))
         st["write_ms"].append(1000.0 * (t5 - t4))
         st["frame_sets"] += 1
         st["bytes"] = nbytes
-        self.last_m = max(self.last_m, m)
-        self.delivered = {"n": int(m), "t": int(cap["t"]), "time": cap["time"], "slot": int(slot)}
+        self.delivered = {"n": int(c), "t": int(cap["t"]), "time": cap["time"], "slot": int(slot)}
         if self.export is not None:
-            self.export.offer(m, cap, self.sens, frames)
-        for old in [c for c in self.rec if c < m - 8]:
+            self.export.offer(c, cap, self.sens, frames)
+        for old in [x for x in self.ready if x <= c]:
+            del self.ready[old]
+        for old in [x for x in self.rec if x < c - 8]:
             del self.rec[old]
-        if self.bench:
-            self._bench(n, self.held[0] if self.lag == 0 else m, reads)
         return self.delivered
 
     # -- a maintainer's bench (`sensors.bench` in the probe's config; the grader never sets it) ----------------------
-    def _bench(self, n, m, reads):
-        """lag_check_every N: at every Nth capture render the same state again and read (B); the next capture's
-        ordinary read (C) must show that render in every depth-like product, bit for bit (the one-capture lag is the
-        same for every product). lidar_check_at [captures]: each lidar's noise-free ranges at those captures against
-        PhysX ray casts that hit a static collider of the real bay."""
+    def _bench(self, n, reads):
+        """lag_check_every N: is the read's lag the same in every product? At captures N k - 1 and N k the same state
+        is rendered twice more after the ordinary read; the last of three renders of one state reads fresh for any lag
+        up to 2 (C). Each depth-like product's ordinary read at N k (A) is then the fresh one (A = C_Nk), one capture
+        behind (A = C_Nk-1) or neither, against the clock's own lag. lidar_check_at [captures]: each lidar's noise-free
+        ranges against PhysX ray casts that hit a static collider of the real bay."""
         b = self.bench
-        lc = b.setdefault("_lag", dict(points=0, fresh_b=0, equal=0, differ=0, by_kind={}))
+        lc = b.setdefault("_lag", dict(points=0, clock_lag={}, product_lag={}, mixed=0, c_fresh=0))
         every = int(b.get("lag_check_every") or 0)
-        if every and n >= 2 and n % every == 0:  # (the same state again: a fresh read of every product must not differ)
-            a_reads = [(np.array(a) if a is not None else None, i) for a, i in reads]
+        mod = self.clock_ck["modulo"]
+
+        def fresh_read():
             self.render()
-            rb = self.P.read()
+            self.render()
+            rc = self.P.read()
+            lc["c_fresh"] += int(self._clock_decode(rc[-1][0]) == n % mod)
+            return [np.array(a) if a is not None else None for a, _ in rc]
+        if every and n >= 2 and (n + 1) % every == 0:
+            b["_prev"] = (n, fresh_read())
+        elif every and n >= 2 and n % every == 0 and b.get("_prev") and b["_prev"][0] == n - 1:
+            a_reads = [np.array(a) if a is not None else None for a, _ in reads]
+            dec = self._clock_decode(reads[-1][0])
+            c_now = fresh_read()
+            c_prev = b["_prev"][1]
             lc["points"] += 1
-            lc["fresh_b"] += int(self._clock_decode(rb[-1][0]) == (n - self.lag) % self.clock_ck["modulo"])
-            for (arr, _), (barr, _), s in zip(a_reads[:-1], rb[:-1], self.sens):
-                if s["kind"] == "rgb":
+            clag = None if dec is None else (n - dec) % mod
+            lc["clock_lag"][str(clag)] = lc["clock_lag"].get(str(clag), 0) + 1
+            for a, cn, cp, s in zip(a_reads[:-1], c_now[:-1], c_prev[:-1], self.sens):
+                if s["kind"] == "rgb" or a is None:
                     continue
-                same = arr is not None and barr is not None and np.array_equal(np.asarray(arr), np.asarray(barr))
-                lc["equal" if same else "differ"] += 1
-                k = lc["by_kind"].setdefault(s["kind"], [0, 0])
-                k[0 if same else 1] += 1
-        if m in set(b.get("lidar_check_at") or []):
-            b.setdefault("_lidar", []).append(self._lidar_check(m, reads))
+                if cn is not None and cp is not None and np.array_equal(cn, cp):
+                    lag = "static"
+                elif cn is not None and np.array_equal(a, cn):
+                    lag = "0"
+                elif cp is not None and np.array_equal(a, cp):
+                    lag = "1"
+                else:
+                    lag = "other"
+                key = f"{s['kind']}:{lag}"
+                lc["product_lag"][key] = lc["product_lag"].get(key, 0) + 1
+                if lag in ("0", "1") and clag is not None and lag != str(clag):
+                    lc["mixed"] += 1
+            b["_prev"] = None
+        if self.delivered and self.delivered["n"] in set(b.get("lidar_check_at") or []):
+            b.setdefault("_lidar", []).append(self._lidar_check(self.delivered["n"], reads))
 
     def _lidar_check(self, m, reads):
         from omni.physx import get_physx_scene_query_interface
@@ -737,7 +795,7 @@ class SensorRig:
             ri, ci = s["grid"]
             img = np.asarray(arr, dtype=np.float32)
             img = img.reshape(img.shape[0], img.shape[1]) if img.ndim == 3 else img
-            r = img[np.ix_(ri, ci)] + self.near
+            r = img[np.ix_(ri, ci)] + s["near"]
             bp, bq = self.bodies(s["stage_body"])
             o = bp + rotm(bq) @ np.array(s["pos_in_body"])
             R = rotm(qmul(bq, np.array(s["quat_in_body"])))
@@ -774,7 +832,7 @@ class SensorRig:
                     bytes_per_set=st["bytes"], lag_anomalies=st["lag_anomalies"], lag_seen=st["lag_seen"], anomalies=st.get("anomalies", []),
                     stale=st["stale"], read_mode=self.read_mode,
                     digests={k: v.hexdigest() for k, v in self.digest.items()}, warm_up=getattr(self, "warm", None), create_s=self.create_s,
-                    pinned=self.P.pinned, absent=sorted(self.P.absent), product_rtx=self.P.first_attrs,
+                    pinned=self.P.pinned, absent=sorted(self.P.absent), product_rtx=self.P.first_attrs, annotator_retries=self.P.retries,
                     bench={k: v for k, v in self.bench.items() if k in ("_lag", "_lidar")} or None)
 
     def close(self):

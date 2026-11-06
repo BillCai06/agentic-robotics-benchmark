@@ -608,7 +608,8 @@
       "omni:rtx:post:dlss:execMode": "performance",
       "omni:rtx:post:motionblur:enabled": false,
       "omni:rtx:post:dof:enabled": false,
-      "omni:rtx:post:histogram:enabled": false,
+      "omni:rtx:post:tonemap:operator": "acesApproximation",
+      "omni:rtx:post:tonemap:exposureKey": 0.25,
       "omni:rtx:rt:ecoMode:enabled": false
     },
     "range_settings": {
@@ -617,7 +618,8 @@
       "omni:rtx:post:dlss:execMode": "performance",
       "omni:rtx:post:motionblur:enabled": false,
       "omni:rtx:post:dof:enabled": false,
-      "omni:rtx:post:histogram:enabled": false,
+      "omni:rtx:post:tonemap:operator": "acesApproximation",
+      "omni:rtx:post:tonemap:exposureKey": 0.25,
       "omni:rtx:rt:ecoMode:enabled": false
     },
     "thermal": {

@@ -665,8 +665,8 @@ def run_control(scene, work, cfg, mission, index, snap, egress="seccomp", env_pr
     its own bound (`setup_timeout_s`). The program's budget (`reply_budget_s`) is its own time, the time from each
     request to its reply summed over the run: the simulator's own pace, which depends on the machine and its load,
     never counts against it. A run that has not ended `episode_wall_cap_s` after the wire opened is stopped all the
-    same (the bound on a verify; at the measured 19-55 ms a control step a full run takes 12-33 min). Either ends the
-    run as aborted. With `egress` "detect" the relay looks at the agent's account's sockets every 60 steps and aborts
+    same (the bound on a verify; with the sensors rendered every 6 control steps the reference fleet ran at about
+    0.13 s a control step in P2, the physics alone at 19-55 ms). Either ends the run as aborted. With `egress` "detect" the relay looks at the agent's account's sockets every 60 steps and aborts
     the run at the first internet socket with a peer off this machine."""
     ctl = cfg.get("control", {})
     budget = float(ctl.get("reply_budget_s", 1800))

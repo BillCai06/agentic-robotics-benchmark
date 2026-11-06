@@ -50,6 +50,14 @@ import omni.kit.app  # noqa: E402
 
 for _ext in ("isaacsim.core.nodes", "isaacsim.sensors.physics"):
     omni.kit.app.get_app().get_extension_manager().set_extension_enabled_immediate(_ext, True)
+
+
+def enable_replicator():
+    """Replicator for the groups that render (canary_render, the control group with sensors), enabled before their stage
+    opens (its graph node types then have the stage's open updates to register in)."""
+    omni.kit.app.get_app().get_extension_manager().set_extension_enabled_immediate("omni.replicator.core", True)
+    for _ in range(2):
+        app.update()
 import omni.physics.tensors as pt  # noqa: E402
 import omni.usd  # noqa: E402
 from isaacsim.core.api import SimulationContext  # noqa: E402
@@ -315,6 +323,7 @@ def canary_render(out):
     import mission_stage
     import sensor_rig
     from pxr import Sdf
+    enable_replicator()
     scfg = CFG["sensors"]
     cat = CFG["catalog"]["sensors"]
     path = os.path.splitext(OUT)[0] + "_stage.usda"
@@ -1042,6 +1051,8 @@ def control(out):
     if sensors_on and not (frames_dir and os.path.isdir(frames_dir)):
         out["error"] = "no frames folder for the sensors"
         return
+    if sensors_on:
+        enable_replicator()  # (before any stage is open: no physics runs in these updates)
     if os.environ.get("ARB_DAY_FILE"):  # (a maintainer's day: one day, or a mission entry holding one)
         with open(os.environ["ARB_DAY_FILE"]) as f:
             day = json.load(f)
