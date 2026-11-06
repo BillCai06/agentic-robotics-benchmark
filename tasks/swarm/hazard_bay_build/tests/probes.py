@@ -393,20 +393,27 @@ def settle(out):
 # --------------------------------------------------------------------------------------------- the valve, the steam
 class ValveRig:
     """The valve's handle (a lever or a wheel on one revolute joint), turned from outside by a torque about its joint
-    axis; its angle counted without wrapping."""
+    axis; its angle counted without wrapping. interface.md leaves to the scene how the valve is put together: the
+    handle is either a link of an articulation below the steam line (its angle: the joint's position) or a plain rigid
+    body on its joint (its angle: the body's own rotation about the joint's axis since the start)."""
 
     def __init__(self, s):
         self.s = s
         handle = f"{FAC}/SteamLine/Handle"
         self.root = s.art_root(f"{FAC}/SteamLine")
-        self.art = s.view.create_articulation_view(self.root)
-        names = list(self.art.shared_metatype.link_names)
-        paths = [p for p in self.art.link_paths[0]] if hasattr(self.art, "link_paths") else None
-        self.i_handle = paths.index(handle) if paths else names.index("Handle")
-        self.nl = self.art.max_links
+        self.art, self.body = None, None
         self.axis = np.array([0.0, 1.0, 0.0])
         self.dof = None
-        dof_names = list(self.art.shared_metatype.dof_names)
+        if self.root:
+            self.art = s.view.create_articulation_view(self.root)
+            names = list(self.art.shared_metatype.link_names)
+            paths = [p for p in self.art.link_paths[0]] if hasattr(self.art, "link_paths") else None
+            self.i_handle = paths.index(handle) if paths else names.index("Handle")
+            self.nl = self.art.max_links
+            dof_names = list(self.art.shared_metatype.dof_names)
+        else:
+            self.body = s.view.create_rigid_body_view(handle)
+            dof_names = []
         for j in s.joints():
             jj = UsdPhysics.Joint(j)
             b1 = [t.pathString for t in jj.GetBody1Rel().GetTargets()]
@@ -422,20 +429,36 @@ class ValveRig:
                 if j.GetName() in dof_names:
                     self.dof = dof_names.index(j.GetName())
                 break
-        self.last = float(self.art.get_dof_positions()[0][self.dof]) if self.dof is not None else 0.0
+        if self.body is not None:
+            self.q0 = tf_pq(self.body.get_transforms()[0])[1]
+        self.last = self._position() if self.body is not None or self.dof is not None else 0.0
         self.acc = 0.0
+
+    def _position(self):
+        """The joint's angle now (radians, modulo 2 pi): the articulation's joint position, or the handle body's rotation
+        since the start about the joint's axis (the twist of that rotation about the axis)."""
+        if self.body is None:
+            return float(self.art.get_dof_positions()[0][self.dof])
+        r = qmul(tf_pq(self.body.get_transforms()[0])[1], qinv(self.q0))
+        return 2.0 * math.atan2(float(np.dot(r[1:], self.axis)), float(r[0]))
 
     def angle(self):
         """Degrees turned since the start (unwrapped: a joint without limits reports its angle modulo 2 pi)."""
-        if self.dof is None:
+        if self.body is None and self.dof is None:
             return 0.0
-        q = float(self.art.get_dof_positions()[0][self.dof])
+        q = self._position()
         d = (q - self.last + math.pi) % (2 * math.pi) - math.pi
         self.acc += d
         self.last = q
         return math.degrees(self.acc)
 
     def torque(self, nm):
+        if self.body is not None:
+            pos = np.array(self.body.get_transforms()[0][:3], dtype=np.float32).reshape(1, 3)
+            self.body.apply_forces_and_torques_at_position(np.zeros((1, 3), dtype=np.float32),
+                                                           (nm * self.axis).astype(np.float32).reshape(1, 3), pos,
+                                                           np.array([0], dtype=np.int32), True)
+            return
         f = np.zeros((1, self.nl, 3), dtype=np.float32)
         tq = np.zeros((1, self.nl, 3), dtype=np.float32)
         pos = np.zeros((1, self.nl, 3), dtype=np.float32)
