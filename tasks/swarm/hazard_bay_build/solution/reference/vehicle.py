@@ -5,19 +5,29 @@ tool's axis held, where it matters).
 Two programs:
 
 - `Privileged`, the reference's own: with the true state in each observation (`privileged`, which the grader adds
-  for the reference's token only), it does the whole job on the day's draws: the valve pushed shut round the lever's
-  true hub (ending as soon as the lever reads shut, backing off along the arc), then every part off the tables and
-  into the crate (a stand at a table's edge per part, chosen so the arm reaches it from there, the vehicle stays
-  outside the burning pan's ring and has room to turn at its approach; a path on a grid of the bay, driven backward
-  when the way lies behind, the last stretch to a stand driven along the stand's line; a pick from above with the
-  suction tool, planned from where the vehicle really stands and solved again on the way down whenever the base has
-  moved (the arm's reaction pushes a skid-steer's base, and its wheels slip); a drop into a free slot of the crate,
-  the slot moved in to fit the part, let go only once the part is over the crate), then it stops where it stands
-  with its arm folded.
+  for the reference's token only), it does the whole job on the day of the run: the valve pushed shut round the
+  lever's true hub (ending as soon as the lever reads shut, backing off along the arc), then every part off the tables
+  and into the crate (a stand at a table's edge per part, chosen so the arm reaches it from there and from a little
+  beside it, the vehicle stays outside the burning pan's ring and has room to turn at its approach; a path on a grid
+  of the bay, kept a little further from the furniture where there is room, driven backward when the way lies behind,
+  the goal itself approached by turning to it and driving straight at it, the last stretch to a stand driven along
+  the stand's line; a pick from above with the suction tool at the top centre of the part's true box, whether it
+  stands or lies, planned from where the vehicle really stands and solved again on the way down whenever the base has
+  moved (the arm's reaction pushes a skid-steer's base, and its wheels slip); the part then lifted and carried in the
+  pose it was taken in (the grip link's turn about the tool's axis held with the last joint: the IK leaves it free,
+  and with the tool leaning it would tip the part); a drop planned on the part's box as the arm will hold it over its
+  spot (the grader holds the part rigidly in the grip link's frame), the part level again as it lay on its table and
+  squared with the crate's walls, where that box fits inside the walls and overlaps the parts already in least (the
+  crate filled from its corners), let go 3 cm over the rim and only once the part is over the crate (from too far
+  off, the vehicle drives to the crate's stand again first)),
+  then it stops where it stands with its arm folded (after the last part, at the crate: it does not back out).
+  While the pan burns and no side of the crate lies outside its ring, the vehicle holds its part and waits.
   It turns on the spot only where there is room: the skid-steer turns about a point some way off its root body, so a
-  spin walks the vehicle.
-- `Baseline`, for practice runs without that block: it closes the valve on its odometry and parks (the part routine
-  is kept but switched off: on raw wheel odometry the vehicle drifts by tens of centimetres over the minutes the parts
+  spin walks the vehicle. It keeps clear of the bucket wherever it is (hanging or set down), of the stretches the
+  hoist says the bucket is about to cross and of the flying robots that fly low (over the set-down bucket); a part
+  that no stand reaches is given up only once the hoist has settled (until then the bucket may be what is in the way).
+- `Baseline`, the program without that block: it closes the valve on its odometry and parks (the part routine is
+  kept but switched off: on raw wheel odometry the vehicle drifts by tens of centimetres over the minutes the parts
   take and runs into the tables; doing the station without the true state needs localisation against what the
   cameras see, which is the agent's job).
 """
@@ -99,7 +109,7 @@ class Kinematics:
             rev = p.IsA(UsdPhysics.RevoluteJoint)
             axis = {"X": (1, 0, 0), "Y": (0, 1, 0), "Z": (0, 0, 1)}[p.GetAttribute("physics:axis").Get() or "X"] if rev else None
             edges.append(dict(name=p.GetName(), b0=b0[0], b1=b1[0], J0=J0, J1=J1, axis=axis))
-        bodies = {e["b0"] for e in edges} | {e["b1"] for e in edges}
+        bodies = sorted({e["b0"] for e in edges} | {e["b1"] for e in edges})  # (sorted: the same pick in every process)
         # the root: the articulation root's body (an arm asset may carry a body of the same name)
         arts = [p.GetPath().pathString for p in Usd.PrimRange(st.GetPrimAtPath("/World/Fleet/UGV"), Usd.TraverseInstanceProxies())
                 if p.HasAPI(UsdPhysics.ArticulationRootAPI)]
@@ -254,6 +264,18 @@ class Kinematics:
         return dict(zip(names, best[0])), best[1]
 
 
+_KINEMATICS = {}
+
+
+def kinematics(scene, root_body, grip_link):
+    """The vehicle's chain read from the scene, once per process (the controller reads it before it says READY: with
+    the machine loaded, pxr and the stage can take longer than a control step may)."""
+    key = (scene, root_body, grip_link)
+    if key not in _KINEMATICS:
+        _KINEMATICS[key] = Kinematics(scene, root_body, grip_link)
+    return _KINEMATICS[key]
+
+
 # --------------------------------------------------------------------------------------------- the program
 class Baseline:
     """The vehicle's baseline program (no true state). `state` is a plain dict (the controller deep-copies it for
@@ -270,7 +292,7 @@ class Baseline:
             return
         scene = os.path.join(os.getcwd(), "scene.usda")
         try:
-            self.kin = Kinematics(scene, "base_link", u["grip_link"])
+            self.kin = kinematics(scene, "base_link", u["grip_link"])
             log("arm joints", self.kin.joints, "wheels", {k: [round(float(x), 3) for x in v["pos"]] for k, v in self.kin.wheels.items()})
         except Exception as exc:  # noqa: BLE001
             log("no kinematics:", exc)
@@ -556,22 +578,53 @@ CRATE_RIBS = 0.025  # [m] the handle ribs stand out of the crate's long sides
 FOOT = (0.51, 0.43)  # [m] the vehicle's footprint (length along its heading, width), the arm tucked above it
 INFLATE = 0.45  # [m] the planner keeps the vehicle's centre this far from everything (its half-diagonal, and room for a
                 # spin, which walks the root body: the skid-steer turns about a point some way off it)
+INFLATE_SOFT = 0.55  # [m] where the bay leaves the room, the paths keep this far from everything (the skid-steer swings some way
+                     # off its path as it turns; the tighter INFLATE only where there is no other way)
+PAN_SIZE = (0.60, 0.60)  # [m] the fire pan's footprint (square, its sides along the bay's axes)
 RING = 2.30  # [m] the vehicle's centre keeps out of this circle round the burning pan (the rule: 2 m)
+BUCKET_ROOM = 1.0  # [m] and out of this circle round the bucket, hanging or set down (it hangs about a metre up; the mast is higher)
 STAND = 0.37  # [m] the vehicle's centre outside a table's (or the crate's) edge when it works there
 APPROACH = 0.28  # [m] further out: where it turns to face the edge before it drives in straight
+APPROACH_MORE = (0.0, 0.12, 0.27)  # [m] where there is no room to turn there, this much further out along the same line
 GRID = (-4.0, 4.0, -0.70, 3.10, 0.05)  # the planner's grid: x0, x1, y0, y1, cell [m]
 TUCK = (0.05, 0.0, 0.78)  # [m] the tool's point, the arm tucked above the deck (root frame); holding a part: CARRY
 CARRY = (0.10, 0.0, 0.86)
-V_DRIVE, V_SLOW, W_TURN = 0.7, 0.3, 0.8  # [m/s] cruise, the last straight stretch; [rad/s] turn rate (a skid-steer's spin walks)
-LINE_LOOK, LINE_STEER = 0.5, math.radians(8.0)  # the straight stretch's pursuit: look-ahead [m], the largest steer off its line
-                                                # (gentle: a skid-steer that steers hard at a crawl only turns on the spot)
+V_DRIVE, V_SLOW, W_TURN = 0.7, 0.3, 0.8  # [m/s] cruise, the creep before a spin; [rad/s] turn rate (a skid-steer's spin walks)
+V_STRAIGHT = 0.4  # [m/s] the straight stretch in to a stand and out again
+LINE_LOOK, LINE_STEER = 0.5, math.radians(14.0)  # the straight stretch's pursuit: look-ahead [m], the largest steer off its line
+                                                 # (moderate: a skid-steer that steers hard at a crawl only turns on the spot)
+VALVE_AT, VALVE_APPROACH = (-1.15, 2.62), (-1.15, 2.05)  # [m] the valve's stand and the approach before it. Coming from the
+                                                 # parking bay in the west, the vehicle turns north at the approach and the
+                                                 # spin walks it 5-11 cm west, which the straight stretch takes up only in
+                                                 # part: the stand lies east of the stem by about what is left (pushed from
+                                                 # 11 cm or more west of the stem, the arm has caught the lever as it flew
+                                                 # shut and pulled the vehicle into the valve)
 WHEEL_SLEW = 0.12  # [rad/s per control step] the wheels' speed targets change gently (7.2 rad/s^2: about 0.7 m/s^2 at the rim)
 ARM_FAST, ARM_SLOW = 1.0, 0.5  # [rad/s] joint target rates: free moves, moves near the parts and the lever
 LEVER_R, LEVER_STEP = 0.24, math.radians(4.0)  # the push's radius round the hub; its arc step
-SLOTS = [(sx, sy) for sy in (-0.09, 0.09) for sx in (-0.18, 0.0, 0.18)]  # the crate's 3 x 2 drop slots (crate frame)
-SLOT_MARGIN = 0.045  # [m] a dropped part's box stays this far inside the crate's outer box (the check after the drop wants 0.035)
+SLOT_MARGIN = 0.05  # [m] a dropped part's box, as it will hang at its spot, stays this far inside the crate's outer box (the
+                    # check before the release wants 0.035: the rest is for the base's slip and the arm's tracking)
+TRANSIT, RELEASE = 0.10, 0.03  # [m] the held part's bottom over the crate's rim (or the parts under it): on its way over to its
+                               # spot, and where it is let go
+UAV_ROOM = 0.62  # [m] a flying robot's airframe reaches this far from its centre (its rotors; the landing gear below)
+UAV_LOW = 2.25  # [m] a flying robot whose centre is lower than this (the set-down, a pouring hook) can meet the vehicle (its gear
+                # hangs 0.47 m below its centre, the vehicle's mast stands 1.64 m): the vehicle keeps clear of it as of a table
 SPIN_ROOM = 0.58  # [m] the vehicle spins on the spot only this far from everything (its half-diagonal and the spin's walk)
 PRE_ABOVE, TOUCH = 0.16, 0.005  # [m] above a part's top: where the arm comes in; where the tool touches (the suction holds at 4 cm)
+TURN_DRIFT, TURN_MAX = 0.6, 8.0  # [m] a turn at the goal that has carried the vehicle this far (more than it coasts after
+                                 # arriving), or has lasted this long [s] (a wheel slipping: the vehicle crawls off in an arc),
+                                 # is stopped and the goal driven to again
+NEAR_GOAL, NEAR_MAX = 0.35, 6.0  # [m] within this of its goal the vehicle turns to it and drives straight at it; [s] after this
+                                 # long within 0.5 m of it (hunting), within 0.25 m is taken as there
+BAD_STAND_S = 40.0  # [s] how long a stand the arm missed a part from is left alone
+PICK_REDO, CREEP = 0.10, 0.06  # [m] a pick out of reach from further than this off its stand: out and in again first; else the
+                               # vehicle creeps this much closer to the table and tries again (once each)
+STAND_OFF = 0.25  # [m] further than this from the crate's stand, the vehicle drives there again before it reaches over the crate
+STAND_SLIP, FRAGILE = 0.12, 2.5  # [m] how far beside its stand the vehicle may come to rest; the cost [m of path] of a stand
+                                # whose pick the arm does not reach from there
+JUMP = 0.25  # [rad] a joint's change between two waypoints that `line_path(smooth=True)` takes for a leap to another branch
+LIFTS, LEAN_TOL = (0.30, 0.22, PRE_ABOVE), 8.0  # [m] how high a part is lifted off its table: the first of these at which the arm
+                                               # holds the tool's lean within LEAN_TOL [deg] (the last is where it came in)
 REPLAN_M, REPLAN_RAD = 0.006, math.radians(0.4)  # the base's motion that makes a pick's or a drop's way down solved again
 
 
@@ -582,6 +635,35 @@ def rect_dist(px, py, c, size, yaw):
     u, v = dx * ca + dy * sa, -dx * sa + dy * ca
     ox, oy = np.maximum(np.abs(u) - size[0] / 2, 0.0), np.maximum(np.abs(v) - size[1] / 2, 0.0)
     return np.hypot(ox, oy)
+
+
+def seg_dist(px, py, a, b):
+    """Distance from points to the segment a-b."""
+    ax, ay = float(a[0]), float(a[1])
+    dx, dy = float(b[0]) - ax, float(b[1]) - ay
+    ll = dx * dx + dy * dy
+    f = np.clip(((px - ax) * dx + (py - ay) * dy) / ll, 0.0, 1.0) if ll > 1e-12 else 0.0
+    return np.hypot(px - (ax + f * dx), py - (ay + f * dy))
+
+
+def rot_between(a, b):
+    """The smallest rotation that turns the direction a into the direction b."""
+    a = np.asarray(a, dtype=float) / (np.linalg.norm(a) + 1e-12)
+    b = np.asarray(b, dtype=float) / (np.linalg.norm(b) + 1e-12)
+    v, c = np.cross(a, b), float(a @ b)
+    if c < -0.999999:  # (opposite: half a turn about any axis square to a)
+        p = np.cross(a, [1.0, 0.0, 0.0])
+        if np.linalg.norm(p) < 1e-6:
+            p = np.cross(a, [0.0, 1.0, 0.0])
+        p = p / np.linalg.norm(p)
+        return 2.0 * np.outer(p, p) - np.eye(3)
+    K = np.array([[0.0, -v[2], v[1]], [v[2], 0.0, -v[0]], [-v[1], v[0], 0.0]])
+    return np.eye(3) + K + K @ K / (1.0 + c)
+
+
+def rot_z(a):
+    c, s = math.cos(a), math.sin(a)
+    return np.array([[c, -s, 0.0], [s, c, 0.0], [0.0, 0.0, 1.0]])
 
 
 def rect_corners(c, size, yaw):
@@ -616,7 +698,8 @@ def wrap_a(a):
 
 class Planner:
     """A grid of the bay: the static obstacles (tables, crate, tank, steam line) and the day's (the pan, the burning
-    pan's ring, the bucket while it hangs low), inflated; A* and a string-pulled path."""
+    pan's ring, the bucket wherever it is and the stretches the hoist is about to carry it over), inflated; A* and a
+    string-pulled path."""
 
     def __init__(self, tables, crate):
         x0, x1, y0, y1, r = GRID
@@ -629,23 +712,32 @@ class Planner:
         self.crate = (((lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2), (hi[0] - lo[0], hi[1] - lo[1] + 2 * CRATE_RIBS), 0.0)
         self.rects += [self.crate, TANK_RECT] + LINE_RECTS
         occ = np.zeros((self.nx, self.ny), dtype=bool)
+        soft = np.zeros((self.nx, self.ny), dtype=bool)
         for c, size, yaw in self.rects:
-            occ |= rect_dist(self.X, self.Y, c, size, yaw) < INFLATE
-        self.static = occ
+            d = rect_dist(self.X, self.Y, c, size, yaw)
+            occ |= d < INFLATE
+            soft |= d < INFLATE_SOFT
+        self.static, self.static_soft = occ, soft
 
     def clearance(self, p, pan=None):
         """How far the point is from the nearest obstacle (the tables, the crate, the tank, the steam line, the pan)."""
         d = min(float(rect_dist(np.array([p[0]]), np.array([p[1]]), c, size, yaw)[0]) for c, size, yaw in self.rects)
         if pan is not None:
-            d = min(d, math.hypot(p[0] - pan[0], p[1] - pan[1]) - 0.30)
+            d = min(d, float(rect_dist(np.array([p[0]]), np.array([p[1]]), pan, PAN_SIZE, 0.0)[0]))
         return d
 
-    def occupancy(self, pan, fire, bucket):
-        occ = self.static | (np.hypot(self.X - pan[0], self.Y - pan[1]) < 0.30 + INFLATE)
+    def occupancy(self, pan, fire, bucket, keep=(), discs=()):
+        """`keep`: capsules (x0, y0, x1, y1, room) the vehicle's centre keeps out of (where the bucket is about to pass);
+        `discs`: circles (x, y, r) it keeps out of (the flying robots that fly low)."""
+        occ = self.static | (rect_dist(self.X, self.Y, pan, PAN_SIZE, 0.0) < INFLATE)
         if fire:
             occ |= np.hypot(self.X - pan[0], self.Y - pan[1]) < RING
         if bucket is not None:
-            occ |= np.hypot(self.X - bucket[0], self.Y - bucket[1]) < 1.0
+            occ |= np.hypot(self.X - bucket[0], self.Y - bucket[1]) < BUCKET_ROOM
+        for x0, y0, x1, y1, room in keep or ():
+            occ |= seg_dist(self.X, self.Y, (x0, y0), (x1, y1)) < room
+        for x, y, r in discs or ():
+            occ |= np.hypot(self.X - x, self.Y - y) < r
         return occ
 
     def cell(self, p):
@@ -678,8 +770,14 @@ class Planner:
                         best = (d, (i, j))
         return None if best is None else best[1]
 
-    def plan(self, occ, a, b):
-        """A path from a to b (both points), as a list of points, or None."""
+    def plan(self, occ, a, b, pan=None):
+        """A path from a to b (both points), as a list of points, or None. With the pan given, the path keeps
+        INFLATE_SOFT from the bay's furniture and the pan where it can (the cells `occ` holds taken all the same)."""
+        if pan is not None:
+            soft = occ | self.static_soft | (rect_dist(self.X, self.Y, pan, PAN_SIZE, 0.0) < INFLATE_SOFT)
+            path = self.plan(soft, a, b)
+            if path is not None:
+                return path
         import heapq
         sa = self.cell(a) if self.free(occ, a) else self.nearest_free(occ, a)
         sb = self.cell(b) if self.free(occ, b) else None
@@ -734,9 +832,10 @@ class Privileged:
         self.limits = (mis.get("ugv") or {}).get("limits") or {}
         self.dt = mis["dt"]
         self.planner = None
+        self.hoist = {}  # (what the hoist's controller says this step: its phase, where the bucket is about to pass, settled)
 
     def init_state(self):
-        return dict(phase="start", steps=[], q_tgt=None, grip=False, home=None, lever_done_t=None, done=False, slots=[],
+        return dict(phase="start", steps=[], q_tgt=None, grip=False, home=None, lever_done_t=None, done=False,
                     tries={}, gave_up=[], t=0.0, ik_seed=None, log_t=-1.0)
 
     # -- the true state -------------------------------------------------------------------------------------------
@@ -756,9 +855,22 @@ class Privileged:
     def dir_root(self, pv, d_world):
         return self.pose(pv)[3].T @ np.asarray(d_world, dtype=float)
 
+    @staticmethod
+    def low_uavs(pv):
+        """The flying robots in the air low enough to meet the vehicle (over the set-down bucket, a pouring robot):
+        their centres (x, y). (On their pads they sit far south of every route.)"""
+        out = []
+        for u in (pv.get("uav") or {}).values():
+            p = u.get("pos") or [0.0, 0.0, 0.0]
+            if 0.75 < float(p[2]) < UAV_LOW:
+                out.append((float(p[0]), float(p[1])))
+        return out
+
     def occ(self, pv):
-        b = pv["bucket"]["pos"]
-        return self.planner.occupancy(pv["pan"], pv["fire"], b[:2] if b[2] > 0.3 else None)
+        """The grid's cells taken now: the bucket kept clear wherever it is (hanging, carried or set down), the
+        stretches the hoist is about to carry it over, and the flying robots that fly low."""
+        return self.planner.occupancy(pv["pan"], pv["fire"], pv["bucket"]["pos"][:2], self.hoist.get("keep") or (),
+                                      [(x, y, UAV_ROOM + INFLATE) for x, y in self.low_uavs(pv)])
 
     def joints(self, obs):
         return {n: obs["ugv"]["joints"][n][0] for n in self.kin.joints}
@@ -780,9 +892,12 @@ class Privileged:
         """Joint-space waypoints from q0 to q1."""
         return [{k: q0[k] + (f / n) * (q1[k] - q0[k]) for k in self.kin.joints} for f in range(1, n + 1)]
 
-    def line_path(self, s, pv, obs, p1, wrist1, p0=None, wrist0=None, step=0.03, root=None):
+    def line_path(self, s, pv, obs, p1, wrist1, p0=None, wrist0=None, step=0.03, root=None, smooth=False):
         """Joint waypoints that carry the grip point along a straight line (world) to p1, the tool's axis turning from
-        wrist0 to wrist1 (world unit vectors, the wrist's side of the grip point). `root` = (p, R) of a planned pose."""
+        wrist0 to wrist1 (world unit vectors, the wrist's side of the grip point). `root` = (p, R) of a planned pose.
+        `smooth`: a waypoint whose solution leaps from the last one (the posture's pull can swing the arm over to
+        another branch of its solutions, and on the way the tool turns and tips what it holds) is solved again without
+        that pull: the least joint motion."""
         if root is None:
             to_r = lambda x: self.to_root(pv, x)  # noqa: E731
             dir_r = lambda d: self.dir_root(pv, d)  # noqa: E731
@@ -804,7 +919,13 @@ class Privileged:
             f = k / n
             w = (1 - f) * w0r + f * w1r
             w = w / (np.linalg.norm(w) + 1e-9)
-            q, res, wres = self.kin.solve(p0r + f * (p1r - p0r), q, self.limits, wrist_dir=w, posture=s["home"], iters=60)
+            q1, res, wres = self.kin.solve(p0r + f * (p1r - p0r), q, self.limits, wrist_dir=w, posture=s["home"], iters=60)
+            if smooth and max(abs(q1[n] - q[n]) for n in self.kin.joints[:-1]) > JUMP:
+                q2, res2, wres2 = self.kin.solve(p0r + f * (p1r - p0r), q, self.limits, wrist_dir=w, posture=None, iters=60)
+                if (max(abs(q2[n] - q[n]) for n in self.kin.joints[:-1]) < max(abs(q1[n] - q[n]) for n in self.kin.joints[:-1])
+                        and res2 < max(res, 0.004) + 0.002 and wres2 < max(wres, 0.006) + 0.004):
+                    q1, res, wres = q2, res2, wres2
+            q = q1
             worst = max(worst, res)
             out.append(dict(q))
         return out, worst
@@ -816,6 +937,7 @@ class Privileged:
     def act(self, s, obs, hoist):
         pv = obs["privileged"]
         self.setup_world(pv)
+        self.hoist = hoist if isinstance(hoist, dict) else {}
         s["t"] = obs["time"]
         if s["home"] is None:
             s["home"] = self.joints(obs)
@@ -878,13 +1000,13 @@ class Privileged:
             s["phase"] = "parts"
         if s["phase"] == "parts":
             steps = self.part_steps(s, pv, obs)
-            if steps is None:  # (nothing reachable now: the burning pan's ring; again in a moment)
+            if steps is None:  # (nothing reachable now: the burning pan's ring, the bucket; again in a moment)
                 s["steps"] = [dict(kind="wait", seconds=0.5)]
                 return
             if steps:
                 s["steps"] = steps
                 return
-            s["phase"] = "park"  # (where it stands, backed out of the crate, the arm tucked: any drive now only delays the end)
+            s["phase"] = "park"  # (where it stands, the arm tucked: any drive now only delays the end)
             s["steps"] = [dict(kind="arm_line", to="tuck", speed=ARM_FAST, timeout=15.0), dict(kind="stop", timeout=1e9)]
             return
         if s["phase"] == "park":
@@ -894,7 +1016,9 @@ class Privileged:
 
     # -- the valve ------------------------------------------------------------------------------------------------
     def valve_steps(self, s, pv, obs, depth=0.0):
-        stand, approach = (-1.20, 2.62), (-1.20, 2.25)  # (on the white square, facing the lever; turned out in front of it)
+        # (on the white square, facing the lever; turned out in front of it, far enough back for the straight stretch in
+        # to take up what the turn there left beside the line: the push wants the base within a few centimetres)
+        stand, approach = VALVE_AT, VALVE_APPROACH
         return [dict(kind="arm_line", to="tuck", speed=ARM_FAST, timeout=12.0, why="tuck"),
                 dict(kind="drive", goal=approach, heading=0.0, timeout=40.0, why="valve approach"),
                 dict(kind="straight", goal=stand, heading=0.0, timeout=15.0, why="valve stand"),
@@ -914,6 +1038,7 @@ class Privileged:
         into = np.array([0.0, -1.0, 0.0])  # (the wrist on the vehicle's side: the tool points into the lever's plane)
         depth = st["depth"]
         if "path" not in st:
+            log(f"t={obs['time']:.1f} lever: the base stands {float(self.pose(pv)[0][0] - LEVER_STEM[0]):+.3f} m east of the stem")
             a0 = math.radians(pv["lever"]["deg"] - 20.0)
             pts = [self.lever_at(pv, a0, depth, 0.25), self.lever_at(pv, a0, depth, 0.10), self.lever_at(pv, a0, depth)]
             a = a0
@@ -926,7 +1051,7 @@ class Privileged:
                 more, w2 = self.line_path(dict(s, q_tgt=seg[-1]), pv, obs, pts[k], into, p0=pts[k - 1], wrist0=into, step=0.02)
                 seg = seg + more
                 worst = max(worst, w2)
-            st.update(path=seg, k=0, held=0.0, phase="push")
+            st.update(path=seg, k=0, held=0.0, phase="push", base0=[float(v) for v in self.pose(pv)[0]])
             log(f"t={obs['time']:.1f} lever from {pv['lever']['deg']:.1f} deg: {len(seg)} waypoints, IK residual {worst:.3f} m")
         if st["phase"] == "push":
             done = self.follow(st, s, obs, ARM_SLOW, tol=0.04)
@@ -943,8 +1068,12 @@ class Privileged:
                 b2, w2 = self.line_path(dict(s, q_tgt=b1[-1]), pv, obs, self.lever_at(pv, a_tool - math.radians(15.0), depth, 0.25), into,
                                         p0=back, wrist0=into, step=0.03)
                 st.update(path=b1 + b2, k=0, phase="retreat")
+                log(f"t={obs['time']:.1f} lever: the base moved {math.dist(self.pose(pv)[0], st['base0']):.3f} m during the push")
             return False
-        return self.follow(st, s, obs, ARM_FAST, tol=0.05)
+        done = self.follow(st, s, obs, ARM_FAST, tol=0.05)
+        if done:
+            log(f"t={obs['time']:.1f} lever: the base moved {math.dist(self.pose(pv)[0], st['base0']):.3f} m by the end of the retreat")
+        return done
 
     # -- the parts -----------------------------------------------------------------------------------------------
     def pick_point(self, part):
@@ -990,17 +1119,30 @@ class Privileged:
         return out
 
     def stand_ok(self, pv, occ, stand, approach, heading):
+        """Whether the vehicle may work from this stand now: the approach it turns at (the given one, else one further
+        out along the stand's line: the last stretch is driven straight in) or None. Outside the burning pan's ring,
+        clear of the tables, the crate and the rest, 0.70 m from the pan, with room to turn at the approach (a pan
+        moved up to the table's corner leaves no room there, and some further out)."""
         x, y = stand
-        if pv["fire"] and (math.hypot(x - pv["pan"][0], y - pv["pan"][1]) < RING or math.hypot(approach[0] - pv["pan"][0], approach[1] - pv["pan"][1]) < RING):
-            return False
-        if not self.planner.free(occ, approach) or self.planner.clearance(approach, pv["pan"]) < SPIN_ROOM:
-            return False  # (the vehicle turns to face the edge there: it needs the room)
+        pan = pv["pan"]
+        if pv["fire"] and math.hypot(x - pan[0], y - pan[1]) < RING:
+            return None
         foot = rect_corners(stand, (FOOT[1] + 0.04, FOOT[0] + 0.04), heading)  # (its width across, its length along the heading)
         for c, size, yaw in self.planner.rects:
             if rects_overlap(foot, rect_corners(c, size, yaw)):
-                return False
-        pan = pv["pan"]
-        return math.hypot(x - pan[0], y - pan[1]) > 0.30 + 0.40
+                return None
+        if float(rect_dist(np.array([x]), np.array([y]), pan, PAN_SIZE, 0.0)[0]) <= 0.40:
+            return None
+        if any(math.hypot(x - ux, y - uy) < UAV_ROOM + 0.5 * math.hypot(FOOT[0] + 0.04, FOOT[1] + 0.04) for ux, uy in self.low_uavs(pv)):
+            return None
+        out = (np.asarray(approach, dtype=float) - np.asarray(stand, dtype=float)) / APPROACH
+        for extra in APPROACH_MORE:
+            a = np.asarray(approach, dtype=float) + extra * out
+            if pv["fire"] and math.hypot(a[0] - pan[0], a[1] - pan[1]) < RING:
+                continue
+            if self.planner.free(occ, a) and self.planner.clearance(a, pan) >= SPIN_ROOM:
+                return a  # (the vehicle turns to face the edge there: it needs the room)
+        return None
 
     def stand_root(self, stand, heading):
         """The root's pose (position, rotation) with the vehicle at a stand: level, its forward (+x) along the heading."""
@@ -1035,9 +1177,19 @@ class Privileged:
                 return [float(x) for x in wrist]
         return None
 
+    @staticmethod
+    def stand_bad(s, obs, name, stand):
+        """A stand from which the arm missed this part: left alone for a while (the next trip there may end closer),
+        and for good once it has failed three times (a part whose only stand it is would otherwise be given up)."""
+        key = [name] + [round(float(v), 2) for v in stand]
+        marks = [b[-1] for b in s.get("bad_stands", []) if b[:3] == key]
+        return len(marks) >= 3 or any(obs["time"] - t < BAD_STAND_S for t in marks)
+
     def part_steps(self, s, pv, obs):
         """The next part: Table A's first, then Table B's; the cheapest reachable stand outside the burning pan's
-        ring. None: parts left, none reachable now; []: none left."""
+        ring and clear of the bucket. None: parts left, none reachable now; []: none left. What no stand reaches is
+        given up only once the fire is out and the hoist has settled (until then the ring or the bucket may be what
+        is in the way)."""
         left = [n for n in pv["parts"] if self.where(pv, n) not in ("crate", "elsewhere") and n not in s["gave_up"]]
         if not left:
             return []
@@ -1051,24 +1203,34 @@ class Privileged:
             rect = (t["center"], t["size"], math.radians(t["yaw_deg"]))
             top = self.pick_point(pv["parts"][name])
             for stand, appr, hd, depth in self.stands(rect, top[:2]):
-                if not self.stand_ok(pv, occ, stand, appr, hd) or [name] + [round(float(v), 2) for v in stand] in s.get("bad_stands", []):
+                appr = self.stand_ok(pv, occ, stand, appr, hd)
+                if appr is None or self.stand_bad(s, obs, name, stand):
                     continue
-                path = self.planner.plan(occ, xy, appr)
+                path = self.planner.plan(occ, xy, appr, pv["pan"])
                 if path is None:
                     continue
                 cost = self.planner.length(path) + 2.0 * max(0.0, depth) + (0.0 if self.clean(pv, name) else 5.0) + (0.0 if tname == "Table_A" else 3.0)
                 if best is not None and cost >= best[0]:
                     continue
-                wrist = self.reach_ok(s, pv, obs, stand, hd, [top + [0, 0, PRE_ABOVE], top + [0, 0, 0.10], top + [0, 0, TOUCH]],
-                                      self.wrist_options(stand, top))
+                pts = [top + [0, 0, PRE_ABOVE], top + [0, 0, 0.10], top + [0, 0, TOUCH]]
+                wrist = self.reach_ok(s, pv, obs, stand, hd, pts, self.wrist_options(stand, top))
                 if wrist is None:
                     continue
+                # (the vehicle comes to rest up to a dozen centimetres beside its stand: a pick that the arm reaches from
+                # the stand itself only is a pick it may miss, and then the trip there is lost)
+                side = np.array([math.cos(hd), math.sin(hd)])
+                if any(self.reach_ok(s, pv, obs, stand + k * STAND_SLIP * side, hd, pts, [np.array(wrist)] + self.wrist_options(stand, top)) is None
+                       for k in (1.0, -1.0)):
+                    cost += FRAGILE
+                    if best is not None and cost >= best[0]:
+                        continue
                 best = (cost, name, stand, appr, hd, wrist)
             if best is not None and self.where(pv, best[1]) == "Table_A" and tname != "Table_A":
                 break
         if best is None:
-            s["unreached"] = s.get("unreached", 0) + (0 if pv["fire"] else 1)
-            if s["unreached"] >= 6:  # (no ring to wait for, for 3 s: what no stand reaches is given up)
+            cooling = any(obs["time"] - b[-1] < BAD_STAND_S for b in s.get("bad_stands", []))  # (a missed stand may be tried again soon)
+            s["unreached"] = s.get("unreached", 0) + (0 if pv["fire"] or not self.hoist.get("settled", True) or cooling else 1)
+            if s["unreached"] >= 6:  # (no ring and no bucket to wait for, for 3 s: what no stand reaches is given up)
                 for n in left:
                     s["gave_up"].append(n)
                     log(f"t={obs['time']:.1f} {n}: no stand reaches it; given up")
@@ -1083,7 +1245,7 @@ class Privileged:
                 dict(kind="straight", goal=list(stand), heading=hd, timeout=15.0, why="in"),
                 dict(kind="pick", part=name, wrist=wrist, stand=list(stand), timeout=40.0, why=f"pick {name}"),
                 dict(kind="straight", goal=list(appr), heading=hd, timeout=15.0, why="out"),
-                dict(kind="crate", part=name, timeout=120.0, why=f"crate {name}")]
+                dict(kind="crate", part=name, timeout=240.0, why=f"crate {name}")]
 
     def run_pick(self, st, s, pv, obs):
         name = st["part"]
@@ -1094,9 +1256,28 @@ class Privileged:
             xy, psi, _, _ = self.pose(pv)
             wrist = self.reach_ok(s, pv, obs, xy, psi, [top + [0, 0, PRE_ABOVE], top + [0, 0, 0.10], top + [0, 0, TOUCH]],
                                   [np.array(st.get("wrist") or [0.0, 0.0, 1.0])] + self.wrist_options(xy, top))  # (from where it stands)
-            if wrist is None:  # (out of the arm's reach from here: this stand is no good for this part)
-                log(f"t={obs['time']:.1f} {name}: out of reach from ({xy[0]:.2f}, {xy[1]:.2f}), {math.dist(xy, st['stand']):.2f} m off the stand")
-                s.setdefault("bad_stands", []).append([name] + [round(float(v), 2) for v in st["stand"]])
+            if wrist is None:  # (out of the arm's reach from here)
+                off = math.dist(xy, st["stand"])
+                log(f"t={obs['time']:.1f} {name}: out of reach from ({xy[0]:.2f}, {xy[1]:.2f}), {off:.2f} m off the stand")
+                again = {k: v for k, v in st.items() if k != "t0"}
+                if off > PICK_REDO and not st.get("redone"):
+                    # (far off: the turn at the approach walked it there; out, to the approach and in again, from close by)
+                    again["redone"] = True
+                    appr = list(s["steps"][1]["goal"]) if len(s["steps"]) > 1 and s["steps"][1]["kind"] == "straight" else None
+                    if appr is not None:
+                        hd = float(s["steps"][1]["heading"])
+                        s["steps"] = [st, dict(kind="straight", goal=appr, heading=hd, timeout=15.0, why="out to come in again"),
+                                      dict(kind="drive", goal=appr, heading=hd, timeout=40.0, why=f"to {name} again"),
+                                      dict(kind="straight", goal=list(st["stand"]), heading=hd, timeout=15.0, why="in again"), again] + s["steps"][1:]
+                        return True
+                if not st.get("crept"):
+                    # (a little short of it: a few centimetres closer to the table, along the heading, and try again)
+                    again["crept"] = True
+                    s["steps"] = [st, dict(kind="straight", goal=(xy + CREEP * np.array([-math.sin(psi), math.cos(psi)])).tolist(), heading=psi,
+                                           timeout=8.0, why="closer"), again] + s["steps"][1:]
+                    return True
+                # (this stand is no good for this part)
+                s.setdefault("bad_stands", []).append([name] + [round(float(v), 2) for v in st["stand"]] + [float(obs["time"])])
                 s["steps"] = s["steps"][:1] + [x for x in s["steps"][1:] if x["kind"] != "crate"]
                 return True
             st["wrist"] = wrist
@@ -1118,6 +1299,11 @@ class Privileged:
             if obs["ugv"].get("holding") is not None or done:
                 st["phase"] = "held" if obs["ugv"].get("holding") is not None else "missed"
                 st["t_held"] = obs["time"]
+                if st["phase"] == "held":  # (the grip link's frame as it took the part, and the part's own axis that stands up)
+                    st["G_hold"] = self.grip_frame(pv, self.joints(obs))[1].tolist()
+                    pR = quat_mat(part["quat"]) if part.get("quat") is not None else np.eye(3)
+                    k = int(np.argmax(np.abs(pR[2, :])))
+                    s.setdefault("rest", {})[name] = [k, 1.0 if pR[2, k] > 0 else -1.0]
                 tool = self.tool_world(s, pv, obs)
                 log(f"t={obs['time']:.1f} {name}: {st['phase']} ({obs['ugv'].get('holding')}) {obs['time'] - st['t0']:.1f} s into the pick; "
                     f"tool at {np.round(tool, 3).tolist()}, part top {np.round(st['top'], 3).tolist()}, box {part['lo']} {part['hi']}")
@@ -1135,20 +1321,49 @@ class Privileged:
             st["fail"] = True
             st.pop("t_last", None)
         if st["phase"] == "held":
+            # (straight up, as high as the arm holds the tool's lean: the part keeps the pose it was taken in, turned
+            # neither about the tool's axis nor, beyond the arm's reach, with the tool)
             top = np.array(st["top"])
-            up, w = self.line_path(s, pv, obs, top + [0, 0, 0.30], down, step=0.03)
-            st.update(phase="up", path=up, k=0)
+            st["sync"] = True
+            for lift in LIFTS:
+                up, w = self.line_path(s, pv, obs, top + [0, 0, lift], down, step=0.03, smooth=True)
+                dev = self.lean_off(pv, up, down)
+                if dev <= LEAN_TOL:
+                    break
+            if lift < LIFTS[0] or dev > LEAN_TOL:
+                log(f"t={obs['time']:.1f} {name}: lifted {lift:.2f} m (the tool's lean held within {dev:.0f} deg)")
+            st.update(phase="up", path=self.hold_turn(pv, up, st.get("G_hold")), k=0)
         if st["phase"] == "up":
             if self.follow(st, s, obs, ARM_SLOW, tol=0.04):
                 if st.get("fail"):
                     s["steps"] = s["steps"][:1] + [x for x in s["steps"][1:] if x["kind"] != "crate"]
                 st["phase"] = "carry"
-                st["path"], w = self.line_path(s, pv, obs, self.carry_point(pv), down, step=0.04)
+                path, w = self.line_path(s, pv, obs, self.carry_point(pv), down, step=0.04, smooth=st.get("G_hold") is not None)
+                st["path"] = self.hold_turn(pv, path, st.get("G_hold"))
                 st["k"] = 0
             return False
         if st["phase"] == "carry":
             return self.follow(st, s, obs, ARM_FAST, tol=0.05)
         return False
+
+    def lean_off(self, pv, path, wrist):
+        """The largest angle [deg] between the tool's axis along the joint waypoints and the axis `wrist` (world)."""
+        _, _, _, R = self.pose(pv)
+        w = np.asarray(wrist, dtype=float) / (np.linalg.norm(wrist) + 1e-12)
+        worst = 0.0
+        for q in path:
+            tool_r, wr = self.kin.points(q)
+            a = R @ (wr - tool_r)
+            worst = max(worst, math.degrees(math.acos(max(-1.0, min(1.0, float(a @ w) / (np.linalg.norm(a) + 1e-12))))))
+        return worst
+
+    def hold_turn(self, pv, path, G):
+        """The waypoints with the last joint turned so the grip link keeps the frame G (world, as it took the part)
+        about the tool's axis: the IK leaves that turn free, and with the tool leaning it would tip the part."""
+        if G is None:
+            return path
+        G = np.asarray(G, dtype=float)
+        return [self.turn_tool(pv, q, G)[0] for q in path]
 
     @staticmethod
     def pose_key(pv):
@@ -1187,10 +1402,15 @@ class Privileged:
         st["replans"] = st.get("replans", 0) + 1
 
     def track_lower(self, st, s, pv, obs):
-        """The crate's way down, solved again on the true pose when the base has moved (as `track_pick`)."""
+        """The crate's way down, solved again on the true pose when the base has moved (as `track_pick`): the rest of
+        the way over to the part's spot and down to where it is let go."""
         if not self.moved(st, pv, obs):
             return
-        st["path"], _ = self.line_path(s, pv, obs, np.array(st["p1"]), np.array([0.0, 0.0, 1.0]), step=0.03)
+        drop = st.get("drop")
+        if drop is not None:
+            st["path"], st["n_over"] = self.drop_path(s, pv, obs, drop, over=st["k"] < st.get("n_over", 0))
+        else:
+            st["path"], _ = self.line_path(s, pv, obs, np.array(st["p1"]), np.array([0.0, 0.0, 1.0]), step=0.03)
         st.update(k=0, plan_pose=self.pose_key(pv), t_replan=obs["time"])
         st["replans"] = st.get("replans", 0) + 1
 
@@ -1198,8 +1418,204 @@ class Privileged:
         _, _, p, R = self.pose(pv)
         return p + R @ np.asarray(which, dtype=float)
 
+    # -- the drop: planned on the part's box as it will hang over its spot (the grader holds it rigidly in the grip link's
+    # frame, so its pose at the drop follows from the arm's)
+    def grip_frame(self, pv, q):
+        """The grip link's frame in the world for joint positions q on the vehicle's true pose (origin, rotation), and
+        the last joint's (signed) axis there: it turns the tool about its own axis, the grip point on it."""
+        T, js = self.kin.frames(q)
+        _, _, p, R = self.pose(pv)
+        return p + R @ T[:3, 3], R @ T[:3, :3], R @ np.asarray(js[-1][1], dtype=float)
+
+    def held_shape(self, pv, obs, name):
+        """The held part as the grip link's frame carries it: its box's corners and its orientation in that frame, the
+        tool's axis there, and the frame's orientation now (world). None without the part's own box."""
+        part = pv["parts"].get(name) or {}
+        if part.get("own_lo") is None or part.get("quat") is None or part.get("pos") is None:
+            return None
+        q = self.joints(obs)
+        gp, gR, _ = self.grip_frame(pv, q)
+        tool_r, wrist_r = self.kin.points(q)
+        a = self.pose(pv)[3] @ (wrist_r - tool_r)
+        pR = quat_mat(part["quat"])
+        lo, hi = np.array(part["own_lo"], dtype=float), np.array(part["own_hi"], dtype=float)
+        cs = np.array([[x, y, z] for x in (lo[0], hi[0]) for y in (lo[1], hi[1]) for z in (lo[2], hi[2])])
+        world = np.array(part["pos"], dtype=float) + cs @ pR.T
+        return dict(corners=(world - gp) @ gR, R_rel=gR.T @ pR, axis=gR.T @ (a / (np.linalg.norm(a) + 1e-12)), gR=gR)
+
+    @staticmethod
+    def drop_options(shape, rest=None):
+        """The ways the held part may go down into the crate, in order: (how, the grip link's orientation in the world,
+        the tool's axis, the box's corners from the tool point in world axes). Level first: the part's own axis nearest
+        the vertical made vertical, so it lands as it stood or lay on its table (the tool then leans as it did at the
+        pick), turned about the vertical so its sides square with the crate's walls (the four quarter turns, the
+        smallest first). Then the tool upright and the part as it hangs from it, turned to its smallest footprint."""
+        R_rel, c_g, a_g, gR = shape["R_rel"], shape["corners"], shape["axis"], shape["gR"]
+        up = np.array([0.0, 0.0, 1.0])
+        pR = gR @ R_rel
+        if rest is not None:  # (the own axis that stood up on the table, as the pick found it)
+            k, sign = int(rest[0]), float(rest[1])
+        else:
+            k = int(np.argmax(np.abs(pR[2, :])))
+            sign = 1.0 if pR[2, k] > 0 else -1.0
+        L = rot_between(pR[:, k] * sign, up) @ pR
+        j = (k + 1) % 3
+        phi = math.atan2(L[1, j], L[0, j])
+        level = []
+        for m in range(4):
+            psi = wrap_a(-phi + m * math.pi / 2)
+            G = rot_z(psi) @ L @ R_rel.T
+            level.append((abs(psi), "level", G, G @ a_g, c_g @ G.T))
+        out = [o[1:] for o in sorted(level, key=lambda o: o[0])]
+        U = rot_between(gR @ a_g, up) @ gR
+        best = None
+        for d in range(-90, 90, 5):
+            G = rot_z(math.radians(d)) @ U
+            cw = c_g @ G.T
+            ext = cw[:, :2].max(axis=0) - cw[:, :2].min(axis=0)
+            key = (round(float(ext[0] * ext[1]), 4), abs(d))
+            if best is None or key < best[0]:
+                best = (key, G, cw)
+        out.append(("upright", best[1], up, best[2]))
+        return out
+
+    def turn_tool(self, pv, q, G):
+        """q with its last joint turned so the grip link's frame comes round to G about the tool's axis (the grip point
+        and the tool's axis stay where they are)."""
+        _, gR, u = self.grip_frame(pv, q)
+        u = u / (np.linalg.norm(u) + 1e-12)
+
+        def flat(v):
+            v = np.asarray(v, dtype=float) - (np.asarray(v, dtype=float) @ u) * u
+            return v / (np.linalg.norm(v) + 1e-12)
+        x0, x1 = flat(gR[:, 0]), flat(np.asarray(G)[:, 0])
+        th = math.atan2(float(np.cross(x0, x1) @ u), float(x0 @ x1))
+        out = dict(q)
+        out[self.kin.joints[-1]] = out[self.kin.joints[-1]] + th
+        return out, th
+
+    def drop_path(self, s, pv, obs, drop, over=True):
+        """Joint waypoints to the drop: over to the spot at the transit height, the tool turning to the drop's axis
+        and the part to its turn on the way (`over`), then straight down to where the part is let go; and how many of
+        them are the way over."""
+        G, ax = np.array(drop["G"]), np.array(drop["ax"])
+        path, start, p0 = [], s, None
+        if over:  # (the grip link's frame turned from where it is now to the drop's, evenly along the way)
+            a, _ = self.line_path(s, pv, obs, np.array(drop["p_over"]), ax, step=0.03, smooth=True)
+            G0 = self.grip_frame(pv, dict(s["q_tgt"] or self.joints(obs)))[1]
+            D = G @ G0.T
+            ang = math.acos(max(-1.0, min(1.0, (float(np.trace(D)) - 1.0) / 2.0)))
+            w = np.array([D[2, 1] - D[1, 2], D[0, 2] - D[2, 0], D[1, 0] - D[0, 1]])
+            w = w / np.linalg.norm(w) if np.linalg.norm(w) > 1e-9 else np.array([0.0, 0.0, 1.0])
+            a = [self.turn_tool(pv, q, axis_rot(w, ang * (i + 1) / len(a))[:3, :3] @ G0)[0] for i, q in enumerate(a)]
+            path, start, p0 = a, dict(s, q_tgt=a[-1]), np.array(drop["p_over"])
+        b, _ = self.line_path(start, pv, obs, np.array(drop["p_rel"]), ax, p0=p0, wrist0=ax if p0 is not None else None, step=0.02, smooth=True)
+        b = [self.turn_tool(pv, q, G)[0] for q in b]
+        return path + b, len(path)
+
+    def crate_spots(self, pv, d_lo, d_hi, held, xy):
+        """Where the held part may go down into the crate: tool positions (x, y) at which its box (`d_lo`, `d_hi`: its
+        corners from the tool point, as it will hang there) lies inside the crate's walls with SLOT_MARGIN to spare,
+        on a grid over the room it has. The ones whose box overlaps the parts already in the crate least come first;
+        then those whose box rests against the most walls and parts (the crate fills from its corners: a part lying
+        on its broad side is broad, and six fit side by side only packed); then the nearest to the vehicle. Each with
+        its overlap and its contacts."""
+        lo, hi = np.array(pv["bay"]["crate"][0]), np.array(pv["bay"]["crate"][1])
+        a, b = lo[:2] + SLOT_MARGIN - d_lo, hi[:2] - SLOT_MARGIN - d_hi
+        axes = [np.linspace(a[k], b[k], n) if a[k] < b[k] else np.array([(a[k] + b[k]) / 2]) for k, n in ((0, 13), (1, 9))]
+        others = [(np.array(q["lo"][:2]) - 0.01, np.array(q["hi"][:2]) + 0.01) for m, q in pv["parts"].items()
+                  if m != held and not q.get("held") and self.where(pv, m) == "crate"]
+        out = []
+        for x in axes[0]:
+            for y in axes[1]:
+                plo, phi = np.array([x, y]) + d_lo, np.array([x, y]) + d_hi
+                over = 0.0
+                # (against a wall: at either end of the room it has along an axis)
+                touch = sum(int(a[k] < b[k] and abs((x, y)[k] - a[k]) < 1e-6) + int(a[k] < b[k] and abs((x, y)[k] - b[k]) < 1e-6) for k in range(2))
+                for olo, ohi in others:
+                    w = np.minimum(phi, ohi) - np.maximum(plo, olo)
+                    over += float(max(0.0, w[0]) * max(0.0, w[1]))
+                    for k in range(2):  # (against a part: within 3 cm of its box along one axis, beside it along the other)
+                        j = 1 - k
+                        if w[j] > 0.0 and (0.0 <= olo[k] - phi[k] < 0.03 or 0.0 <= plo[k] - ohi[k] < 0.03):
+                            touch += 1
+                out.append((round(over, 4), -touch, math.dist((x, y), xy), np.array([x, y])))
+        out.sort(key=lambda r: r[:3])
+        return [(r[0], -r[1], r[3]) for r in out]
+
+    def floor_under(self, pv, held, plo, phi):
+        """The height the held part's bottom must clear over its footprint (plo, phi): the crate's rim, or the parts
+        already in the crate under it."""
+        z = float(pv["bay"]["crate"][1][2])
+        for m, q in pv["parts"].items():
+            if m == held or q.get("held") or self.where(pv, m) != "crate":
+                continue
+            if np.all(np.minimum(phi, np.array(q["hi"][:2]) + 0.01) > np.maximum(plo, np.array(q["lo"][:2]) - 0.01)):
+                z = max(z, float(q["hi"][2]))
+        return z
+
+    def fk_box(self, pv, q, shape):
+        """The held part's box (lo, hi in x, y) with the arm at joint positions q (forward kinematics)."""
+        gp, gR, _ = self.grip_frame(pv, q)
+        cw = gp + shape["corners"] @ gR.T
+        return cw[:, :2].min(axis=0), cw[:, :2].max(axis=0)
+
+    @staticmethod
+    def into_crate(pv, blo, bhi, room):
+        """The least horizontal move that brings a box (lo, hi in x, y) inside the crate's walls (the check before a
+        release wants 0.035 m inside its outer box) with `room` to spare; a box too broad for that is centred."""
+        lo, hi = np.array(pv["bay"]["crate"][0][:2]) + 0.035, np.array(pv["bay"]["crate"][1][:2]) - 0.035
+        shift = np.zeros(2)
+        for k in range(2):
+            if bhi[k] - blo[k] > hi[k] - lo[k] - 2 * room:
+                shift[k] = (lo[k] + hi[k]) / 2 - (blo[k] + bhi[k]) / 2
+            elif blo[k] < lo[k] + room:
+                shift[k] = lo[k] + room - blo[k]
+            elif bhi[k] > hi[k] - room:
+                shift[k] = hi[k] - room - bhi[k]
+        return shift
+
+    def plan_drop(self, s, pv, obs, held):
+        """The drop: the best spot over the ways the part may go down (the least overlap with the parts already in,
+        then the most walls and parts touched, then level before upright), among the spots the arm reaches from where
+        the vehicle stands. None without the part's shape or a reachable spot."""
+        shape = self.held_shape(pv, obs, held)
+        if shape is None:
+            return None
+        xy, psi, _, _ = self.pose(pv)
+        best, tried = None, []
+        for rank, (how, G, ax, cw) in enumerate(self.drop_options(shape, (s.get("rest") or {}).get(held))):
+            lean = math.degrees(math.acos(max(-1.0, min(1.0, float(ax[2])))))
+            if lean > 65.0:  # (the tool would lean too far)
+                tried.append(f"{how} leaning {lean:.0f}")
+                continue
+            d_lo, d_hi = cw[:, :2].min(axis=0), cw[:, :2].max(axis=0)
+            below = -float(cw[:, 2].min())
+            n = 0
+            for over, touch, spot in self.crate_spots(pv, d_lo, d_hi, held, xy)[:4]:
+                if best is not None and (over, -touch, rank) >= best[0]:
+                    break
+                n += 1
+                z = self.floor_under(pv, held, spot + d_lo, spot + d_hi)
+                p_over = np.array([spot[0], spot[1], z + TRANSIT + below])
+                p_rel = np.array([spot[0], spot[1], z + RELEASE + below])
+                if self.reach_ok(s, pv, obs, xy, psi, [p_over, p_rel], [ax]) is not None:
+                    best = ((over, -touch, rank), dict(how=how, G=G.tolist(), ax=[float(v) for v in ax], p_over=p_over.tolist(),
+                                                       p_rel=p_rel.tolist(), box=[(spot + d_lo).tolist(), (spot + d_hi).tolist()]))
+                    break
+            tried.append(f"{how} leaning {lean:.0f}: {n} spots{' ok' if best is not None and best[0][2] == rank else ''}")
+            if best is not None and best[0][0] == 0.0 and best[0][1] <= -2 and how == "level":
+                break  # (a level spot that overlaps no part and rests against two walls or parts: none better)
+        pR = shape["gR"] @ shape["R_rel"]
+        a_now = shape["gR"] @ shape["axis"]
+        log(f"t={obs['time']:.1f} {held}: the drop's ways tried (the part tilted {math.degrees(math.acos(min(1.0, float(np.max(np.abs(pR[2, :])))))):.0f} deg, "
+            f"the tool leaning {math.degrees(math.acos(max(-1.0, min(1.0, float(a_now[2]))))):.0f} deg): {'; '.join(tried)}")
+        return None if best is None else best[1]
+
     def run_crate(self, st, s, pv, obs):
-        """To the crate's nearest free side, the part over a free slot, let go, check it landed inside."""
+        """To the crate's nearest open side (none outside the burning pan's ring: the vehicle holds the part and waits,
+        the step's clock stopped), the part down where it fits, let go, check it landed inside; back out, except after
+        the last part."""
         held = obs["ugv"].get("holding")
         if "phase" not in st:
             if held is None:
@@ -1208,26 +1624,26 @@ class Privileged:
             c = (lo + hi) / 2
             occ = self.occ(pv)
             xy = self.pose(pv)[0]
-            free = [k for k in range(len(SLOTS)) if k not in s["slots"]] or list(range(len(SLOTS)))
             best = None
             for stand, appr, hd, _ in self.stands(self.planner.crate, c[:2]):
-                if not self.stand_ok(pv, occ, stand, appr, hd):
+                appr = self.stand_ok(pv, occ, stand, appr, hd)
+                if appr is None:
                     continue
-                path = self.planner.plan(occ, xy, appr)
+                path = self.planner.plan(occ, xy, appr, pv["pan"])
                 if path is None:
                     continue
-                for k in free:
-                    slot = np.array([c[0] + SLOTS[k][0], c[1] + SLOTS[k][1], hi[2] + 0.10])
-                    cost = self.planner.length(path) + 0.5 * math.dist(stand, slot[:2])
-                    if best is None or cost < best[0]:
-                        best = (cost, stand, appr, hd, k, slot)
+                cost = self.planner.length(path) + 0.5 * math.dist(stand, c[:2])
+                if best is None or cost < best[0]:
+                    best = (cost, stand, appr, hd)
             if best is None:
-                st.setdefault("waits", 0)
-                st["waits"] += 1
+                if not st.get("waits"):
+                    log(f"t={obs['time']:.1f} crate: no side open (the burning pan's ring, the bucket): holding {held}, waiting")
+                st["waits"] = st.get("waits", 0) + 1
+                st["t0"] = obs["time"]  # (the step's time limit counts from when a side opens)
                 return False
-            _, stand, appr, hd, k, slot = best
-            log(f"t={obs['time']:.1f} crate: slot {k} from ({stand[0]:.2f}, {stand[1]:.2f}) heading {math.degrees(hd):.0f}")
-            st.update(phase="drive", stand=list(stand), appr=list(appr), hd=hd, slot_k=k, slot=slot.tolist(),
+            _, stand, appr, hd = best
+            log(f"t={obs['time']:.1f} crate: from ({stand[0]:.2f}, {stand[1]:.2f}) heading {math.degrees(hd):.0f}")
+            st.update(phase="drive", stand=list(stand), appr=list(appr), hd=hd,
                       sub=[dict(kind="drive", goal=list(appr), heading=hd, timeout=60.0), dict(kind="straight", goal=list(stand), heading=hd, timeout=15.0)])
         if st["phase"] == "drive":
             sub = st["sub"][0]
@@ -1246,62 +1662,109 @@ class Privileged:
                 st["phase"] = "check"
                 st["t_rel"] = obs["time"]
                 return False
+            off = math.dist(self.pose(pv)[0], st["stand"])
+            if off > STAND_OFF and st.get("redrives", 0) < 2:  # (the drive or the straight stretch did not get it there: again)
+                st["redrives"] = st.get("redrives", 0) + 1
+                log(f"t={obs['time']:.1f} crate: {off:.2f} m off its stand, holding {held}: driving there again")
+                st.update(phase="drive", sub=[dict(kind="drive", goal=list(st["appr"]), heading=st["hd"], timeout=60.0),
+                                              dict(kind="straight", goal=list(st["stand"]), heading=st["hd"], timeout=15.0)])
+                return False
+            drop = self.plan_drop(s, pv, obs, held)
+            if drop is not None:
+                # (the part's box where the planned arm really puts it: the IK holds the tool's axis only so well, and
+                # a part hanging from a leaning tool swings out with any error; moved in until it fits)
+                shape = self.held_shape(pv, obs, held)
+                for _ in range(3):
+                    path, n_over = self.drop_path(s, pv, obs, drop)
+                    blo, bhi = self.fk_box(pv, path[-1], shape)
+                    shift = self.into_crate(pv, blo, bhi, 0.012)
+                    if not np.any(shift):
+                        break
+                    drop["p_over"] = (np.array(drop["p_over"]) + [shift[0], shift[1], 0.0]).tolist()
+                    drop["p_rel"] = (np.array(drop["p_rel"]) + [shift[0], shift[1], 0.0]).tolist()
+                log(f"t={obs['time']:.1f} {held}: down into the crate {drop['how']} at ({drop['p_rel'][0]:.2f}, {drop['p_rel'][1]:.2f}), "
+                    f"its box as planned {np.round(drop['box'][0], 3).tolist()} {np.round(drop['box'][1], 3).tolist()}, "
+                    f"as the arm puts it {np.round(blo, 3).tolist()} {np.round(bhi, 3).tolist()}")
+                st.update(path=path, n_over=n_over, k=0, phase="lower", part=held, drop=drop, sync=True, plan_pose=self.pose_key(pv))
+                return False
+            # (no shape of the part, or no spot the arm reaches with it: the tool upright, the part's box as it hangs now)
             tool = self.tool_world(s, pv, obs)
             below = float(tool[2] - part["lo"][2])
-            lo, hi = np.array(pv["bay"]["crate"][0]), np.array(pv["bay"]["crate"][1])
-            c = (lo + hi) / 2
-            order = [st["slot_k"]] + [k for k in range(len(SLOTS)) if k != st["slot_k"] and k not in s["slots"]] + list(range(len(SLOTS)))
+            hi = np.array(pv["bay"]["crate"][1])
             xy, psi, _, _ = self.pose(pv)
-            for k in order:  # (the planned slot, else the first free one the arm reaches from where the vehicle stands)
-                slot = np.array([c[0] + SLOTS[k][0], c[1] + SLOTS[k][1], hi[2] + 0.10])
-                if self.reach_ok(s, pv, obs, xy, psi, [slot + [0, 0, below]], [np.array([0.0, 0.0, 1.0])]) is not None:
-                    st["slot_k"] = k
+            spots = self.crate_spots(pv, np.array(part["lo"][:2]) - tool[:2], np.array(part["hi"][:2]) - tool[:2], held, xy)
+            p1 = np.array([spots[0][2][0], spots[0][2][1], hi[2] + 0.10 + below])
+            for _, _, spot in spots[:8]:
+                p = np.array([spot[0], spot[1], hi[2] + 0.10 + below])
+                if self.reach_ok(s, pv, obs, xy, psi, [p], [np.array([0.0, 0.0, 1.0])]) is not None:
+                    p1 = p
                     break
-            # the slot moved in until the part's box (as it hangs from the tool now) lies inside the crate's walls with
-            # room to spare: a big part over an outer slot would hang over the wall and need aiming again
-            d_lo, d_hi = np.array(part["lo"][:2]) - tool[:2], np.array(part["hi"][:2]) - tool[:2]
-            a, b = lo[:2] + SLOT_MARGIN - d_lo, hi[:2] - SLOT_MARGIN - d_hi
-            slot[:2] = np.where(a <= b, np.clip(slot[:2], a, b), (a + b) / 2)
-            p1 = np.array([slot[0], slot[1], slot[2] + below])
+            log(f"t={obs['time']:.1f} {held}: down into the crate at ({p1[0]:.2f}, {p1[1]:.2f}), its box "
+                f"{np.round(np.array(part['hi'][:2]) - np.array(part['lo'][:2]), 3).tolist()} across")
             st["path"], w = self.line_path(s, pv, obs, p1, np.array([0.0, 0.0, 1.0]), step=0.03)
             st.update(k=0, phase="lower", part=held, p1=p1.tolist(), plan_pose=self.pose_key(pv))
             return False
         if st["phase"] == "lower":
             if not st.get("aims"):  # (the aim-again moves below re-plan from where the part is: only the first way down)
                 self.track_lower(st, s, pv, obs)
-            if self.follow(st, s, obs, ARM_SLOW, tol=0.03):
+            fast = st.get("drop") is not None and not st.get("aims") and st["k"] < st.get("n_over", 0) - 2
+            there = self.follow(st, s, obs, ARM_FAST if fast else ARM_SLOW, tol=0.03)  # (over to the spot high above the crate: fast)
+            if there and obs["time"] - st.get("t_aim", -9.0) >= 0.6:  # (an aim-again move: the arm has had the time to make it)
                 part = pv["parts"].get(st["part"]) if st.get("part") else None
                 lo, hi = np.array(pv["bay"]["crate"][0]), np.array(pv["bay"]["crate"][1])
                 inner_lo, inner_hi = lo[:2] + 0.035, hi[:2] - 0.035
                 inside = part is None or (np.all(np.array(part["lo"][:2]) >= inner_lo) and np.all(np.array(part["hi"][:2]) <= inner_hi))
+                over = part is None or (np.all(np.array(part["center"][:2]) >= lo[:2] + 0.06) and np.all(np.array(part["center"][:2]) <= hi[:2] - 0.06))
+                if not inside and st.get("aims", 0) >= 3 and not over and st.get("redrives", 0) < 2:
+                    # (out of the arm's reach from where the vehicle stands: never let it go there; the part back up, to the
+                    # stand again, the drop planned anew)
+                    st["redrives"] = st.get("redrives", 0) + 1
+                    log(f"t={obs['time']:.1f} {st['part']}: not over the crate from here; back up and to the stand again")
+                    path, w = self.line_path(s, pv, obs, self.carry_point(pv), np.array([0.0, 0.0, 1.0]), step=0.04)
+                    st.update(phase="lift", path=path, k=0, aims=0, drop=None)
+                    return False
                 if not inside and st.get("aims", 0) < 3:  # (the vehicle slid while the arm reached: aim again from here)
                     st["aims"] = st.get("aims", 0) + 1
-                    c_in = (inner_lo + inner_hi) / 2
-                    pc = np.array(part["center"][:2])
-                    shift = np.clip(c_in - pc, -(inner_hi - inner_lo) / 2, (inner_hi - inner_lo) / 2)
+                    # (the least move that brings the part's box, as it hangs now, inside the walls with a little room)
+                    shift = self.into_crate(pv, np.array(part["lo"][:2]), np.array(part["hi"][:2]), 0.008)
                     tool = self.tool_world(s, pv, obs)
-                    log(f"t={obs['time']:.1f} {st['part']} not over the crate yet: aiming again ({shift[0]:+.2f}, {shift[1]:+.2f})")
-                    st["path"], w = self.line_path(s, pv, obs, tool + np.array([shift[0], shift[1], 0.0]), np.array([0.0, 0.0, 1.0]), step=0.02)
-                    st["k"] = 0
+                    log(f"t={obs['time']:.1f} {st['part']} not over the crate yet: aiming again ({shift[0]:+.3f}, {shift[1]:+.3f})")
+                    target = tool + np.array([shift[0], shift[1], 0.0])
+                    drop = st.get("drop")
+                    if drop is not None:
+                        path, w = self.line_path(s, pv, obs, target, np.array(drop["ax"]), step=0.02)
+                        st["path"] = [self.turn_tool(pv, q, np.array(drop["G"]))[0] for q in path]
+                    else:
+                        st["path"], w = self.line_path(s, pv, obs, target, np.array([0.0, 0.0, 1.0]), step=0.02)
+                    st["k"], st["t_aim"] = 0, obs["time"]
                     return False
                 s["grip"] = False
                 st["phase"], st["t_rel"] = "check", obs["time"]
             return False
-        if st["phase"] == "check":
-            if obs["time"] - st["t_rel"] < 1.2:
-                return False
+        if st["phase"] == "lift":  # (the part back to the carry pose, then the drive to the stand again)
+            if self.follow(st, s, obs, ARM_FAST, tol=0.05):
+                st.update(phase="drive", sub=[dict(kind="drive", goal=list(st["appr"]), heading=st["hd"], timeout=60.0),
+                                              dict(kind="straight", goal=list(st["stand"]), heading=st["hd"], timeout=15.0)])
+            return False
+        if st["phase"] == "check":  # (let go: up and away to the tucked arm at once; where the part landed is read once it has fallen)
             name = st.get("part")
-            ok = name is not None and self.where(pv, name) == "crate"
-            log(f"t={obs['time']:.1f} {name} {'in the crate' if ok else 'missed the crate: ' + self.where(pv, name) if name else 'gone'}")
-            if ok:
-                s["slots"].append(st["slot_k"])
+            # (the last part: the vehicle stays where it stands, the arm folds over the crate; any drive now only
+            # delays the end, which wants the vehicle still)
+            st["last"] = not [n for n in pv["parts"] if n != name and self.where(pv, n) not in ("crate", "elsewhere") and n not in s["gave_up"]]
             st["phase"] = "away"
+            up_dir = np.array([0.0, 0.0, 1.0])
             p = self.tool_world(s, pv, obs) + np.array([0.0, 0.0, 0.12])
-            st["path"], w = self.line_path(s, pv, obs, p, np.array([0.0, 0.0, 1.0]), step=0.03)
-            st["k"] = 0
+            up, w = self.line_path(s, pv, obs, p, up_dir, step=0.03)
+            tuck, w = self.line_path(dict(s, q_tgt=up[-1]), pv, obs, self.carry_point(pv, TUCK), up_dir, p0=p, wrist0=up_dir, step=0.05)
+            st["path"], st["k"] = up + tuck, 0
             return False
         if st["phase"] == "away":
-            if self.follow(st, s, obs, ARM_FAST, tol=0.05):
+            if self.follow(st, s, obs, ARM_FAST, tol=0.05) and obs["time"] - st["t_rel"] >= 0.9:
+                name = st.get("part")
+                ok = name is not None and self.where(pv, name) == "crate"
+                log(f"t={obs['time']:.1f} {name} {'in the crate' if ok else 'missed the crate: ' + self.where(pv, name) if name else 'gone'}")
+                if st.get("last"):
+                    return True
                 st["phase"] = "back"
                 st["sub"] = [dict(kind="straight", goal=st["appr"], heading=st["hd"], timeout=15.0)]
             return False
@@ -1328,9 +1791,15 @@ class Privileged:
         goal = path[k]
         step = rate * self.dt
         q = s["q_tgt"]
-        for n in self.kin.joints:
-            d = goal[n] - q[n]
-            q[n] += float(np.clip(d, -step, step))
+        if st.get("sync"):  # (all the joints arrive together: the tool keeps to the path between its waypoints)
+            m = max(abs(goal[n] - q[n]) for n in self.kin.joints)
+            f = 1.0 if m <= step else step / m
+            for n in self.kin.joints:
+                q[n] = goal[n] if f >= 1.0 else q[n] + f * (goal[n] - q[n])
+        else:
+            for n in self.kin.joints:
+                d = goal[n] - q[n]
+                q[n] += float(np.clip(d, -step, step))
         arrived = all(abs(goal[n] - q[n]) < 1e-6 for n in self.kin.joints)
         joints = obs["ugv"]["joints"]
         if arrived and k < len(path) - 1:
@@ -1380,14 +1849,54 @@ class Privileged:
         w = float(np.clip(2.0 * err, -W_TURN, W_TURN))
         return self.wheels(0.0, math.copysign(max(abs(w), 0.3), err))
 
+    def clear_of_bucket(self, pv, pts):
+        """Is the polyline `pts` clear of the bucket, of the stretches the hoist is about to carry it over and of the
+        flying robots that fly low, as they are now? (The static obstacles do not move: the planner keeps the path
+        clear of them.)"""
+        b = pv["bucket"]["pos"]
+        keep = self.hoist.get("keep") or ()
+        uavs = self.low_uavs(pv)
+        for a, c in zip(pts[:-1], pts[1:]):
+            n = max(2, int(math.dist(a, c) / (self.planner.r / 2)) + 1)
+            for k in range(n + 1):
+                x, y = a[0] + k / n * (c[0] - a[0]), a[1] + k / n * (c[1] - a[1])
+                if math.hypot(x - b[0], y - b[1]) < BUCKET_ROOM:
+                    return False
+                if any(float(seg_dist(x, y, (x0, y0), (x1, y1))) < room for x0, y0, x1, y1, room in keep):
+                    return False
+                if any(math.hypot(x - ux, y - uy) < UAV_ROOM + INFLATE for ux, uy in uavs):
+                    return False
+        return True
+
     def drive(self, st, s, pv, obs):
         xy, psi, _, _ = self.pose(pv)
         goal = np.array(st["goal"], dtype=float)
         if st.get("arrived"):
-            return self.turn(pv, st["heading"], st) if st.get("heading") is not None else (self.wheels(0.0, 0.0), True)
+            if st.get("heading") is None:
+                return self.wheels(0.0, 0.0), True
+            st.setdefault("turn_at", [float(xy[0]), float(xy[1])])
+            st["turn_t"] = st.get("turn_t", 0.0) + self.dt
+            if math.dist(xy, st["turn_at"]) > TURN_DRIFT or st["turn_t"] > TURN_MAX:
+                # (a turn on the spot that carries the vehicle off in an arc, a wheel slipping: not there any more, so
+                # stop and drive to the goal again from where it got to, twice; then end the drive where it is, the
+                # step after it checks how far off it stands. Turning on would wander anywhere, a burning pan's ring
+                # included)
+                log(f"t={obs['time']:.1f} drive: the turn has carried it {math.dist(xy, st['turn_at']):.2f} m in {st['turn_t']:.1f} s"
+                    f"{': to the goal again' if st.get('turn_redo', 0) < 2 else ': stopped there'}")
+                if st.get("turn_redo", 0) >= 2:
+                    return self.wheels(0.0, 0.0), True
+                st["turn_redo"] = st.get("turn_redo", 0) + 1
+                for k in ("arrived", "turn_at", "turn_t", "near_t", "near_back", "crept", "path"):
+                    st.pop(k, None)
+                return self.wheels(0.0, 0.0), False
+            return self.turn(pv, st["heading"], st)
+        if "path" in st and obs["time"] - st.get("t_check", -9.0) >= 0.5:  # (the bucket moves: a path it now crosses goes)
+            st["t_check"] = obs["time"]
+            if not self.clear_of_bucket(pv, [list(xy)] + [list(p) for p in st["path"][1:]]):
+                st["t_plan"] = -9.0
         if "path" not in st or obs["time"] - st.get("t_plan", -9) > 2.0:
             occ = self.occ(pv)
-            path = self.planner.plan(occ, xy, goal)
+            path = self.planner.plan(occ, xy, goal, pv["pan"])
             st["t_plan"] = obs["time"]
             if path is None:
                 st.pop("path", None)
@@ -1407,6 +1916,25 @@ class Privileged:
                 st["arrived"] = True
                 return self.wheels(0.0, 0.0), st.get("heading") is None
             return self.wheels(math.copysign(min(V_SLOW, 0.8 * abs(along) + 0.03), along), 0.0), False
+        st["near_t"] = st.get("near_t", 0.0) + self.dt if dg < 0.5 else 0.0
+        if st["near_t"] > NEAR_MAX and dg < 0.25:  # (it has hunted round the goal this long: near enough, the straight stretch takes up the rest)
+            log(f"t={obs['time']:.1f} drive: {dg:.2f} m from its goal after {st['near_t']:.0f} s near it: taken as there")
+            st["arrived"] = True
+            return self.wheels(0.0, 0.0), st.get("heading") is None
+        if dg < NEAR_GOAL:
+            # near the goal: face it (or turn the back to it, whichever is less of a turn), then straight at it; the
+            # pursuit, its look-ahead on the goal itself, would circle a goal it passes beside at its turning radius
+            to_goal = heading_of(goal - xy)
+            e_fwd, e_back = wrap_a(to_goal - psi), wrap_a(to_goal + math.pi - psi)
+            back = st.get("near_back")
+            if back is None or abs(e_back if back else e_fwd) > math.radians(100.0):  # (kept once chosen: no dithering abeam of it)
+                back = abs(e_back) < abs(e_fwd)
+                st["near_back"] = back
+            e = e_back if back else e_fwd
+            if abs(e) > math.radians(15.0):
+                return self.spin(pv, e, st), False
+            v = min(V_SLOW, 0.8 * dg + 0.04) * math.cos(e)
+            return self.wheels(-v if back else v, float(np.clip(2.0 * e, -0.5, 0.5))), False
         # pure pursuit: the point on the path 0.35 m ahead of the nearest one
         best, bi, bf = 1e9, 0, 0.0
         for i in range(len(path) - 1):
@@ -1459,8 +1987,13 @@ class Privileged:
         along = float((goal - xy) @ f)
         if abs(along) < 0.012:
             return self.wheels(0.0, 0.0), abs(pv["ugv"]["vel"][0]) + abs(pv["ugv"]["vel"][1]) < 0.03
+        if abs(wrap_a(hd - psi)) > math.radians(25.0):  # (far off the line's heading, a drive along it would arc off: turn first,
+            st.setdefault("spin_at", [float(xy[0]), float(xy[1])])  # unless the turn carries it off: then stop, the next step looks)
+            if math.dist(xy, st["spin_at"]) > TURN_DRIFT:
+                return self.wheels(0.0, 0.0), True
+            return self.spin(pv, wrap_a(hd - psi), st), False
         lat = float((xy - goal) @ n)  # (> 0: left of the line)
-        v = math.copysign(min(V_SLOW, 1.2 * abs(along) + 0.02), along)
+        v = math.copysign(min(V_STRAIGHT, 1.2 * abs(along) + 0.02), along)
         steer = -math.copysign(1.0, v) * float(np.clip(math.atan2(lat, LINE_LOOK), -LINE_STEER, LINE_STEER))
         err = wrap_a(hd + steer - psi)
         return self.wheels(v, float(np.clip(2.0 * err, -0.5, 0.5))), False
@@ -1488,9 +2021,11 @@ class Vehicle:
     def init_state(self):
         return self.prog.init_state() if self.privileged else self.base.init_state()
 
-    def act(self, s, obs, hoist_phase):
+    def act(self, s, obs, hoist):
+        """`hoist`: what the hoist's controller says (its phase; with the true state, where the bucket is about to pass
+        and whether the hoist has settled); the baseline takes the phase only."""
         if self.privileged and "privileged" in obs and "ugv" in obs and obs["privileged"].get("ugv"):
-            return self.prog.act(s, obs, hoist_phase)
+            return self.prog.act(s, obs, hoist)
         if self.privileged:
             return {}
-        return self.base.act(s, obs, hoist_phase)
+        return self.base.act(s, obs, hoist.get("phase") if isinstance(hoist, dict) else hoist)
