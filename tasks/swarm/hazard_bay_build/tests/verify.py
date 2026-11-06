@@ -22,7 +22,8 @@ each mission's sensor noise at its noise seed, and each mission's match lock fro
 retry meets the same lock). What the probes read (their code, `grader_config.json` with the real bay's facts and the
 set's days, the real bay's layer) sits in a folder only the probe account can read (`work/probe`, 0700); a mission's
 seed and index travel in the probe's own environment, never on a command line (the agent's controller runs in the same
-sandbox during the mission), and nothing of the set is written to the log.
+sandbox during the mission; only the probe's output file is named by the mission's place in the set's fixed order,
+which tells nothing), and nothing of the set is written to the log.
 
 A submission that carries the reference's token (`.oracle_token`, sha256 in `hidden/oracle_token.sha256`) gets the
 true state in each observation (`privileged`): the reference program's channel; nothing else changes.
