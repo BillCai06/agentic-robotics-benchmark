@@ -73,8 +73,7 @@ READY                                       <- within 40 s of launch
   and scratch files elsewhere, under `/tmp`. The submission may hold only regular files and directories: a symbolic
   link or any other kind of file anywhere in it, or more than 2 GiB in all, and the whole submission scores 0.
 - **No network.** When it is graded your program has no network: it cannot open an internet socket, not even one to
-  localhost; only Unix-domain sockets and pipes work. (On a host where the grader cannot enforce that, a run in which
-  your program holds a connection to another machine is aborted.)
+  localhost; only Unix-domain sockets and pipes work.
 - **`READY`, then `reset`.** The first line that is exactly `READY` must come within 40 s of launch (up to 199 other
   lines before it are skipped). The grader then sends `{"type": "reset"}` at once; any JSON object answers it.
 - **stdout carries replies only.** Each request has one deadline, 10 s of wall time from when it is written, and after

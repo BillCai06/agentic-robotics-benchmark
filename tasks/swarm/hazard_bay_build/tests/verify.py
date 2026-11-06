@@ -783,6 +783,11 @@ def run_probes(scene, work, timeout, retries, fixed, cfg, snap, cfg_probe=None, 
                 log("control: parts by the agent's names:", json.dumps(cfg_probe["item_alias"]))
             egress = egress_mode()  # (once, before the missions)
             log("control: egress guard:", egress)
+            if egress != "seccomp":  # (fail closed: the fixed set is public, so a program with the network could fetch its
+                # day; sampling sockets cannot stop a fetch made and closed between two looks. Grading without the filter
+                # would not be the grading the instruction describes: a task error, not a score)
+                fail("the grading environment cannot block the controller's network (the seccomp filter cannot be "
+                     "installed here); the bay mission is not graded with the network open")
             runs = []
             for e, mission in enumerate(fixed["missions"]):
                 data = run_control(scene, work, cfg, mission, e, snap, egress)
