@@ -187,7 +187,7 @@ class Render:
         import omni.replicator.core as rep
         self.rep, self.settings = rep, carb.settings.get_settings()
         self.cfg, self.work = cfg, work
-        self.stats = dict(reads=0, steps=0, unsettled=0)
+        self.stats = dict(reads=0, steps=0, unsettled=0, auto_exposure=self.settings.get("/rtx/post/histogram/enabled"))
 
     def open_day(self, day, bay_layer, hide_items=False):
         import control_sim

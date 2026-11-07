@@ -287,8 +287,10 @@ renders in the real bay, from the sensor's own pose at the moment of capture, as
   replaces it 12 steps later. Nothing writes the slots while a request waits for your reply; a program that reads
   between requests checks that seq is the same and even before and after it reads (the writer makes it odd while it
   writes). `~/given/frame_reader.py` reads the manifest and a slot that way; copy it into your submission to use it.
-- **The GPU.** Your program may use it (CUDA, PyTorch). It shares it with the grader's renderer, which leaves at least
-  [[P7: GB]] GB of its memory free. Your program cannot start Isaac Sim when it is graded.
+- **The GPU.** Your program may use it (CUDA, PyTorch). It shares it with the grader's renderer: on a 24 GB GPU the
+  renderer leaves at least 4 GB of its memory free (it holds about 12 GB for a fleet that streams all the sensors the
+  cap allows at their full size, and more, up to about 20 GB, while it compiles shaders for looks it has not drawn
+  before). Your program cannot start Isaac Sim when it is graded.
 
 ## The real bay
 

@@ -37,7 +37,7 @@ def camera(st, path, model, pos, rot_cols):
     cam.CreateVerticalApertureAttr(float(c["vap"]))
     cam.CreateClippingRangeAttr(Gf.Vec2f(0.01, 100.0))
     m = Gf.Matrix4d(1.0)
-    r = np.array(rot_cols, dtype=float).T  # (rows: the camera's axes; Gf is row-vector)
+    r = np.array(rot_cols, dtype=float)  # (Gf is row-vector: row i is the camera's axis i in the parent's frame)
     m.SetRow3(0, Gf.Vec3d(*r[0]))
     m.SetRow3(1, Gf.Vec3d(*r[1]))
     m.SetRow3(2, Gf.Vec3d(*r[2]))
