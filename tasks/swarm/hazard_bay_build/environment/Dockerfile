@@ -69,3 +69,12 @@ RUN HOME=/tmp/selfcheck python3 -c "import torch, isaaclab, isaacsim, cv2; print
     && runuser -u user -- python3 -c "import torch, isaaclab, isaacsim, cv2; print('[image] agent-UID import OK')" \
     && rm -rf /tmp/selfcheck /home/user/.nvidia-omniverse /home/user/.cache \
     && chown -R user:user /home/user
+
+# The claude-code harness aborts a model stream after 300 s without a byte (Bun's HTTP idle timeout and the CLI's
+# stream watchdog); both timers are raised to the gateway's own 1800 s upstream ceiling. ENV is inherited by every
+# process the guest service starts, and the profile.d file covers the login shell the CLI is launched with (`bash -lc`).
+# Nothing else in this image reads them. Appended after every toolchain layer so the layers above stay cached.
+ENV BUN_CONFIG_HTTP_IDLE_TIMEOUT=1800 CLAUDE_STREAM_IDLE_TIMEOUT_MS=1800000
+RUN printf '%s\n' 'export BUN_CONFIG_HTTP_IDLE_TIMEOUT=1800' 'export CLAUDE_STREAM_IDLE_TIMEOUT_MS=1800000' \
+        > /etc/profile.d/99-ale-idle-timeouts.sh \
+    && chmod 0644 /etc/profile.d/99-ale-idle-timeouts.sh
