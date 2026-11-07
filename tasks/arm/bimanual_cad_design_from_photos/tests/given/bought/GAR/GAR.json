@@ -1,0 +1,144 @@
+{
+ "format": "bimanual-cad-bought/1",
+ "generator": "bimanual-cad-standins/1.0.0",
+ "class": "GAR",
+ "pn": "OGM-25-FA-R",
+ "vendor": "Ostwyn Automation",
+ "title": "gripper finger A (right-hand module)",
+ "kind": "gripper_finger",
+ "step": "OGM-25-FA-R.step",
+ "side": "R",
+ "module": {
+  "pn": "OGM-25-R",
+  "pieces": {
+   "body": "OGM-25-B-R",
+   "A": "OGM-25-FA-R",
+   "B": "OGM-25-FB-R"
+  },
+  "classes": {
+   "body": "GBR",
+   "A": "GAR",
+   "B": "GFR"
+  },
+  "mass_kg": 0.6420944989104231
+ },
+ "frame": "module frame: origin on the drive axis at the mounting face (the face that bolts to the actuator's output), +z along that axis away from the actuator, +x from finger hinge B to finger hinge A; the finger pieces' frames coincide with it at the closed stop (fingers at zero)",
+ "hinges": {
+  "A": {
+   "point": [
+    18.000000002275385,
+    67.99999999819215,
+    0.0
+   ],
+   "dir": [
+    0.0,
+    0.0,
+    -1.0
+   ]
+  },
+  "B": {
+   "point": [
+    -17.999999997724615,
+    67.99999999819215,
+    0.0
+   ],
+   "dir": [
+    0.0,
+    0.0,
+    1.0
+   ]
+  }
+ },
+ "open_stop_rad": 0.7853981633974483,
+ "open_stop_deg": 45.0,
+ "coupling": "the two fingers are geared 1:1: both turn by the same angle, A about hinges.A.dir, B about hinges.B.dir",
+ "pointing": [
+  0.0032710051965743484,
+  0.999994650248192,
+  -6.800735652691579e-18
+ ],
+ "tcp": [
+  0.06493474199280058,
+  159.78212098728744,
+  -34.165144590422095
+ ],
+ "fingertips": {
+  "A": [
+   5.0897444712184665,
+   169.78554510410663,
+   -34.16857839597207
+  ],
+  "B": [
+   -4.894454883301364,
+   169.7785898754321,
+   -34.16171078487211
+  ]
+ },
+ "tcp_rule": "fingertips: the centroid of each finger's tip region (its surface within 1 mm of its extreme point along `pointing`) at the closed stop; tcp: their midpoint moved 10 mm back against `pointing`",
+ "keepout": "OGM-25-FA-R_keepout.step",
+ "keepout_covers": "the stand-in itself",
+ "finger": "A",
+ "hinge": {
+  "point": [
+   18.000000002275385,
+   67.99999999819215,
+   0.0
+  ],
+  "dir": [
+   0.0,
+   0.0,
+   -1.0
+  ]
+ },
+ "fingertip": [
+  5.0897444712184665,
+  169.78554510410663,
+  -34.16857839597207
+ ],
+ "volume_mm3": 57295.26152497253,
+ "extents_sorted_mm": [
+  40.971596761582,
+  54.950000099994,
+  121.00000009993019
+ ],
+ "bbox_mm": [
+  [
+   -1.3643292193060002,
+   48.999999998868994,
+   -49.4000000045
+  ],
+  [
+   39.607267542276,
+   170.00000009879918,
+   5.550000095494
+  ]
+ ],
+ "mass_kg": 0.11973443166140993,
+ "com_mm": [
+  20.33325279996478,
+  114.35756130101636,
+  -28.945765414994145
+ ],
+ "inertia_kg_mm2": [
+  [
+   164.29579096686734,
+   7.402103510710427,
+   2.599577089344311
+  ],
+  [
+   7.402103510710427,
+   34.36419855969631,
+   -38.93993256320125
+  ],
+  [
+   2.599577089344311,
+   -38.93993256320125,
+   149.16069766790312
+  ]
+ ],
+ "mass_model": "the stated mass spread uniformly over the solid: com_mm and inertia_kg_mm2 are the solid's at density mass / volume",
+ "documents": {
+  "datasheet": "datasheet_OGM-25-FA-R.png",
+  "drawing": "drawing_OGM-25-FA-R.png"
+ }
+}

@@ -1,0 +1,68 @@
+# robotic_arm_full_assembly_openarm_panda (assembly stage: both arms of an OpenArm 2.0 pair from loose units, two Pandas;
+# built 2026-10-24..29 on the owner's request, the sibling of robotic_arm_full_assembly_so101_panda).
+#
+# The agent receives the pair's kit (every unit's look and the convex pieces the cell simulates, kit.json: units, joints,
+# the design, the mates), the shop's 27-photo picture manual, the cell's commissioning document and API and the client
+# library; no practice. It delivers assemble.py (solve(cell): a camera-only program that builds both arms, 18 mates, on
+# the gallows with two Pandas), run as an unprivileged account on 3 OS-entropy episodes of the grader's MuJoCo cell
+# (tests/arm/assembly_openarm: the units on the bench in stable orientations, placed and turned at random around a
+# hidden bench plan; three uncalibrated RGB-D cameras, top and one per hand, rendered by MuJoCo's Filament on CPU Vulkan
+# in a baked factory hall; noisy F/T, no part poses, no mate events; J1-J3 held by their motors while the arms are
+# built). Score = the episode mean of the fastened mates' weight / 22. The oracle submits the privileged program
+# (tests/arm/assembly_openarm/reference.py) with a 256-bit token: it runs inside the cell on the bench plan's nominal
+# layout. Grader knobs live in tests/grader_config.json.
+
+schema_version = "1.4+ale.1"
+artifacts = ["/home/user/submission"]
+
+[task]
+name = "grounded-intelligence-initiative/robotic_arm_full_assembly_openarm_panda"
+
+[metadata]
+platform = "arm"
+direction = "assembly"
+metric = {name = "assembly_score", direction = "higher", hardware_invariant = true}
+mode = "atomic"
+stage = "assembly"
+stage_key = "assembly"
+info_tier = 1
+practice_instances = []
+render_backend = "filament"
+photo_set_version = "1"
+entry = "design-first"
+route = "code-as-policy"
+agent_role = ["assembly engineer", "assembly-cell programmer"]
+artifact_kind = ["program"]
+oracle_kind = "token-privileged"
+compute = "cpu"
+branch = {assembler = "two pandas", fastening = "coupling (on-feature hold, at-rest bolt position)", joints = "J1-J3 position-held while built, J4-J7 unpowered back-drivable", engine = "mujoco", observation = "cameras-only"}
+observation_tier = "camera-only"
+randomisation = ["bench layout (place, yaw) per episode", "gallows +-10 mm", "cameras (mount, intrinsics, distortion)", "lighting", "F/T bias"]
+expert_time_hours = 80
+siblings = ["robotic_arm_full_assembly_so101_panda"]
+tags = ["assembly", "mujoco", "panda", "dual-arm", "openarm", "code-as-policy", "camera-only", "rgbd", "calibration", "picture-manual", "full-arm", "oracle-token"]
+
+[environment]
+cpus = 8
+memory_mb = 16384
+
+# [agent] timeout_sec: 6 h; [verifier] timeout_sec: 3 x (cell build ~20 s + program <= 3000 s wall); the oracle's
+# verify: 3 x the privileged program (~650 s simulated, ~45-50 min wall each). The verifier sandbox's start and
+# tests/test.sh's copy of the givens count against it too.
+[agent]
+timeout_sec = 21600
+network_mode = "no-network"
+
+# Separate verification: the grader runs as root in a fresh verifier sandbox from the task image that the agent never
+# touched, with only the declared artifact (the submission) restored into it, so nothing else the agent left (a file,
+# a process, a program planted on root's PATH) reaches it. environment/setup/setup.sh does not run there: tests/test.sh
+# builds the grader's root-owned copy of the givens itself. The agent's program runs during verify, so the verifier
+# gets the agent's resources (CPU rendering: no GPU).
+[verifier]
+timeout_sec = 14400
+environment_mode = "separate"
+
+[verifier.environment]
+cpus = 8
+memory_mb = 16384
+gpus = 0

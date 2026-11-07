@@ -1,0 +1,179 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "description": "Traced requirements of the replica pairs: one item per quantity the brief, the build log, the photos or the documents fix, plus the derived items of brief B-16 (source_id 'derived' with a derivation note). Bounds in the listed units; every item traced to its source. Comparator convention: a duty quantity is bounded the way the brief bounds the duty (for example payload_mass_max <= the band top, payload_mass_min >= the band bottom, move_time <= the move time); a working-range quantity (tray_x_min, tray_x_max, tray_y_min, tray_y_max, tray_height_min, tray_height_max, gripper_opening_min) states what the replica must cover: a *_min with <= the lowest value the duty needs, a *_max with >= the highest.",
+  "properties": {
+    "format": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "project": {
+      "type": "string"
+    },
+    "requirements": {
+      "items": {
+        "additionalProperties": true,
+        "properties": {
+          "bound": {
+            "maximum": 1000000.0,
+            "minimum": -1000000.0,
+            "type": "number"
+          },
+          "comparator": {
+            "enum": [
+              ">=",
+              "<=",
+              "==",
+              ">",
+              "<"
+            ],
+            "type": "string"
+          },
+          "derivation": {
+            "type": "string"
+          },
+          "id": {
+            "pattern": "^REQ-[A-Za-z0-9_.-]+$",
+            "type": "string"
+          },
+          "quantity": {
+            "enum": [
+              "approach_pitch",
+              "bus_voltage",
+              "dwell_time",
+              "eco_cost",
+              "elbow_swivel",
+              "grip_torque:left",
+              "grip_torque:right",
+              "gripper_close_time",
+              "gripper_opening_min",
+              "handle_spacing",
+              "harness_drop",
+              "joint_peak_speed:left_j1",
+              "joint_peak_speed:left_j2",
+              "joint_peak_speed:left_j3",
+              "joint_peak_speed:left_j4",
+              "joint_peak_speed:left_j5",
+              "joint_peak_speed:left_j6",
+              "joint_peak_speed:left_j7",
+              "joint_peak_speed:right_j1",
+              "joint_peak_speed:right_j2",
+              "joint_peak_speed:right_j3",
+              "joint_peak_speed:right_j4",
+              "joint_peak_speed:right_j5",
+              "joint_peak_speed:right_j6",
+              "joint_peak_speed:right_j7",
+              "joint_peak_torque:left_j1",
+              "joint_peak_torque:left_j2",
+              "joint_peak_torque:left_j3",
+              "joint_peak_torque:left_j4",
+              "joint_peak_torque:left_j5",
+              "joint_peak_torque:left_j6",
+              "joint_peak_torque:left_j7",
+              "joint_peak_torque:right_j1",
+              "joint_peak_torque:right_j2",
+              "joint_peak_torque:right_j3",
+              "joint_peak_torque:right_j4",
+              "joint_peak_torque:right_j5",
+              "joint_peak_torque:right_j6",
+              "joint_peak_torque:right_j7",
+              "joint_rms_torque:left_j1",
+              "joint_rms_torque:left_j2",
+              "joint_rms_torque:left_j3",
+              "joint_rms_torque:left_j4",
+              "joint_rms_torque:left_j5",
+              "joint_rms_torque:left_j6",
+              "joint_rms_torque:left_j7",
+              "joint_rms_torque:right_j1",
+              "joint_rms_torque:right_j2",
+              "joint_rms_torque:right_j3",
+              "joint_rms_torque:right_j4",
+              "joint_rms_torque:right_j5",
+              "joint_rms_torque:right_j6",
+              "joint_rms_torque:right_j7",
+              "module_count",
+              "move_time",
+              "moving_mass:left",
+              "moving_mass:right",
+              "pad_friction",
+              "payload_com_drop",
+              "payload_mass_max",
+              "payload_mass_min",
+              "proof_load_factor",
+              "psu_count",
+              "revolute_dof",
+              "slip_safety_factor",
+              "supply_peak_current",
+              "total_cost",
+              "tray_height_max",
+              "tray_height_min",
+              "tray_x_max",
+              "tray_x_min",
+              "tray_y_max",
+              "tray_y_min",
+              "unit_count",
+              "untested_vendor_derating"
+            ],
+            "type": "string"
+          },
+          "source_clause": {
+            "type": "string"
+          },
+          "source_id": {
+            "pattern": "^(B|BL)-[0-9]{2}$|^PH-[0-9]{2}$|^DS-[A-Za-z0-9-]+$|^LR(-[0-9]{4}-[0-9]{4})?$|^derived$",
+            "type": "string"
+          },
+          "unit": {
+            "enum": [
+              "A",
+              "N m",
+              "N.m",
+              "Nm",
+              "USD",
+              "V",
+              "W",
+              "cm",
+              "count",
+              "deg",
+              "deg/s",
+              "fraction",
+              "g",
+              "kg",
+              "kgf.cm",
+              "m",
+              "mA",
+              "mm",
+              "ms",
+              "rad",
+              "rad/s",
+              "rpm",
+              "s"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "quantity",
+          "comparator",
+          "bound",
+          "unit",
+          "source_id"
+        ],
+        "type": "object"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
+    "units": {
+      "type": "object"
+    }
+  },
+  "required": [
+    "requirements"
+  ],
+  "title": "req-bimanual/1 requirements sheet",
+  "type": "object"
+}

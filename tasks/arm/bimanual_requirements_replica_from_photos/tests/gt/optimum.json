@@ -1,0 +1,55 @@
+{
+ "binding": [
+  {
+   "chosen": "VR-L98-15-W",
+   "gap_usd": 147.0,
+   "joint": "j1",
+   "next": "OGD-9862-R13",
+   "next_util": 1.0232950103723994,
+   "stronger": "VR-L98-17-W",
+   "util": 0.9743368308507048
+  },
+  {
+   "chosen": "VR-S57-36H-W",
+   "gap_usd": 140.0,
+   "joint": "j4",
+   "next": "VR-S57-30H-W",
+   "next_util": 1.0746986810929147,
+   "stronger": "OGD-5746-R42",
+   "util": 0.9059433825145947
+  }
+ ],
+ "bom": {
+  "boards": [
+   "VR-CFD-2CH"
+  ],
+  "bus_voltage_v": 24.0,
+  "modules": {
+   "left": {
+    "j1": "VR-L98-15-W",
+    "j2": "VR-L98-11-W",
+    "j3": "VR-M57-19-W",
+    "j4": "VR-S57-36H-W",
+    "j5": "VR-S57-07-24",
+    "j6": "VR-S57-07-24",
+    "j7": "VR-S57-07-24",
+    "j8": "VR-S57-18-W"
+   },
+   "right": {
+    "j1": "VR-L98-15-W",
+    "j2": "VR-L98-11-W",
+    "j3": "VR-M57-19-W",
+    "j4": "VR-S57-36H-W",
+    "j5": "VR-S57-07-24",
+    "j6": "VR-S57-07-24",
+    "j7": "VR-S57-07-24",
+    "j8": "VR-S57-18-W"
+   }
+  },
+  "psu": "PSU-24V-12A5"
+ },
+ "bus_voltage_v": 24.0,
+ "cost": 3469.0,
+ "format": "bimanual-req-optimum/1",
+ "peak_current_a": 11.525307602200826
+}

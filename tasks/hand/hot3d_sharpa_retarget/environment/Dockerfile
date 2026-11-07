@@ -22,10 +22,13 @@ RUN uv venv --seed /opt/venv --python 3.12 \
 
 RUN /opt/isaac-venv/bin/python -m pip install --no-deps "setuptools<81" wheel \
     && /opt/isaac-venv/bin/python -m pip install --no-deps --no-build-isolation flatdict==4.0.1
+# The 19 GB Isaac venv is made readable in the layer that installs it: a chmod in a later layer copies every file it
+# touches into that layer, which doubled the image and took longer than the install.
 RUN /opt/isaac-venv/bin/python -m pip install --no-deps --prefer-binary \
     -r /tmp/requirements-isaac.txt \
     --extra-index-url https://download.pytorch.org/whl/cu128 \
-    --extra-index-url https://pypi.nvidia.com
+    --extra-index-url https://pypi.nvidia.com \
+    && chmod -R a+rX /opt/isaac-venv
 
 RUN apt-get update && apt-get install -y --no-install-recommends libglu1-mesa \
     && rm -rf /var/lib/apt/lists/*
@@ -52,7 +55,7 @@ RUN python3 /opt/task-assets/fetch_assets.py /opt/task-assets/assets.sha256 /opt
 
 COPY flashdex /opt/flashdex
 RUN install -d -o user -g user /home/user/submission /home/user/.cache/ov \
-    && chmod -R a+rX /opt/flashdex /opt/venv /opt/isaac-venv /opt/python /opt/uv-python \
+    && chmod -R a+rX /opt/flashdex \
     && for name in cache data logs; do \
       mkdir -p /opt/isaac-venv/lib/python3.11/site-packages/isaacsim/kit/$name; \
       chown -R user:user /opt/isaac-venv/lib/python3.11/site-packages/isaacsim/kit/$name; \

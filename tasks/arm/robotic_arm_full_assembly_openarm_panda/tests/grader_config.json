@@ -1,0 +1,136 @@
+{
+ "agent_cameras": [
+  "top",
+  "wrist_left",
+  "wrist_right"
+ ],
+ "agent_renderer": "filament",
+ "bench_jitter": {
+  "gap_m": 0.006,
+  "xy_m": 0.03,
+  "yaw_deg": 30.0
+ },
+ "camera_budget_frames": 900,
+ "cpu_cap_factor": 4.0,
+ "damage": {
+  "note": "a unit pressed on the environment or another unit above part_force_N for `ticks` consecutive 10 ms ticks (0.2 s) is a safety violation",
+  "part_force_N": 150.0,
+  "ticks": 20
+ },
+ "episode_trace": {
+  "agent": true,
+  "anchor": false,
+  "every_ticks": 4,
+  "note": "maintainers' replay record of every agent episode under /opt/arb-verify/out/trace (root-only, outside /opt/ale, which the engine clears before it keeps a sandbox; tests/episode_trace.py); never a scoring input"
+ },
+ "episodes": 3,
+ "fixture_jitter_m": 0.01,
+ "held": {
+  "force_N": 1.0,
+  "ticks": 5
+ },
+ "info_layout": {
+  "camera_draw": {
+   "c_rel": 0.02,
+   "f_rel": 0.03,
+   "k1": [
+    -0.08,
+    0.02
+   ],
+   "k2": [
+    -0.02,
+    0.02
+   ],
+   "mount_ang_deg": 3.0,
+   "mount_pos_m": 0.03,
+   "p": 0.001,
+   "wrist_ang_deg": 1.0,
+   "wrist_pos_m": 0.002
+  },
+  "cameras": {
+   "top": {
+    "depth": true,
+    "eye": [
+     -0.05,
+     0.0,
+     1.55
+    ],
+    "hfov_deg": 70.0,
+    "size": [
+     1280,
+     960
+    ],
+    "target": [
+     -0.05,
+     0.0,
+     0.0
+    ],
+    "up": [
+     0.0,
+     1.0,
+     0.0
+    ]
+   },
+   "wrist": {
+    "depth": true,
+    "hfov_deg": 80.0,
+    "offset_m": 0.05720137772977594,
+    "size": [
+     640,
+     480
+    ],
+    "tilt_deg": 16.921104305540013,
+    "z_m": 0.041169104589646295
+   }
+  }
+ },
+ "max_ticks_per_step": 500,
+ "oracle_nominal_layout": true,
+ "power_hold": {
+  "j1": [
+   40.0,
+   1.5,
+   10.0
+  ],
+  "j2": [
+   40.0,
+   1.5,
+   10.0
+  ],
+  "j3": [
+   25.0,
+   1.0,
+   5.0
+  ],
+  "note": "J1-J3 of each arm hold the angle they were fastened at while the arm is built (owner, 2026-10-27): kp N m/rad, kd N m s/rad, max N m"
+ },
+ "privileged_wall_cap_s": 7200.0,
+ "route_gate": {
+  "forbidden_calls": [
+   "torch.optim",
+   ".backward(",
+   "jax.grad"
+  ],
+  "forbidden_extensions": [
+   ".pt",
+   ".pth",
+   ".onnx",
+   ".safetensors",
+   ".ckpt",
+   ".h5",
+   ".pb",
+   ".pkl",
+   ".npz"
+  ],
+  "max_submission_mb": 60
+ },
+ "runner_account": "nobody",
+ "safety": {
+  "panda_force_N": 30.0,
+  "part_speed_m_s": 3.0
+ },
+ "silence_s": 120.0,
+ "sim_cap_s": 1800.0,
+ "socket_sample_s": 0.5,
+ "wall_cap_s": 3000.0
+}

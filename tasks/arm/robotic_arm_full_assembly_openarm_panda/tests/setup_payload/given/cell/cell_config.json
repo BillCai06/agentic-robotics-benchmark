@@ -1,0 +1,45 @@
+{
+ "camera_budget_frames": 900,
+ "cameras": [
+  "top",
+  "wrist_left",
+  "wrist_right"
+ ],
+ "damage": {
+  "note": "a unit pressed on the environment or another unit above part_force_N for `ticks` consecutive 10 ms ticks (0.2 s) is a safety violation",
+  "part_force_N": 150.0,
+  "ticks": 20
+ },
+ "episodes": 3,
+ "held": {
+  "force_N": 1.0,
+  "ticks": 5
+ },
+ "max_ticks_per_step": 500,
+ "note": "the grader's cell configuration as far as it is public (the camera mounts and the layout's draws are not)",
+ "power_hold": {
+  "j1": [
+   40.0,
+   1.5,
+   10.0
+  ],
+  "j2": [
+   40.0,
+   1.5,
+   10.0
+  ],
+  "j3": [
+   25.0,
+   1.0,
+   5.0
+  ],
+  "note": "J1-J3 of each arm hold the angle they were fastened at while the arm is built (owner, 2026-10-27): kp N m/rad, kd N m s/rad, max N m"
+ },
+ "safety": {
+  "panda_force_N": 30.0,
+  "part_speed_m_s": 3.0
+ },
+ "silence_s": 120.0,
+ "sim_cap_s": 1800.0,
+ "wall_cap_s": 3000.0
+}

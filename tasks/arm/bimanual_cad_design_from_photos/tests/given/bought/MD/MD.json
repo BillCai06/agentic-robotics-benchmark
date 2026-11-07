@@ -1,0 +1,322 @@
+{
+ "format": "bimanual-cad-bought/1",
+ "generator": "bimanual-cad-standins/1.0.0",
+ "class": "MD",
+ "pn": "HXA-5746",
+ "vendor": "Halvard Actuation",
+ "title": "joint actuator, 57 mm frame, short",
+ "kind": "motor",
+ "step": "HXA-5746.step",
+ "frame": "+z = the output axis, from the housing towards the output face; origin on the axis at the housing's rear face (z = 0); the output (mating) face at z = output_face_z; hole angles from +x about +z",
+ "output_face_z": 46.0,
+ "output_face": {
+  "diameter": 35.0,
+  "point": [
+   0.0,
+   0.0,
+   46.0
+  ],
+  "normal": [
+   0.0,
+   0.0,
+   1.0
+  ]
+ },
+ "output_bolts": {
+  "count": 6,
+  "pcd": 27.0,
+  "angle0_deg": 0.0,
+  "d": 2.5,
+  "depth": 5.0,
+  "role": "bolts",
+  "xy": [
+   [
+    13.5,
+    0.0
+   ],
+   [
+    6.75,
+    11.6913
+   ],
+   [
+    -6.75,
+    11.6913
+   ],
+   [
+    -13.5,
+    0.0
+   ],
+   [
+    -6.75,
+    -11.6913
+   ],
+   [
+    6.75,
+    -11.6913
+   ]
+  ]
+ },
+ "output_holes": [
+  {
+   "count": 3,
+   "pcd": 24.3,
+   "angle0_deg": 30.0,
+   "d": 4.0,
+   "depth": 4.0,
+   "role": "dowel",
+   "xy": [
+    [
+     10.5222,
+     6.075
+    ],
+    [
+     -10.5222,
+     6.075
+    ],
+    [
+     0.0,
+     -12.15
+    ]
+   ]
+  }
+ ],
+ "mount_faces": [
+  {
+   "name": "front",
+   "what": "housing front face, around the output flange",
+   "normal": [
+    0.0,
+    0.0,
+    1.0
+   ],
+   "point": [
+    0.0,
+    0.0,
+    45.0
+   ],
+   "annulus_mm": [
+    17.5,
+    28.5
+   ],
+   "bolts": {
+    "count": 6,
+    "pcd": 50.0,
+    "angle0_deg": 30.0,
+    "d": 2.5,
+    "depth": 5.0,
+    "role": "bolts",
+    "xy": [
+     [
+      21.6506,
+      12.5
+     ],
+     [
+      0.0,
+      25.0
+     ],
+     [
+      -21.6506,
+      12.5
+     ],
+     [
+      -21.6506,
+      -12.5
+     ],
+     [
+      0.0,
+      -25.0
+     ],
+     [
+      21.6506,
+      -12.5
+     ]
+    ]
+   },
+   "other_holes": [
+    {
+     "count": 2,
+     "pcd": 50.0,
+     "angle0_deg": 75.0,
+     "d": 3.0,
+     "depth": 5.0,
+     "role": "dowel",
+     "xy": [
+      [
+       6.4705,
+       24.1481
+      ],
+      [
+       -6.4705,
+       -24.1481
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "name": "rear",
+   "what": "housing rear face",
+   "normal": [
+    0.0,
+    0.0,
+    -1.0
+   ],
+   "point": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "annulus_mm": [
+    0.0,
+    28.5
+   ],
+   "bolts": {
+    "count": 4,
+    "pcd": 38.0,
+    "angle0_deg": 45.0,
+    "d": 2.5,
+    "depth": 4.0,
+    "role": "bolts",
+    "xy": [
+     [
+      13.435,
+      13.435
+     ],
+     [
+      -13.435,
+      13.435
+     ],
+     [
+      -13.435,
+      -13.435
+     ],
+     [
+      13.435,
+      -13.435
+     ]
+    ]
+   },
+   "other_holes": []
+  }
+ ],
+ "housing": {
+  "diameter": 57.0,
+  "length": 46.0,
+  "profile_rz": [
+   [
+    0.0,
+    0.0
+   ],
+   [
+    28.5,
+    0.0
+   ],
+   [
+    28.5,
+    45.0
+   ],
+   [
+    17.5,
+    45.0
+   ],
+   [
+    17.5,
+    46.0
+   ],
+   [
+    0.0,
+    46.0
+   ]
+  ],
+  "z_levels": [
+   0.0,
+   45.0,
+   46.0
+  ],
+  "recesses": [
+   {
+    "angle_deg": 90.0,
+    "width": 14.4,
+    "floor_r": 22.575532633115177,
+    "depth": 5.0,
+    "z": [
+     1.0,
+     6.5
+    ]
+   },
+   {
+    "angle_deg": 270.0,
+    "width": 14.4,
+    "floor_r": 22.575532633115177,
+    "depth": 5.0,
+    "z": [
+     1.0,
+     6.5
+    ]
+   }
+  ],
+  "flats": []
+ },
+ "facts": {
+  "rated_torque_nm": 2.8,
+  "peak_torque_nm": 8.5,
+  "no_load_speed_rpm": 175.0,
+  "speed_at_peak_rpm": 80.0,
+  "rated_voltage_v": 24.0,
+  "voltage_range_v": [
+   16.0,
+   30.0
+  ],
+  "gear_ratio": "12 : 1 planetary",
+  "encoder": "14-bit absolute, on the output",
+  "interface": "CAN 2.0B, 1 Mbit/s"
+ },
+ "keepout": "HXA-5746_keepout.step",
+ "keepout_covers": "the housing envelope: the revolved housing profile with every bolt hole, the centre bore, the connector recesses and the rear flat filled; a made part may touch it, never enter it",
+ "volume_mm3": 114306.75993283292,
+ "extents_sorted_mm": [
+  46.0,
+  57.0,
+  57.0
+ ],
+ "bbox_mm": [
+  [
+   -28.5,
+   -28.5,
+   0.0
+  ],
+  [
+   28.5,
+   28.5,
+   46.0
+  ]
+ ],
+ "mass_kg": 0.3,
+ "com_mm": [
+  -5.551105413724754e-15,
+  7.780175531908044e-14,
+  22.76010305468104
+ ],
+ "inertia_kg_mm2": [
+  [
+   110.22029439280017,
+   0.02898689897062604,
+   -6.571567001476916e-15
+  ],
+  [
+   0.02898689897062604,
+   111.79421208348269,
+   4.859326077393705e-13
+  ],
+  [
+   -6.571567001476916e-15,
+   4.859326077393705e-13,
+   120.667709963365
+  ]
+ ],
+ "mass_model": "the stated mass spread uniformly over the solid: com_mm and inertia_kg_mm2 are the solid's at density mass / volume",
+ "documents": {
+  "datasheet": "datasheet_HXA-5746.png",
+  "drawing": "drawing_HXA-5746.png"
+ }
+}

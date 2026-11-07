@@ -1,0 +1,1 @@
+"""The public grading modules: the brief's acceptance procedure on any bimanual S-R-S pair model with an injected catalogue and lot (procedure, lotmodel, catalog), the optimum search, the engineering-change repair, the criteria (grade), the schemas and the layer keys. No catalogue, lot, price or layer number is in this code."""

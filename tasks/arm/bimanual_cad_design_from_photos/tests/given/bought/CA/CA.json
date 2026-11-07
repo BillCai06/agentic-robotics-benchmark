@@ -1,0 +1,231 @@
+{
+ "format": "bimanual-cad-bought/1",
+ "generator": "bimanual-cad-standins/1.0.0",
+ "class": "CA",
+ "pn": "LPS-CS1-A",
+ "vendor": "Linnet Profile Systems",
+ "title": "column stand: 60 x 60 profile column, two corner brackets, diagonal brace",
+ "kind": "column_assembly",
+ "step": "LPS-CS1-A.step",
+ "frame": "origin on the column's axis at its bottom end (the face that stands on the base plate), +z up, +x towards the brace side",
+ "keepout": "LPS-CS1-A_keepout.step",
+ "keepout_covers": "the stand-in itself",
+ "column": {
+  "section_mm": [
+   60.0,
+   60.0
+  ],
+  "length_mm": 750.0,
+  "axis_xy": [
+   0.0,
+   0.0
+  ],
+  "core_holes": [
+   {
+    "xy": [
+     -15.0,
+     -15.0
+    ],
+    "d": 6.8
+   },
+   {
+    "xy": [
+     -15.0,
+     15.0
+    ],
+    "d": 6.8
+   },
+   {
+    "xy": [
+     15.0,
+     -15.0
+    ],
+    "d": 6.8
+   },
+   {
+    "xy": [
+     15.0,
+     15.0
+    ],
+    "d": 6.8
+   }
+  ]
+ },
+ "brackets": {
+  "foot_holes": [
+   {
+    "xy": [
+     -15.0,
+     -75.0
+    ],
+    "d": 6.2,
+    "z": [
+     0.8,
+     5.8
+    ]
+   },
+   {
+    "xy": [
+     -15.0,
+     -45.0
+    ],
+    "d": 6.2,
+    "z": [
+     0.8,
+     5.8
+    ]
+   },
+   {
+    "xy": [
+     -15.0,
+     45.0
+    ],
+    "d": 6.2,
+    "z": [
+     0.8,
+     5.8
+    ]
+   },
+   {
+    "xy": [
+     -15.0,
+     75.0
+    ],
+    "d": 6.2,
+    "z": [
+     0.8,
+     5.8
+    ]
+   },
+   {
+    "xy": [
+     15.0,
+     -75.0
+    ],
+    "d": 6.2,
+    "z": [
+     0.8,
+     5.8
+    ]
+   },
+   {
+    "xy": [
+     15.0,
+     -45.0
+    ],
+    "d": 6.2,
+    "z": [
+     0.8,
+     5.8
+    ]
+   },
+   {
+    "xy": [
+     15.0,
+     45.0
+    ],
+    "d": 6.2,
+    "z": [
+     0.8,
+     5.8
+    ]
+   },
+   {
+    "xy": [
+     15.0,
+     75.0
+    ],
+    "d": 6.2,
+    "z": [
+     0.8,
+     5.8
+    ]
+   }
+  ],
+  "y_extent_mm": [
+   -85.0,
+   85.0
+  ]
+ },
+ "brace": {
+  "angle_deg": 60.0,
+  "section_mm": [
+   30.0,
+   60.0
+  ],
+  "x_extent_mm": [
+   30.0,
+   153.0
+  ],
+  "foot_x_mm": [
+   118.359,
+   153.0
+  ],
+  "top_end_z_mm": [
+   153.042,
+   213.042
+  ],
+  "foot_holes": [
+   {
+    "xy": [
+     135.0,
+     -15.0
+    ],
+    "d": 6.5
+   },
+   {
+    "xy": [
+     135.0,
+     15.0
+    ],
+    "d": 6.5
+   }
+  ]
+ },
+ "volume_mm3": 2159847.2983645555,
+ "extents_sorted_mm": [
+  170.0,
+  183.00000010000002,
+  750.0000002000041
+ ],
+ "bbox_mm": [
+  [
+   -30.0,
+   -85.0,
+   -1.000041167069753e-07
+  ],
+  [
+   153.00000010000002,
+   85.0,
+   750.0000001
+  ]
+ ],
+ "mass_kg": 5.8312802506796455,
+ "com_mm": [
+  8.112588427651561,
+  4.044803193640777e-06,
+  336.0501245543105
+ ],
+ "inertia_kg_mm2": [
+  [
+   301704.2060760592,
+   -0.002070766883718207,
+   12407.876848105165
+  ],
+  [
+   -0.002070766883718207,
+   305237.28364457784,
+   0.005528258305009038
+  ],
+  [
+   12407.876848105165,
+   0.005528258305009038,
+   7261.832735615105
+  ]
+ ],
+ "mass_model": "the stated mass spread uniformly over the solid: com_mm and inertia_kg_mm2 are the solid's at density mass / volume",
+ "documents": {
+  "datasheet": "datasheet_LPS-CS1-A.png",
+  "drawing": "drawing_LPS-CS1-A.png"
+ }
+}

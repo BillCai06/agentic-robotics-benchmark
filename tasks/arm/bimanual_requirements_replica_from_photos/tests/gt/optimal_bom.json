@@ -1,0 +1,129 @@
+{
+ "bus_voltage_v": 24.0,
+ "format": "bom-bimanual/1",
+ "parts": [
+  {
+   "arm": "left",
+   "count": 1,
+   "joint": "j1",
+   "part_id": "VR-L98-15-W",
+   "role": "module"
+  },
+  {
+   "arm": "left",
+   "count": 1,
+   "joint": "j2",
+   "part_id": "VR-L98-11-W",
+   "role": "module"
+  },
+  {
+   "arm": "left",
+   "count": 1,
+   "joint": "j3",
+   "part_id": "VR-M57-19-W",
+   "role": "module"
+  },
+  {
+   "arm": "left",
+   "count": 1,
+   "joint": "j4",
+   "part_id": "VR-S57-36H-W",
+   "role": "module"
+  },
+  {
+   "arm": "left",
+   "count": 1,
+   "joint": "j5",
+   "part_id": "VR-S57-07-24",
+   "role": "module"
+  },
+  {
+   "arm": "left",
+   "count": 1,
+   "joint": "j6",
+   "part_id": "VR-S57-07-24",
+   "role": "module"
+  },
+  {
+   "arm": "left",
+   "count": 1,
+   "joint": "j7",
+   "part_id": "VR-S57-07-24",
+   "role": "module"
+  },
+  {
+   "arm": "left",
+   "count": 1,
+   "joint": "j8",
+   "part_id": "VR-S57-18-W",
+   "role": "module"
+  },
+  {
+   "arm": "right",
+   "count": 1,
+   "joint": "j1",
+   "part_id": "VR-L98-15-W",
+   "role": "module"
+  },
+  {
+   "arm": "right",
+   "count": 1,
+   "joint": "j2",
+   "part_id": "VR-L98-11-W",
+   "role": "module"
+  },
+  {
+   "arm": "right",
+   "count": 1,
+   "joint": "j3",
+   "part_id": "VR-M57-19-W",
+   "role": "module"
+  },
+  {
+   "arm": "right",
+   "count": 1,
+   "joint": "j4",
+   "part_id": "VR-S57-36H-W",
+   "role": "module"
+  },
+  {
+   "arm": "right",
+   "count": 1,
+   "joint": "j5",
+   "part_id": "VR-S57-07-24",
+   "role": "module"
+  },
+  {
+   "arm": "right",
+   "count": 1,
+   "joint": "j6",
+   "part_id": "VR-S57-07-24",
+   "role": "module"
+  },
+  {
+   "arm": "right",
+   "count": 1,
+   "joint": "j7",
+   "part_id": "VR-S57-07-24",
+   "role": "module"
+  },
+  {
+   "arm": "right",
+   "count": 1,
+   "joint": "j8",
+   "part_id": "VR-S57-18-W",
+   "role": "module"
+  },
+  {
+   "count": 1,
+   "part_id": "VR-CFD-2CH",
+   "role": "bus_board"
+  },
+  {
+   "count": 1,
+   "part_id": "PSU-24V-12A5",
+   "role": "psu"
+  }
+ ],
+ "total_cost_usd": 3469.0
+}

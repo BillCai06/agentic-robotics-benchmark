@@ -1,0 +1,8 @@
+{
+ "metric": "assembly_score",
+ "direction": "higher",
+ "value": 1.0,
+ "full_at": 1.0,
+ "source": "measured 2026-10-30 by ale validate (run validate-fb553984, the final version): the oracle (privileged reference assembler, nominal layout) scored assembly_score 1.0 in each of the 3 episodes (credit 9/9, no safety violation); the same reference scored 1.0 on 16 of 16 random layouts outside the gate",
+ "note": "assembly_score is already on [0, 1]"
+}

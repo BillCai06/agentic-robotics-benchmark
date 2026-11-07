@@ -1,0 +1,841 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "description": "Appendix-D quantities (shared and per arm, nominal + tolerance), the stops of every joint of both arms in the Appendix-D conventions (j8 = the gripper's [0, open angle]) and, per arm and joint, the BOM's module and the pocket's housing class. Lengths in m, angles in rad.",
+  "properties": {
+    "format": {
+      "type": "string"
+    },
+    "geometry": {
+      "additionalProperties": true,
+      "properties": {
+        "left": {
+          "additionalProperties": true,
+          "properties": {
+            "finger_lever": {
+              "additionalProperties": true,
+              "properties": {
+                "nominal": {
+                  "type": "number"
+                },
+                "tol": {
+                  "minimum": 0,
+                  "type": "number"
+                }
+              },
+              "required": [
+                "nominal",
+                "tol"
+              ],
+              "type": "object"
+            },
+            "forearm": {
+              "additionalProperties": true,
+              "properties": {
+                "nominal": {
+                  "type": "number"
+                },
+                "tol": {
+                  "minimum": 0,
+                  "type": "number"
+                }
+              },
+              "required": [
+                "nominal",
+                "tol"
+              ],
+              "type": "object"
+            },
+            "grip_stroke": {
+              "additionalProperties": true,
+              "properties": {
+                "nominal": {
+                  "type": "number"
+                },
+                "tol": {
+                  "minimum": 0,
+                  "type": "number"
+                }
+              },
+              "required": [
+                "nominal",
+                "tol"
+              ],
+              "type": "object"
+            },
+            "upper_arm": {
+              "additionalProperties": true,
+              "properties": {
+                "nominal": {
+                  "type": "number"
+                },
+                "tol": {
+                  "minimum": 0,
+                  "type": "number"
+                }
+              },
+              "required": [
+                "nominal",
+                "tol"
+              ],
+              "type": "object"
+            },
+            "wrist_to_tcp": {
+              "additionalProperties": true,
+              "properties": {
+                "nominal": {
+                  "type": "number"
+                },
+                "tol": {
+                  "minimum": 0,
+                  "type": "number"
+                }
+              },
+              "required": [
+                "nominal",
+                "tol"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "upper_arm",
+            "forearm",
+            "wrist_to_tcp",
+            "finger_lever",
+            "grip_stroke"
+          ],
+          "type": "object"
+        },
+        "right": {
+          "additionalProperties": true,
+          "properties": {
+            "finger_lever": {
+              "additionalProperties": true,
+              "properties": {
+                "nominal": {
+                  "type": "number"
+                },
+                "tol": {
+                  "minimum": 0,
+                  "type": "number"
+                }
+              },
+              "required": [
+                "nominal",
+                "tol"
+              ],
+              "type": "object"
+            },
+            "forearm": {
+              "additionalProperties": true,
+              "properties": {
+                "nominal": {
+                  "type": "number"
+                },
+                "tol": {
+                  "minimum": 0,
+                  "type": "number"
+                }
+              },
+              "required": [
+                "nominal",
+                "tol"
+              ],
+              "type": "object"
+            },
+            "grip_stroke": {
+              "additionalProperties": true,
+              "properties": {
+                "nominal": {
+                  "type": "number"
+                },
+                "tol": {
+                  "minimum": 0,
+                  "type": "number"
+                }
+              },
+              "required": [
+                "nominal",
+                "tol"
+              ],
+              "type": "object"
+            },
+            "upper_arm": {
+              "additionalProperties": true,
+              "properties": {
+                "nominal": {
+                  "type": "number"
+                },
+                "tol": {
+                  "minimum": 0,
+                  "type": "number"
+                }
+              },
+              "required": [
+                "nominal",
+                "tol"
+              ],
+              "type": "object"
+            },
+            "wrist_to_tcp": {
+              "additionalProperties": true,
+              "properties": {
+                "nominal": {
+                  "type": "number"
+                },
+                "tol": {
+                  "minimum": 0,
+                  "type": "number"
+                }
+              },
+              "required": [
+                "nominal",
+                "tol"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "upper_arm",
+            "forearm",
+            "wrist_to_tcp",
+            "finger_lever",
+            "grip_stroke"
+          ],
+          "type": "object"
+        },
+        "shoulder_forward_offset": {
+          "additionalProperties": true,
+          "properties": {
+            "nominal": {
+              "type": "number"
+            },
+            "tol": {
+              "minimum": 0,
+              "type": "number"
+            }
+          },
+          "required": [
+            "nominal",
+            "tol"
+          ],
+          "type": "object"
+        },
+        "shoulder_half_span": {
+          "additionalProperties": true,
+          "properties": {
+            "nominal": {
+              "type": "number"
+            },
+            "tol": {
+              "minimum": 0,
+              "type": "number"
+            }
+          },
+          "required": [
+            "nominal",
+            "tol"
+          ],
+          "type": "object"
+        },
+        "shoulder_height": {
+          "additionalProperties": true,
+          "properties": {
+            "nominal": {
+              "type": "number"
+            },
+            "tol": {
+              "minimum": 0,
+              "type": "number"
+            }
+          },
+          "required": [
+            "nominal",
+            "tol"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "shoulder_height",
+        "shoulder_half_span",
+        "shoulder_forward_offset",
+        "left",
+        "right"
+      ],
+      "type": "object"
+    },
+    "joint_ranges": {
+      "additionalProperties": false,
+      "properties": {
+        "left": {
+          "additionalProperties": false,
+          "properties": {
+            "j1": {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            },
+            "j2": {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            },
+            "j3": {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            },
+            "j4": {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            },
+            "j5": {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            },
+            "j6": {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            },
+            "j7": {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            },
+            "j8": {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            }
+          },
+          "required": [
+            "j1",
+            "j2",
+            "j3",
+            "j4",
+            "j5",
+            "j6",
+            "j7",
+            "j8"
+          ],
+          "type": "object"
+        },
+        "right": {
+          "additionalProperties": false,
+          "properties": {
+            "j1": {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            },
+            "j2": {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            },
+            "j3": {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            },
+            "j4": {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            },
+            "j5": {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            },
+            "j6": {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            },
+            "j7": {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            },
+            "j8": {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            }
+          },
+          "required": [
+            "j1",
+            "j2",
+            "j3",
+            "j4",
+            "j5",
+            "j6",
+            "j7",
+            "j8"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "left",
+        "right"
+      ],
+      "type": "object"
+    },
+    "joints": {
+      "additionalProperties": false,
+      "properties": {
+        "left": {
+          "additionalProperties": false,
+          "properties": {
+            "j1": {
+              "additionalProperties": true,
+              "properties": {
+                "body_class": {
+                  "enum": [
+                    "large",
+                    "medium",
+                    "small"
+                  ],
+                  "type": "string"
+                },
+                "module_id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "module_id",
+                "body_class"
+              ],
+              "type": "object"
+            },
+            "j2": {
+              "additionalProperties": true,
+              "properties": {
+                "body_class": {
+                  "enum": [
+                    "large",
+                    "medium",
+                    "small"
+                  ],
+                  "type": "string"
+                },
+                "module_id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "module_id",
+                "body_class"
+              ],
+              "type": "object"
+            },
+            "j3": {
+              "additionalProperties": true,
+              "properties": {
+                "body_class": {
+                  "enum": [
+                    "large",
+                    "medium",
+                    "small"
+                  ],
+                  "type": "string"
+                },
+                "module_id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "module_id",
+                "body_class"
+              ],
+              "type": "object"
+            },
+            "j4": {
+              "additionalProperties": true,
+              "properties": {
+                "body_class": {
+                  "enum": [
+                    "large",
+                    "medium",
+                    "small"
+                  ],
+                  "type": "string"
+                },
+                "module_id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "module_id",
+                "body_class"
+              ],
+              "type": "object"
+            },
+            "j5": {
+              "additionalProperties": true,
+              "properties": {
+                "body_class": {
+                  "enum": [
+                    "large",
+                    "medium",
+                    "small"
+                  ],
+                  "type": "string"
+                },
+                "module_id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "module_id",
+                "body_class"
+              ],
+              "type": "object"
+            },
+            "j6": {
+              "additionalProperties": true,
+              "properties": {
+                "body_class": {
+                  "enum": [
+                    "large",
+                    "medium",
+                    "small"
+                  ],
+                  "type": "string"
+                },
+                "module_id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "module_id",
+                "body_class"
+              ],
+              "type": "object"
+            },
+            "j7": {
+              "additionalProperties": true,
+              "properties": {
+                "body_class": {
+                  "enum": [
+                    "large",
+                    "medium",
+                    "small"
+                  ],
+                  "type": "string"
+                },
+                "module_id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "module_id",
+                "body_class"
+              ],
+              "type": "object"
+            },
+            "j8": {
+              "additionalProperties": true,
+              "properties": {
+                "body_class": {
+                  "enum": [
+                    "large",
+                    "medium",
+                    "small"
+                  ],
+                  "type": "string"
+                },
+                "module_id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "module_id",
+                "body_class"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "j1",
+            "j2",
+            "j3",
+            "j4",
+            "j5",
+            "j6",
+            "j7",
+            "j8"
+          ],
+          "type": "object"
+        },
+        "right": {
+          "additionalProperties": false,
+          "properties": {
+            "j1": {
+              "additionalProperties": true,
+              "properties": {
+                "body_class": {
+                  "enum": [
+                    "large",
+                    "medium",
+                    "small"
+                  ],
+                  "type": "string"
+                },
+                "module_id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "module_id",
+                "body_class"
+              ],
+              "type": "object"
+            },
+            "j2": {
+              "additionalProperties": true,
+              "properties": {
+                "body_class": {
+                  "enum": [
+                    "large",
+                    "medium",
+                    "small"
+                  ],
+                  "type": "string"
+                },
+                "module_id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "module_id",
+                "body_class"
+              ],
+              "type": "object"
+            },
+            "j3": {
+              "additionalProperties": true,
+              "properties": {
+                "body_class": {
+                  "enum": [
+                    "large",
+                    "medium",
+                    "small"
+                  ],
+                  "type": "string"
+                },
+                "module_id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "module_id",
+                "body_class"
+              ],
+              "type": "object"
+            },
+            "j4": {
+              "additionalProperties": true,
+              "properties": {
+                "body_class": {
+                  "enum": [
+                    "large",
+                    "medium",
+                    "small"
+                  ],
+                  "type": "string"
+                },
+                "module_id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "module_id",
+                "body_class"
+              ],
+              "type": "object"
+            },
+            "j5": {
+              "additionalProperties": true,
+              "properties": {
+                "body_class": {
+                  "enum": [
+                    "large",
+                    "medium",
+                    "small"
+                  ],
+                  "type": "string"
+                },
+                "module_id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "module_id",
+                "body_class"
+              ],
+              "type": "object"
+            },
+            "j6": {
+              "additionalProperties": true,
+              "properties": {
+                "body_class": {
+                  "enum": [
+                    "large",
+                    "medium",
+                    "small"
+                  ],
+                  "type": "string"
+                },
+                "module_id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "module_id",
+                "body_class"
+              ],
+              "type": "object"
+            },
+            "j7": {
+              "additionalProperties": true,
+              "properties": {
+                "body_class": {
+                  "enum": [
+                    "large",
+                    "medium",
+                    "small"
+                  ],
+                  "type": "string"
+                },
+                "module_id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "module_id",
+                "body_class"
+              ],
+              "type": "object"
+            },
+            "j8": {
+              "additionalProperties": true,
+              "properties": {
+                "body_class": {
+                  "enum": [
+                    "large",
+                    "medium",
+                    "small"
+                  ],
+                  "type": "string"
+                },
+                "module_id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "module_id",
+                "body_class"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "j1",
+            "j2",
+            "j3",
+            "j4",
+            "j5",
+            "j6",
+            "j7",
+            "j8"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "left",
+        "right"
+      ],
+      "type": "object"
+    },
+    "units": {
+      "properties": {
+        "angle": {
+          "const": "rad"
+        },
+        "length": {
+          "const": "m"
+        }
+      },
+      "required": [
+        "length",
+        "angle"
+      ],
+      "type": "object"
+    }
+  },
+  "required": [
+    "units",
+    "geometry",
+    "joint_ranges",
+    "joints"
+  ],
+  "title": "sketch-bimanual/1 kinematic sketch of the replica pair",
+  "type": "object"
+}

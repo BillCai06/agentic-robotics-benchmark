@@ -1,0 +1,314 @@
+{
+ "format": "bimanual-req-reference-sheet/1",
+ "items": [
+  {
+   "band": "brief",
+   "bound": 1.601,
+   "comparator": "<=",
+   "id": "REQ-PAYLOAD-MAX",
+   "quantity": "payload_mass_max",
+   "source_ids": [
+    "PH-40",
+    "B-06"
+   ],
+   "unit": "kg"
+  },
+  {
+   "band": "brief",
+   "bound": 0.94,
+   "comparator": ">=",
+   "id": "REQ-PAYLOAD-MIN",
+   "quantity": "payload_mass_min",
+   "source_ids": [
+    "B-06"
+   ],
+   "unit": "kg"
+  },
+  {
+   "band": "brief",
+   "bound": 0.079,
+   "comparator": "<=",
+   "id": "REQ-COM",
+   "quantity": "payload_com_drop",
+   "source_ids": [
+    "B-06"
+   ],
+   "unit": "m"
+  },
+  {
+   "band": "angle",
+   "bound": -0.7853981633974483,
+   "comparator": "==",
+   "id": "REQ-PITCH",
+   "quantity": "approach_pitch",
+   "source_ids": [
+    "B-05"
+   ],
+   "unit": "rad"
+  },
+  {
+   "band": "angle",
+   "bound": 0.9424777960769379,
+   "comparator": "==",
+   "id": "REQ-SWIVEL",
+   "quantity": "elbow_swivel",
+   "source_ids": [
+    "B-05"
+   ],
+   "unit": "rad"
+  },
+  {
+   "band": "brief",
+   "bound": 1.16,
+   "comparator": "<=",
+   "id": "REQ-MOVE",
+   "quantity": "move_time",
+   "source_ids": [
+    "B-07"
+   ],
+   "unit": "s"
+  },
+  {
+   "band": "brief",
+   "bound": 0.9,
+   "comparator": ">=",
+   "id": "REQ-DWELL",
+   "quantity": "dwell_time",
+   "source_ids": [
+    "B-07"
+   ],
+   "unit": "s"
+  },
+  {
+   "band": "brief",
+   "bound": 1.25,
+   "comparator": ">=",
+   "id": "REQ-PROOF",
+   "quantity": "proof_load_factor",
+   "source_ids": [
+    "B-08"
+   ],
+   "unit": "fraction"
+  },
+  {
+   "band": "brief",
+   "bound": 0.55,
+   "comparator": "==",
+   "id": "REQ-MU",
+   "quantity": "pad_friction",
+   "source_ids": [
+    "B-09"
+   ],
+   "unit": "fraction"
+  },
+  {
+   "band": "brief",
+   "bound": 2.0,
+   "comparator": ">=",
+   "id": "REQ-SF",
+   "quantity": "slip_safety_factor",
+   "source_ids": [
+    "B-09"
+   ],
+   "unit": "fraction"
+  },
+  {
+   "band": "brief",
+   "bound": 0.7,
+   "comparator": "<=",
+   "id": "REQ-CLOSE",
+   "quantity": "gripper_close_time",
+   "source_ids": [
+    "B-09"
+   ],
+   "unit": "s"
+  },
+  {
+   "band": "brief",
+   "bound": 1.0,
+   "comparator": "==",
+   "id": "REQ-PSU",
+   "quantity": "psu_count",
+   "source_ids": [
+    "B-11"
+   ],
+   "unit": "count"
+  },
+  {
+   "band": "brief",
+   "bound": 16.0,
+   "comparator": "==",
+   "id": "REQ-MODULES",
+   "quantity": "module_count",
+   "source_ids": [
+    "B-10"
+   ],
+   "unit": "count"
+  },
+  {
+   "band": "brief",
+   "bound": 14.0,
+   "comparator": "==",
+   "id": "REQ-DOF",
+   "quantity": "revolute_dof",
+   "source_ids": [
+    "B-01"
+   ],
+   "unit": "count"
+  },
+  {
+   "band": "brief",
+   "bound": 4178.0,
+   "comparator": "<=",
+   "id": "REQ-COST",
+   "quantity": "total_cost",
+   "source_ids": [
+    "B-12"
+   ],
+   "unit": "USD"
+  },
+  {
+   "band": "brief",
+   "bound": 120.0,
+   "comparator": "==",
+   "id": "REQ-ECO",
+   "quantity": "eco_cost",
+   "source_ids": [
+    "B-13"
+   ],
+   "unit": "USD"
+  },
+  {
+   "band": "brief",
+   "bound": 7.0,
+   "comparator": "==",
+   "id": "REQ-UNITS",
+   "quantity": "unit_count",
+   "source_ids": [
+    "B-01"
+   ],
+   "unit": "count"
+  },
+  {
+   "band": "brief",
+   "bound": 0.7,
+   "comparator": "<=",
+   "id": "REQ-UNTESTED",
+   "quantity": "untested_vendor_derating",
+   "source_ids": [
+    "B-10"
+   ],
+   "unit": "fraction"
+  },
+  {
+   "band": "brief",
+   "bound": 0.4,
+   "comparator": "==",
+   "id": "REQ-DROP",
+   "quantity": "harness_drop",
+   "source_ids": [
+    "BL-03",
+    "B-11"
+   ],
+   "unit": "V"
+  },
+  {
+   "band": "photo",
+   "bound": 0.325,
+   "comparator": "<=",
+   "id": "REQ-XMIN",
+   "quantity": "tray_x_min",
+   "source_ids": [
+    "PH-37",
+    "B-04"
+   ],
+   "unit": "m"
+  },
+  {
+   "band": "photo",
+   "bound": 0.447,
+   "comparator": ">=",
+   "id": "REQ-XMAX",
+   "quantity": "tray_x_max",
+   "source_ids": [
+    "PH-37",
+    "B-04"
+   ],
+   "unit": "m"
+  },
+  {
+   "band": "photo",
+   "bound": -0.049,
+   "comparator": "<=",
+   "id": "REQ-YMIN",
+   "quantity": "tray_y_min",
+   "source_ids": [
+    "PH-37",
+    "B-04"
+   ],
+   "unit": "m"
+  },
+  {
+   "band": "photo",
+   "bound": 0.049,
+   "comparator": ">=",
+   "id": "REQ-YMAX",
+   "quantity": "tray_y_max",
+   "source_ids": [
+    "PH-37",
+    "B-04"
+   ],
+   "unit": "m"
+  },
+  {
+   "band": "photo",
+   "bound": 0.09,
+   "comparator": "<=",
+   "id": "REQ-ZMIN",
+   "quantity": "tray_height_min",
+   "source_ids": [
+    "PH-38",
+    "PH-37",
+    "B-05"
+   ],
+   "unit": "m"
+  },
+  {
+   "band": "photo",
+   "bound": 0.205,
+   "comparator": ">=",
+   "id": "REQ-ZMAX",
+   "quantity": "tray_height_max",
+   "source_ids": [
+    "PH-37",
+    "PH-38",
+    "B-05"
+   ],
+   "unit": "m"
+  },
+  {
+   "band": "photo",
+   "bound": 0.36,
+   "comparator": "==",
+   "id": "REQ-HANDLES",
+   "quantity": "handle_spacing",
+   "source_ids": [
+    "PH-38",
+    "B-14"
+   ],
+   "unit": "m"
+  },
+  {
+   "band": "photo",
+   "bound": 0.03,
+   "comparator": ">=",
+   "id": "REQ-OPEN",
+   "quantity": "gripper_opening_min",
+   "source_ids": [
+    "PH-38",
+    "B-09"
+   ],
+   "unit": "m"
+  }
+ ]
+}
