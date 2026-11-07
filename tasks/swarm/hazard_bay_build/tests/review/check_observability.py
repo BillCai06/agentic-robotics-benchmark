@@ -30,7 +30,8 @@ The renderer's measure: the observer is a grader camera (the mission's: the cata
 settings) with instance segmentation, read after Replicator's orchestrator steps once two consecutive reads agree (the
 mission's fresh read); a target's visible share is its pixels in the render over its pixels with every other prim
 hidden (a second render; every visibility restored as it was), times the share of its pixels inside the observer's
-frame (a guard camera at the same pose with three times the aperture: its middle third is the frame). Its viewpoints
+frame (a guard camera at the same pose with three times the aperture: its middle third is the frame); its size across
+is the longer side of the smallest rectangle round its pixels (a dial's diameter, however foreshortened). Its viewpoints
 for rows 1-2 are the ray caster's best three per part (its sweep of floor points; the renderer then measures them),
 for row 11 the ray caster's best point per crate wall, the fixed ones for the other rows; row 3 looks straight down;
 the targets are prims (a part, the grip, the dial and the needle, the pan, the start's landmarks; row 10's: the five
@@ -47,6 +48,11 @@ import os
 import sys
 
 import numpy as np
+
+try:
+    import cv2
+except ImportError:  # (the ray caster's mode needs no OpenCV)
+    cv2 = None
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 TESTS = os.path.dirname(HERE)
@@ -194,7 +200,8 @@ class Render:
         import mission_stage
         import omni.usd
         from pxr import Gf, Sdf, Usd, UsdGeom
-        path = os.path.join(self.work, "obs_day.usda")
+        self.opened = getattr(self, "opened", 0) + 1  # (a new layer per day: the open stage keeps the last one registered)
+        path = os.path.join(self.work, f"obs_day_{self.opened}.usda")
         if os.path.exists(path):
             os.remove(path)
         layer = Sdf.Layer.CreateNew(path)
@@ -331,8 +338,11 @@ class Render:
         h0, w0 = int(round(H * (1 - 1 / GUARD) / 2)), int(round(W * (1 - 1 / GUARD) / 2))
         g_in = int(g[h0:H - h0, w0:W - w0].sum()) if g_all else 0
         in_frame = (g_in / g_all) if g_all else (1.0 if b else 0.0)
-        cols = np.where(m.any(axis=0))[0] if m.ndim == 2 else np.array([])
-        across = int(cols.max() - cols.min() + 1) if cols.size else 0
+        across = 0  # (the target's largest extent in the image: the longer side of its pixels' smallest rectangle,
+        if m.ndim == 2 and m.any():  # e.g. a dial's diameter, however foreshortened its other axis)
+            vs, us = np.nonzero(m)
+            (_, _), (w_, h_), _ = cv2.minAreaRect(np.stack([us, vs], axis=1).astype(np.float32))
+            across = int(round(max(w_, h_) + 1))
         occ = (a / b) if b else 0.0
         return dict(share=min(1.0, occ) * min(1.0, in_frame), px2=a, across=across, in_frame=round(in_frame, 4), occluded_share=round(occ, 4))
 
@@ -477,11 +487,11 @@ def main():
     cfg = json.load(open(os.path.join(TESTS, "grader_config.json")))
     missions = json.load(open(a.set_file))["missions"]
     ids = [x for x in a.ids.split(",") if x]
+    R = None if a.raycast else Render(cfg, a.out)  # (Kit first: pxr imported before the app would not be Kit's own)
     import extract_geom_lib
     bay = extract_geom_lib.bay_shapes(os.path.join(TESTS, "hidden", "bay_true.usda"))
     import visibility as V
     import views as W
-    R = None if a.raycast else Render(cfg, a.out)
     h = file_hash()
     for m in missions:
         if ids and m["id"] not in ids:
