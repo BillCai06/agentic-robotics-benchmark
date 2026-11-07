@@ -33,12 +33,13 @@ gpus = 1
 # (round 4, 2026-11-06): verifier timeout = 1.5 x the measured scene part (with the cold render canary) + 2 x
 # (control.setup_timeout_s + control.episode_wall_cap_s + 90 s), rounded up to 30 min; the wall cap = 2 x the measured
 # time of a full run (36,000 control steps) of a fleet streaming all the sensors the cap allows, with a program that
-# answers at once, + control.reply_budget_s, rounded up to 10 min. Measured (P6, 2026-11-06, an RTX 4090 to itself):
+# answers at once, + control.reply_budget_s, rounded up to 10 min. Measured on 2026-11-06 (an RTX 4090 to itself):
 # 3,600 steps of a fleet streaming 16 RGB cameras at 1920 x 1200 and 4 LIDAR-3D took 539.8 s (149.9 ms a step), so
-# T_sim = 90.0 min and the cap 2 x 90.0 + 30 = 210 min (12,600 s). Timeout: 1.5 x the scene part + 2 x (20 + 210 + 1.5)
-# min = [[P8: the scene part]]. The reference's verify: [[P8: measured]] (29 min in round 3, without rendering). A run's
-# budget is the program's own reply time (control.reply_budget_s, 30 min); the wall clock only caps a run
-# (control.episode_wall_cap_s).
+# T_sim = 90.0 min and the cap 2 x 90.0 + 30 = 210 min (12,600 s). Timeout: the scene part measured in the reference's
+# full verify (a fresh verifier container, the Kit caches cold: 684 s, the physics canary 321 s and the render canary
+# 104 s of it) gives 1.5 x 11.4 + 2 x (20 + 210 + 1.5) = 480.1 min, rounded up to 510 min (30,600 s). That verify took
+# 88 min in all (the missions 41.8 and 35.0 min; 29 min in round 3, without rendering). A run's budget is the program's
+# own reply time (control.reply_budget_s, 30 min); the wall clock only caps a run (control.episode_wall_cap_s).
 [agent]
 timeout_sec = 28800
 network_mode = "no-network"
