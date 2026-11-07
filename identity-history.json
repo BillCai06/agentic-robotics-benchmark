@@ -6,6 +6,12 @@
     "spec_hash": "sha256:81cc7d0d26fbb49b34a7db7ef108961fd788433cf63d2646a1368aa9b986e18b"
   },
   {
+    "content_digest": "sha256:a53635fe941edc047ba7205d6f74cba1c19f0b20a4c792e33d73c8cc4448ca94",
+    "since": "2026-11-07T09:05:06Z",
+    "slug": "arm_hidden_mechanism_box",
+    "spec_hash": "sha256:14f0700b58e0c0011ce67fbfb765b09d5f9c8f6adf5e8ae1eeab5cdf6f58f3f2"
+  },
+  {
     "content_digest": "sha256:eaafabdb3b41fd1ee87fa4b94842e47ef30cd89e3ad3123ecac539aa0ab5ffe6",
     "since": "2026-11-04T10:13:10Z",
     "slug": "arm_hidden_mechanism_box",
@@ -24,16 +30,34 @@
     "spec_hash": "sha256:472d0e693dc5010a5d406716d9f5158cd1bcacc1493d3bad88e468e72ac6a5d5"
   },
   {
+    "content_digest": "sha256:0449f8b2f0581f04849d224fa544491c0f2c39bc1fb92145636bcd22536a26fd",
+    "since": "2026-11-07T09:05:06Z",
+    "slug": "bimanual_cad_design_from_photos",
+    "spec_hash": "sha256:ee4abc6bffe5e48ea067f47fb4dd99e5b496198df89fa7b9ed577f7ffa4b5d7e"
+  },
+  {
     "content_digest": "sha256:2d8234ea7647ba9f2dc80242ad9408140ff473d8b86ae2e3a9c0c626539c1130",
     "since": "2026-11-04T16:43:07Z",
     "slug": "bimanual_cad_design_from_photos",
     "spec_hash": "sha256:ee4abc6bffe5e48ea067f47fb4dd99e5b496198df89fa7b9ed577f7ffa4b5d7e"
   },
   {
+    "content_digest": "sha256:3529a4ee1e4becefe1206fea276f71c535bd54241fe7f3ed4929f982dc0e98cd",
+    "since": "2026-11-07T09:05:06Z",
+    "slug": "bimanual_requirements_replica_from_photos",
+    "spec_hash": "sha256:6f50e78650ad63dcb90181ebb568da7f2cfcf336edbd672226d5cf9c648b77e8"
+  },
+  {
     "content_digest": "sha256:dad0860f7fce006e3c98d112da8eec11cb98f51b531bc8f7959b51808466e38f",
     "since": "2026-11-04T17:56:00Z",
     "slug": "bimanual_requirements_replica_from_photos",
     "spec_hash": "sha256:6f50e78650ad63dcb90181ebb568da7f2cfcf336edbd672226d5cf9c648b77e8"
+  },
+  {
+    "content_digest": "sha256:86c0450d0b7058bec67392ab8a959d140acec2a825d6cb6f333bf1c72064ac35",
+    "since": "2026-11-07T09:05:06Z",
+    "slug": "dexhand_shape_sorter_all_pieces",
+    "spec_hash": "sha256:4dfdd073c1ead5a6a39e69c97c8d6909d3cdcae9f545e42c250030b1a2432c50"
   },
   {
     "content_digest": "sha256:6e96572478e441f637ccb8ccc3552cce57a20b97e677c7e2d5e7c52447a25442",
@@ -78,10 +102,22 @@
     "spec_hash": "sha256:95b824570ebf68cda4aa08382f7d95b3e4ee0110eefc03191a9cccd1eda8dc7e"
   },
   {
+    "content_digest": "sha256:a14c438401c2a6152074c30b3fee26a9f93a5909a74da7f2a34ade798791ef7b",
+    "since": "2026-11-07T09:05:06Z",
+    "slug": "furniture_assembly_from_drawings",
+    "spec_hash": "sha256:6222d85efac6f26f5080591098aeb1583f9a3287d5d3e0c589502a9ee6757a73"
+  },
+  {
     "content_digest": "sha256:6f412248f6a8ff325ae35da3bec3ab881ca890efa81c92090afebdba734bef2a",
     "since": "2026-11-05T16:35:59Z",
     "slug": "furniture_assembly_from_drawings",
     "spec_hash": "sha256:6222d85efac6f26f5080591098aeb1583f9a3287d5d3e0c589502a9ee6757a73"
+  },
+  {
+    "content_digest": "sha256:ac98397e41149f5f7929e4ce9b50959a70afb495d16cfa801735cafbe0e09cea",
+    "since": "2026-11-07T09:05:06Z",
+    "slug": "hot3d_sharpa_retarget",
+    "spec_hash": "sha256:e7c5004e06b9a1b441f100a62eb6702ef92f23079396d79ae1f173bb93d130bb"
   },
   {
     "content_digest": "sha256:b8bb82c9141ccc02e47ba3702d92aefee17c1106fdde3e1192ac49c3215fe072",
@@ -102,6 +138,12 @@
     "spec_hash": "sha256:4e6ee4fd9027232b7798674798dd1711adfe51b9b8cb3fdeabd297eaf248b09d"
   },
   {
+    "content_digest": "sha256:17a5de04de447c6cabd399e03ba4de21ce76bcd6dcfa865b79ca8a69be974e0e",
+    "since": "2026-11-07T09:05:06Z",
+    "slug": "robocasa_object_dynamics_from_video",
+    "spec_hash": "sha256:4f50ad3001d827c1eac7867d19a855938f1b3c888fea77b81f5425183cfb1c4f"
+  },
+  {
     "content_digest": "sha256:2dede0606d90887e2c565aa46f845421e9966b4db66946d73b52d7b5ce72234e",
     "since": "2026-11-04T10:13:10Z",
     "slug": "robocasa_object_dynamics_from_video",
@@ -118,6 +160,12 @@
     "since": "2026-10-30T11:55:32Z",
     "slug": "robocasa_object_dynamics_from_video",
     "spec_hash": "sha256:731d35a62337ae85950a7f5d4af15848626bd52cb6692d1a878b6f502f51dbbe"
+  },
+  {
+    "content_digest": "sha256:dc3850765874130f3589cc1228e4c8f0f3814eb8bcf18d031ed995fbb3e08fd9",
+    "since": "2026-11-07T09:05:06Z",
+    "slug": "robotic_arm_cad_design_from_photos",
+    "spec_hash": "sha256:76ca643aa8e8c1b3358cce67112a15edf51ddfed4bc746db7ee6b5ec94ebf8ab"
   },
   {
     "content_digest": "sha256:2caf7f25046aad5b3b29eb8f69ae29b1537004665012c3b230011d63bfec16ce",
@@ -144,10 +192,22 @@
     "spec_hash": "sha256:10b7f2f5c18dabb35baf33d00b0a851c5d55253e35db11f705d28bd4fa1585d7"
   },
   {
+    "content_digest": "sha256:c539594b77efd227e233aadee4113890fc2e8074021145aac70b603f34a9bdc8",
+    "since": "2026-11-07T09:05:06Z",
+    "slug": "robotic_arm_full_assembly_openarm_panda",
+    "spec_hash": "sha256:809b28ae4780240219598f47f9ec850600052bee3a4aeae0d4d78a5317561fa8"
+  },
+  {
     "content_digest": "sha256:a45b9217f174daa2e991ead1bf8aee55b0cdf4e2188c267ff44aaa50800f6248",
     "since": "2026-11-04T19:28:23Z",
     "slug": "robotic_arm_full_assembly_openarm_panda",
     "spec_hash": "sha256:809b28ae4780240219598f47f9ec850600052bee3a4aeae0d4d78a5317561fa8"
+  },
+  {
+    "content_digest": "sha256:0957bf11ad9586eb643c8f1194f4213cdad2183d1b342188dae94533d7e257ad",
+    "since": "2026-11-07T09:05:06Z",
+    "slug": "robotic_arm_full_assembly_so101_panda",
+    "spec_hash": "sha256:43a4d259751ed6be3bd598b84d0cbae04a391ffd12234553ec87eb2df8d08207"
   },
   {
     "content_digest": "sha256:a05f58b602d754fd6747edfc763b78ee0649835e2d0bc00dc29319f10423095a",
@@ -174,6 +234,12 @@
     "spec_hash": "sha256:d86b078a68c6455a35bb80ff3f80a622ab08e85391aadf161eb44517f7bc9e41"
   },
   {
+    "content_digest": "sha256:61f11d5081453a0d931dc1a79aefc11dbae11e0d5ccf698fb03180378e2b3fc5",
+    "since": "2026-11-07T09:05:06Z",
+    "slug": "robotic_arm_requirements_replica_from_photos",
+    "spec_hash": "sha256:f82819e241ae27b77a08a95fc88c90278fa1c3cef57af62c6ab5f546dba83836"
+  },
+  {
     "content_digest": "sha256:896cce1bd0778cf6bb02172c50bf7f46bf2b63e7c9f0a12af5fb3b482c8185cb",
     "since": "2026-11-04T12:34:19Z",
     "slug": "robotic_arm_requirements_replica_from_photos",
@@ -196,6 +262,12 @@
     "since": "2026-10-27T19:49:28Z",
     "slug": "robotic_arm_requirements_replica_from_photos",
     "spec_hash": "sha256:58d88f2534d367fe47af9c59fae8dc46e1fa52d56a5bed83dedc828b5e33ae89"
+  },
+  {
+    "content_digest": "sha256:c92de4f225218a3560c2cf5e2384dec1b6eb4d8e1000167517003964a95ccba1",
+    "since": "2026-11-07T09:05:06Z",
+    "slug": "visual_low_level_flight_control",
+    "spec_hash": "sha256:301a91a5fee60d49182c9832f99f4ec7d43788b5e408dc95433c0d6596ffa645"
   },
   {
     "content_digest": "sha256:a2d3c5b6a55990094fedbf8f9fe90f3a3e5e94b6a85407598f1746a238696800",
